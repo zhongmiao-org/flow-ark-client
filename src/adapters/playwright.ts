@@ -69,7 +69,9 @@ export class PlaywrightDriver implements BrowserDriver {
     validateFormCommand(c);
     assertBrowserOperations(this.binding, [c]);
     const path = framePathOf(c);
-    const remaining = commandBudget(c.timeoutMs);
+    const remaining = commandBudget(
+      c.version === 9 ? Math.min(c.timeoutMs ?? 15000, 15000) : c.timeoutMs,
+    );
     const page = this.page;
     if (c.version === 8) return this.target(c, page, path, remaining);
     if (c.operation === 'collect') return this.collect(c, page, path, remaining);
@@ -301,6 +303,7 @@ export class PlaywrightDriver implements BrowserDriver {
       id: 'driver',
       type: 'browser',
       version: c.version ?? 5,
+      ...(c.version === 9 ? { renderPolicy: c.renderPolicy } : {}),
       operation: 'collect',
       selector: c.selector,
       framePath: path,
@@ -348,12 +351,14 @@ export class PlaywrightDriver implements BrowserDriver {
         framePath: path,
         url,
         renderPolicy:
-          node.version === 7
-            ? ('bounded-rendered-text-v2' as const)
-            : ('bounded-rendered-text-v1' as const),
+          node.version === 9
+            ? ('bounded-selection-text-v1' as const)
+            : node.version === 7
+              ? ('bounded-rendered-text-v2' as const)
+              : ('bounded-rendered-text-v1' as const),
       };
       const result =
-        node.version === 6 || node.version === 7
+        node.version === 6 || node.version === 7 || node.version === 9
           ? await frame.evaluate(readBrowserRenderedFields, request)
           : await frame.evaluate(readBrowserFields, {
               ...request,

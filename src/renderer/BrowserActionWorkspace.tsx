@@ -115,7 +115,7 @@ export default function BrowserActionWorkspace(props: Props) {
   };
   const finish = () => {
     if (!props.guard()) return;
-    if ([5, 6, 7, 8].includes(node.version)) {
+    if ([5, 6, 7, 8, 9].includes(node.version)) {
       try {
         if (node.version === 8) assertBrowserTargetNode(node);
         else assertBrowserFieldsNode(node);
@@ -128,7 +128,13 @@ export default function BrowserActionWorkspace(props: Props) {
     props.close();
   };
   const showBrowser = () => {
-    if (node.version === 5 || node.version === 6 || node.version === 7 || props.guard())
+    if (
+      node.version === 5 ||
+      node.version === 6 ||
+      node.version === 7 ||
+      node.version === 9 ||
+      props.guard()
+    )
       props.showBrowser();
   };
   return (
@@ -172,11 +178,13 @@ export default function BrowserActionWorkspace(props: Props) {
         <div className="browser-action-page">
           <header>
             <h1 ref={heading} id={id} tabIndex={-1}>
-              {node.version === 6 || node.version === 7
-                ? '关联字段与正文'
-                : node.version === 5
-                  ? '读取关联字段'
-                  : '网页动作配置'}
+              {node.version === 9
+                ? '关联字段与选区文字候选'
+                : node.version === 6 || node.version === 7
+                  ? '关联字段与正文'
+                  : node.version === 5
+                    ? '读取关联字段'
+                    : '网页动作配置'}
             </h1>
             <p>
               当前步骤：{ordinal ? `${String(ordinal).padStart(2, '0')} ` : ''}
@@ -204,7 +212,7 @@ export default function BrowserActionWorkspace(props: Props) {
               />
             </div>
           )}
-          {node.version === 5 || node.version === 6 || node.version === 7 ? (
+          {node.version === 5 || node.version === 6 || node.version === 7 || node.version === 9 ? (
             <BrowserFieldsConfiguration
               pickingReady={pickingReady}
               node={node}

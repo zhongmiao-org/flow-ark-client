@@ -31,7 +31,20 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
       className="browser-fields-configuration browser-fields-result"
       aria-label="完整关联字段采集结果"
     >
-      <h2>{value.version >= 2 ? '关联字段与正文采集结果' : '关联字段采集结果'}</h2>
+      <h2>
+        {value.version === 4
+          ? '关联字段与选区文字候选'
+          : value.version >= 2
+            ? '关联字段与正文采集结果'
+            : '关联字段采集结果'}
+      </h2>
+      {value.version === 4 && (
+        <Alert
+          type="info"
+          title="选区文字候选 · 外部覆盖未核验"
+          description="选区外装饰可能绘制；读取完整不代表站点全文、视觉完整、账号验证或动作授权。"
+        />
+      )}
       <div className="browser-fields-top">
         <Card>
           <h2>采集来源</h2>
@@ -52,7 +65,7 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
             type={value.complete ? 'success' : 'warning'}
             title={
               value.complete
-                ? value.version === 3
+                ? value.version === 3 || value.version === 4
                   ? '候选通过有限检查'
                   : '采集完整'
                 : '采集不完整'
@@ -99,7 +112,9 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
                   ? 'DOM文字（textContent）'
                   : f.operation === 'rendered-text'
                     ? '已排版正文（待核对）'
-                    : '原始属性'}
+                    : f.operation === 'selection-text'
+                      ? '选区文字候选（待核对）'
+                      : '原始属性'}
               </dd>
               <dt>属性名</dt>
               <dd>{f.attribute ?? '不适用'}</dd>
@@ -118,8 +133,19 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
                 本次核准无绘制祖先空格 {f.ignoredAncestorSpaces} 处；正文候选仍须本人完整阅读核对。
               </p>
             )}
+            {f.operation === 'selection-text' && 'excludedAncestorDecorations' in f && (
+              <p>
+                本次核准无绘制祖先空格 {f.ignoredAncestorSpaces} 处；选区外祖先装饰{' '}
+                {f.excludedAncestorDecorations}{' '}
+                处（可能绘制）。外部覆盖未核验，候选仍须完整阅读核对。
+              </p>
+            )}
             <strong>
-              {f.operation === 'rendered-text' ? '已排版正文候选 · 仍需本人核对' : '原始值'}
+              {f.operation === 'selection-text'
+                ? '选区文字候选 · 外部覆盖未核验'
+                : f.operation === 'rendered-text'
+                  ? '已排版正文候选 · 仍需本人核对'
+                  : '原始值'}
             </strong>
             <div className="browser-fields-value">
               {f.value === null ? (

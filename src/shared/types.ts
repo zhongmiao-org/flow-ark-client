@@ -138,6 +138,7 @@ export type Bridge = {
   ): () => void;
 };
 export type BrowserCommand = {
+  renderPolicy?: 'bounded-selection-text-v1';
   version?: number;
   operation: string;
   selector?: string;

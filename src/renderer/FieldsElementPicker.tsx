@@ -102,7 +102,10 @@ export default function FieldsElementPicker({
   sourceKey: string;
   reason?: string;
   rendered?: boolean;
-  renderPolicy?: 'bounded-rendered-text-v1' | 'bounded-rendered-text-v2';
+  renderPolicy?:
+    | 'bounded-rendered-text-v1'
+    | 'bounded-rendered-text-v2'
+    | 'bounded-selection-text-v1';
   beforeStart?: () => boolean;
   onApply: (candidate: FieldsPickCandidate) => void;
 }) {
@@ -341,7 +344,9 @@ export default function FieldsElementPicker({
       selector,
       ...(renderPolicy === 'bounded-rendered-text-v2'
         ? { policy: renderPolicy, details: 'ancestor-space-checks-v1' as const }
-        : {}),
+        : renderPolicy === 'bounded-selection-text-v1'
+          ? { policy: renderPolicy }
+          : {}),
     };
     request.current = owner;
     clearInspection();
@@ -451,6 +456,13 @@ export default function FieldsElementPicker({
             <p>
               本次核准无绘制祖先空格 {inspection.ignoredAncestorSpaces}{' '}
               处；未读取正文，仍须在正式运行中核对全文。
+            </p>
+          )}
+          {inspection.policy === 'bounded-selection-text-v1' && (
+            <p>
+              本次核准无绘制祖先空格 {inspection.ignoredAncestorSpaces} 处；选区外祖先装饰{' '}
+              {inspection.excludedAncestorDecorations}{' '}
+              处（可能绘制）。外部覆盖未核验，未读取正文，不代表完整正文或岗位资格。
             </p>
           )}
           {inspection.truncated && (

@@ -1,0 +1,352 @@
+[
+  {
+    "id": "read-only-base-no-actions",
+    "changes": [],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  },
+  {
+    "id": "author-extra-capability-optional",
+    "changes": [
+      {
+        "path": "/entryCapabilities",
+        "value": []
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  },
+  {
+    "id": "literal-root",
+    "changes": [
+      {
+        "path": "/nodes/0/selector",
+        "value": "main"
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  },
+  {
+    "id": "missing-flow-selection-capability",
+    "changes": [
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser"
+        ]
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "missing-flow-browser",
+    "changes": [
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser-selection-text-v1"
+        ]
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "extra-entry-capability-cannot-replace-flow",
+    "changes": [
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser"
+        ]
+      },
+      {
+        "path": "/entryCapabilities",
+        "value": [
+          "browser-selection-text-v1"
+        ]
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "missing-formal-entry-capability",
+    "changes": [
+      {
+        "path": "/formalEntryCapabilities",
+        "value": [
+          "browser"
+        ]
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": false
+    }
+  },
+  {
+    "id": "browser-not-declared-by-entry",
+    "changes": [
+      {
+        "path": "/resourceIds",
+        "value": []
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "missing-browser-resource",
+    "changes": [
+      {
+        "path": "/resourceIds",
+        "value": []
+      },
+      {
+        "path": "/resources",
+        "value": []
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "directory-not-browser",
+    "changes": [
+      {
+        "path": "/resources/0/kind",
+        "value": "directory"
+      },
+      {
+        "path": "/resources/0/access",
+        "value": "read"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "browser-wrong-access",
+    "changes": [
+      {
+        "path": "/resources/0/access",
+        "value": "read"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "reserved-reference",
+    "changes": [
+      {
+        "path": "/nodes/0/selector",
+        "value": {
+          "$ref": "params.constructor.x"
+        }
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "invalid-field-reference",
+    "changes": [
+      {
+        "path": "/nodes/0/fields/0/selector",
+        "value": {
+          "$ref": "item..selector"
+        }
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "no-selected-operation",
+    "changes": [
+      {
+        "path": "/nodes/0/fields/0/operation",
+        "value": "text"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "wrong-selected-attribute",
+    "changes": [
+      {
+        "path": "/nodes/0/fields/0/attribute",
+        "value": "title"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "wrong-policy",
+    "changes": [
+      {
+        "path": "/nodes/0/renderPolicy",
+        "value": "bounded-rendered-text-v2"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "wrong-operation",
+    "changes": [
+      {
+        "path": "/nodes/0/operation",
+        "value": "read"
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "loop-descendant",
+    "changes": [
+      {
+        "path": "/wrapLoop",
+        "value": true
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  },
+  {
+    "id": "loop-descendant-missing-capability",
+    "changes": [
+      {
+        "path": "/wrapLoop",
+        "value": true
+      },
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser"
+        ]
+      }
+    ],
+    "valid": {
+      "author": false,
+      "package": false
+    }
+  },
+  {
+    "id": "legacy-rendered-v7-retains-own-capability",
+    "changes": [
+      {
+        "path": "/nodes",
+        "value": [
+          {
+            "id": "legacy",
+            "type": "browser",
+            "version": 7,
+            "operation": "collect",
+            "selector": "main",
+            "framePath": [],
+            "fields": [
+              {
+                "key": "body",
+                "selector": "article",
+                "operation": "rendered-text",
+                "attribute": null,
+                "required": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser",
+          "browser-rendered-fields-v2"
+        ]
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  },
+  {
+    "id": "legacy-rendered-v6-retains-own-capability",
+    "changes": [
+      {
+        "path": "/nodes",
+        "value": [
+          {
+            "id": "legacy",
+            "type": "browser",
+            "version": 6,
+            "operation": "collect",
+            "selector": "main",
+            "framePath": [],
+            "fields": [
+              {
+                "key": "body",
+                "selector": "article",
+                "operation": "rendered-text",
+                "attribute": null,
+                "required": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/flowCapabilities",
+        "value": [
+          "browser",
+          "browser-rendered-fields-v1"
+        ]
+      }
+    ],
+    "valid": {
+      "author": true,
+      "package": true
+    }
+  }
+]

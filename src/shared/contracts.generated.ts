@@ -928,7 +928,263 @@ export type Node =
     }
   | RunResultNode
   | BrowserScopedRenderedFieldsNode
-  | BrowserTargetNode;
+  | BrowserTargetNode
+  | {
+      id: string;
+      type: 'browser';
+      version: 9;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'collect';
+      selector:
+        | string
+        | {
+            $ref: string;
+          };
+      framePath: FramePath;
+      /**
+       * @minItems 1
+       * @maxItems 20
+       */
+      fields:
+        | [BrowserSelectionTextField]
+        | [BrowserSelectionTextField, BrowserSelectionTextField]
+        | [BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField]
+        | [BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ]
+        | [
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField,
+            BrowserSelectionTextField
+          ];
+      renderPolicy: 'bounded-selection-text-v1';
+    };
 export type Value =
   | Json
   | {
@@ -977,6 +1233,22 @@ export type BrowserRenderedField = {
 };
 export type RunResultId = string;
 export type RunResultBindingId = string;
+export type BrowserSelectionTextField = {
+  key: string;
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  operation: 'text' | 'attribute' | 'selection-text';
+  attribute:
+    | string
+    | {
+        $ref: string;
+      }
+    | null;
+  required: boolean;
+};
 export type RunState =
   | 'QUEUED'
   | 'RUNNING'
@@ -2050,6 +2322,287 @@ export type BrowserScopedRenderedFieldResult = {
 };
 export type BrowserTargetWaitResult = true;
 export type BrowserTargetReadResult = string;
+export type BrowserSelectionTextFieldResult = {
+  key: string;
+  selector: string;
+  operation: 'text' | 'attribute' | 'selection-text';
+  attribute: string | null;
+  required: boolean;
+  count: number;
+  status: 'ok' | 'missing' | 'ambiguous' | 'missing-attribute' | 'empty' | 'hidden' | 'clipped' | 'unsupported';
+  value: string | null;
+  /**
+   * @maxItems 7
+   */
+  issues:
+    | []
+    | [
+        | 'hidden-target'
+        | 'hidden-descendant'
+        | 'line-clamp'
+        | 'overflow-clip'
+        | 'unsupported-layout'
+        | 'embedded-content'
+        | 'generated-content'
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ]
+    | [
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        ),
+        (
+          | 'hidden-target'
+          | 'hidden-descendant'
+          | 'line-clamp'
+          | 'overflow-clip'
+          | 'unsupported-layout'
+          | 'embedded-content'
+          | 'generated-content'
+        )
+      ];
+  ignoredAncestorSpaces: number;
+  excludedAncestorDecorations: number;
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -2280,6 +2833,11 @@ export interface FlowArkP1 {
   BrowserTargetClickResult?: BrowserTargetClickResult;
   BrowserTargetWaitResult?: BrowserTargetWaitResult;
   BrowserTargetReadResult?: BrowserTargetReadResult;
+  BrowserSelectionTextField?: BrowserSelectionTextField;
+  BrowserSelectionTextFieldsNode?: BrowserSelectionTextFieldsNode;
+  BrowserSelectionTextFieldsInvocation?: BrowserSelectionTextFieldsInvocation;
+  BrowserSelectionTextFieldResult?: BrowserSelectionTextFieldResult;
+  BrowserSelectionTextFieldsResult?: BrowserSelectionTextFieldsResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -6713,4 +7271,25984 @@ export interface BrowserTargetInvocation {
 export interface BrowserTargetClickResult {
   clicked: true;
   verified: false;
+}
+export interface BrowserSelectionTextFieldsNode {
+  id: string;
+  type: 'browser';
+  version: 9;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'collect';
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  framePath: FramePath;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  fields:
+    | [BrowserSelectionTextField]
+    | [BrowserSelectionTextField, BrowserSelectionTextField]
+    | [BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField]
+    | [BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField, BrowserSelectionTextField]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ]
+    | [
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField,
+        BrowserSelectionTextField
+      ];
+  renderPolicy: 'bounded-selection-text-v1';
+}
+export interface BrowserSelectionTextFieldsInvocation {
+  id: string;
+  type: 'browser';
+  version: 9;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'collect';
+  selector: string;
+  framePath: FramePath;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  fields:
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ]
+    | [
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        },
+        {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        } & {
+          key: string;
+          selector: string;
+          operation: 'text' | 'attribute' | 'selection-text';
+          attribute: string | null;
+          required: boolean;
+        }
+      ];
+  renderPolicy: 'bounded-selection-text-v1';
+  nodeInstance: string;
+}
+export interface BrowserSelectionTextFieldsResult {
+  version: 4;
+  operation: 'collect';
+  url: string;
+  documentUrl: string;
+  selector: string;
+  framePath: FramePath;
+  complete: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 20
+   */
+  fields:
+    | [BrowserSelectionTextFieldResult]
+    | [BrowserSelectionTextFieldResult, BrowserSelectionTextFieldResult]
+    | [BrowserSelectionTextFieldResult, BrowserSelectionTextFieldResult, BrowserSelectionTextFieldResult]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ]
+    | [
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult,
+        BrowserSelectionTextFieldResult
+      ];
+  renderPolicy: 'bounded-selection-text-v1';
+  externalAppearanceVerified: false;
 }

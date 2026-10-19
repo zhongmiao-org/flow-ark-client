@@ -1,6 +1,7 @@
 import type {
   BrowserRenderedFieldsResult,
   BrowserScopedRenderedFieldsResult,
+  BrowserSelectionTextFieldsResult,
 } from '../shared/contracts.generated';
 import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
 import type {
@@ -16,7 +17,10 @@ type Input = {
   url: string;
   fields: ResolvedBrowserFieldsNode['fields'];
   diagnosticsOnly?: false;
-  renderPolicy?: 'bounded-rendered-text-v1' | 'bounded-rendered-text-v2';
+  renderPolicy?:
+    | 'bounded-rendered-text-v1'
+    | 'bounded-rendered-text-v2'
+    | 'bounded-selection-text-v1';
 };
 type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticsOnly: true;
@@ -27,11 +31,18 @@ type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
 export function readBrowserRenderedFields(input: DiagnosticInput): RenderingDiagnosticData;
 export function readBrowserRenderedFields(
   input: Input,
-): BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult;
+):
+  | BrowserRenderedFieldsResult
+  | BrowserScopedRenderedFieldsResult
+  | BrowserSelectionTextFieldsResult;
 /** Serialized into one document. Synchronous, closure-free, read-only and fail-closed. */
 export function readBrowserRenderedFields(
   input: Input | DiagnosticInput,
-): BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult | RenderingDiagnosticData {
+):
+  | BrowserRenderedFieldsResult
+  | BrowserScopedRenderedFieldsResult
+  | BrowserSelectionTextFieldsResult
+  | RenderingDiagnosticData {
   const encoder = new TextEncoder();
   const check = (value: string, limit: number) => {
     const bytes = encoder.encode(value);
@@ -41,10 +52,16 @@ export function readBrowserRenderedFields(
   };
   let elements = 0,
     nodes = 0;
-  const scoped = input.renderPolicy === 'bounded-rendered-text-v2';
+  const selection = input.renderPolicy === 'bounded-selection-text-v1';
+  const scoped = input.renderPolicy === 'bounded-rendered-text-v2' || selection;
+  const deadline = selection ? performance.now() + 15000 : Infinity;
   const explainSpace =
-    scoped && input.diagnosticsOnly && input.diagnosticDetails === 'ancestor-space-checks-v1';
+    !selection &&
+    scoped &&
+    input.diagnosticsOnly &&
+    input.diagnosticDetails === 'ancestor-space-checks-v1';
   let ignoredAncestorSpaces = 0;
+  let excludedAncestorDecorations = 0;
   const nonPaintingSpace = (
     style: CSSStyleDeclaration,
     failed?: (failure: AncestorSpaceFailure) => void,
@@ -138,6 +155,7 @@ export function readBrowserRenderedFields(
     return passes;
   };
   const visit = (node: Node) => {
+    if (selection && performance.now() > deadline) throw Error('选区文字扫描超时，整次采集未采用');
     if (nodes >= 6000 || (node.nodeType === 1 && elements >= 2000))
       throw Error('正文扫描预算超限，整次采集未采用');
     nodes++;
@@ -342,7 +360,20 @@ export function readBrowserRenderedFields(
               pseudoStyle,
               detailed ? (failure) => failures.push(failure) : undefined,
             );
+          const outsideDecoration =
+            selection &&
+            !allowed &&
+            ancestor &&
+            ordinary &&
+            ['absolute', 'fixed'].includes(pseudoStyle.position) &&
+            pseudoStyle.getPropertyValue('float') === 'none' &&
+            ['normal', 'nowrap'].includes(pseudoStyle.whiteSpace) &&
+            pseudoStyle.animationName === 'none' &&
+            !!pseudoStyle.transitionDuration &&
+            pseudoStyle.transitionDuration.split(',').every((d) => d.trim() === '0s') &&
+            !element.getAnimations().some((a) => a.playState === 'running' || a.pending);
           if (allowed) ignoredAncestorSpaces++;
+          else if (outsideDecoration) excludedAncestorDecorations++;
           else {
             if (detailed && !ordinary) failures.push({ rule: 'ordinary-space', state: 'mismatch' });
             report(
@@ -380,24 +411,31 @@ export function readBrowserRenderedFields(
       throw Error('诊断目标不唯一或已被替换，请重新检查');
     const issues = inspect(matches[0]);
     return {
-      policy: scoped ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1',
+      policy: selection
+        ? 'bounded-selection-text-v1'
+        : scoped
+          ? 'bounded-rendered-text-v2'
+          : 'bounded-rendered-text-v1',
       issues,
       locations,
       truncated,
       scannedElements: elements,
       scannedNodes: nodes,
       ...(scoped ? { ignoredAncestorSpaces } : {}),
+      ...(selection ? { excludedAncestorDecorations, externalAppearanceVerified: false } : {}),
       ...(explainSpace ? { details: 'ancestor-space-checks-v1' as const } : {}),
     } as RenderingDiagnosticData;
   }
   const fields = input.fields.map((f) => {
     const priorIgnored = ignoredAncestorSpaces;
+    const priorExcluded = excludedAncestorDecorations;
     const matches = roots[0].querySelectorAll(f.selector),
       count = matches.length;
-    const issues = count === 1 && f.operation === 'rendered-text' ? inspect(matches[0]) : [];
+    const isTextCandidate = f.operation === 'rendered-text' || f.operation === 'selection-text';
+    const issues = count === 1 && isTextCandidate ? inspect(matches[0]) : [];
     let value: string | null = null;
     if (count === 1 && !issues.length) {
-      if (f.operation === 'rendered-text') {
+      if (isTextCandidate) {
         if (!(matches[0] instanceof HTMLElement)) issues.push('embedded-content');
         else value = matches[0].innerText;
       } else
@@ -406,7 +444,7 @@ export function readBrowserRenderedFields(
             ? (matches[0].textContent ?? '')
             : matches[0].getAttribute(f.attribute!);
     }
-    if (value !== null) check(value, f.operation === 'rendered-text' ? 65536 : 8192);
+    if (value !== null) check(value, isTextCandidate ? 65536 : 8192);
     const status =
       count === 0
         ? 'missing'
@@ -430,12 +468,20 @@ export function readBrowserRenderedFields(
       status,
       value,
       ...(scoped ? { ignoredAncestorSpaces: ignoredAncestorSpaces - priorIgnored } : {}),
+      ...(selection
+        ? { excludedAncestorDecorations: excludedAncestorDecorations - priorExcluded }
+        : {}),
     };
   });
   const result = {
-    version: scoped ? 3 : 2,
+    version: selection ? 4 : scoped ? 3 : 2,
     operation: 'collect',
-    renderPolicy: scoped ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1',
+    renderPolicy: selection
+      ? 'bounded-selection-text-v1'
+      : scoped
+        ? 'bounded-rendered-text-v2'
+        : 'bounded-rendered-text-v1',
+    ...(selection ? { externalAppearanceVerified: false } : {}),
     url: input.url,
     documentUrl: location.href,
     selector: input.selector,
@@ -446,7 +492,10 @@ export function readBrowserRenderedFields(
         (!f.required || f.status === 'ok'),
     ),
     fields,
-  } as BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult;
+  } as
+    | BrowserRenderedFieldsResult
+    | BrowserScopedRenderedFieldsResult
+    | BrowserSelectionTextFieldsResult;
   check(result.url, 16384);
   check(result.documentUrl, 16384);
   check(JSON.stringify(result), 131072);
