@@ -1140,7 +1140,7 @@ export default function AttentionWorkspace({
               <h2>{human(selected) ? '仅对本次请求生效' : '查看来源与证据'}</h2>
               <p>
                 {human(selected)
-                  ? '确认不修改实例的默认权限，也不授权其他动作。'
+                  ? '确认不改默认权限；范围见左侧，运行级确认包含后续循环。'
                   : '查看原运行记录和保存的证据，再决定下一步。'}
               </p>
               <p className="attention-muted">
