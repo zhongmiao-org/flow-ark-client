@@ -810,7 +810,6 @@ function WorkspaceApp() {
         selection: { id: saved.id, debug },
         source: JSON.stringify([saved.id, saved.versionId, saved.updatedAt]),
       });
-      setBrowserOpen(false);
       setSection('flow-review');
     });
   }
