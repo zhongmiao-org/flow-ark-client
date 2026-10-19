@@ -10,7 +10,7 @@ export const browserActions: Record<
     detail: string;
     keywords: string;
     value: Json;
-    version: 2 | 3 | 4 | 5 | 6;
+    version: 2 | 3 | 4 | 5 | 6 | 7;
   }
 > = {
   collect: {
@@ -18,7 +18,7 @@ export const browserActions: Record<
     detail: '在唯一根元素内同步采集指定字段，分别保留缺失、空值和不唯一状态',
     keywords: 'collect fields 关联字段 同次 只读',
     value: null,
-    version: 6,
+    version: 7,
   },
   url: {
     label: '读取当前网址',
@@ -143,7 +143,7 @@ export function changeBrowserOperation(
   if (operation === 'collect')
     return {
       ...base,
-      version: 6,
+      version: 7,
       operation,
       selector: node.selector || 'body',
       framePath: 'framePath' in node ? node.framePath : [],
@@ -171,7 +171,7 @@ export function newBrowserStep(operation: BrowserOperation): BrowserNode {
     return {
       id: 'n_' + crypto.randomUUID().slice(0, 8),
       type: 'browser',
-      version: 6,
+      version: 7,
       operation,
       selector: 'body',
       framePath: [],

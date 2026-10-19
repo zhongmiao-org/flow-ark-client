@@ -590,7 +590,7 @@ export class EmbeddedPage {
     verify();
     const result = await this.evaluate(
       scope,
-      `(${(node.version === 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url })})`,
+      `(${(node.version >= 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url, renderPolicy: node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1' })})`,
     );
     for (const prior of chain) {
       const { frameTree } = await this.send('Page.getFrameTree', {}, prior.scope.session);
@@ -866,6 +866,7 @@ export class EmbeddedPage {
             framePath: request.root.framePath,
             fields: [],
             url: '',
+            renderPolicy: request.policy ?? 'bounded-rendered-text-v1',
           },
         ),
       );

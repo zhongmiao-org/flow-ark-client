@@ -1,0 +1,62 @@
+{
+  "policy": "bounded-rendered-text-v2",
+  "ancestorOnly": true,
+  "contentPattern": "^(?:\" +\"|' +')$",
+  "display": [
+    "block",
+    "inline",
+    "table"
+  ],
+  "white-space": [
+    "normal",
+    "nowrap"
+  ],
+  "background-color": [
+    "transparent",
+    "rgba(0, 0, 0, 0)"
+  ],
+  "borderWidths": {
+    "sides": [
+      "top",
+      "right",
+      "bottom",
+      "left"
+    ],
+    "value": "0px"
+  },
+  "transition-duration": "each comma-separated value must be 0s",
+  "exact": {
+    "position": "static",
+    "float": "none",
+    "z-index": "auto",
+    "background-image": "none",
+    "border-image-source": "none",
+    "outline-style": "none",
+    "box-shadow": "none",
+    "text-shadow": "none",
+    "text-decoration-line": "none",
+    "text-emphasis-style": "none",
+    "-webkit-text-stroke-width": "0px",
+    "filter": "none",
+    "backdrop-filter": "none",
+    "transform": "none",
+    "perspective": "none",
+    "clip": "auto",
+    "clip-path": "none",
+    "mask-image": "none",
+    "-webkit-mask-box-image-source": "none",
+    "opacity": "1",
+    "mix-blend-mode": "normal",
+    "visibility": "visible",
+    "content-visibility": "visible",
+    "animation-name": "none",
+    "contain": "none",
+    "overflow-x": "visible",
+    "overflow-y": "visible",
+    "-webkit-box-reflect": "none",
+    "rotate": "none",
+    "scale": "none",
+    "translate": "none",
+    "zoom": "1"
+  }
+}

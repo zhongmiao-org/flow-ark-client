@@ -1,4 +1,7 @@
-import type { BrowserRenderedFieldsResult } from '../shared/contracts.generated';
+import type {
+  BrowserRenderedFieldsResult,
+  BrowserScopedRenderedFieldsResult,
+} from '../shared/contracts.generated';
 import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
 import type {
   RenderingDiagnosticData,
@@ -11,6 +14,7 @@ type Input = {
   url: string;
   fields: ResolvedBrowserFieldsNode['fields'];
   diagnosticsOnly?: false;
+  renderPolicy?: 'bounded-rendered-text-v1' | 'bounded-rendered-text-v2';
 };
 type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticsOnly: true;
@@ -18,11 +22,13 @@ type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticSelector: string;
 };
 export function readBrowserRenderedFields(input: DiagnosticInput): RenderingDiagnosticData;
-export function readBrowserRenderedFields(input: Input): BrowserRenderedFieldsResult;
+export function readBrowserRenderedFields(
+  input: Input,
+): BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult;
 /** Serialized into one document. Synchronous, closure-free, read-only and fail-closed. */
 export function readBrowserRenderedFields(
   input: Input | DiagnosticInput,
-): BrowserRenderedFieldsResult | RenderingDiagnosticData {
+): BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult | RenderingDiagnosticData {
   const encoder = new TextEncoder();
   const check = (value: string, limit: number) => {
     const bytes = encoder.encode(value);
@@ -32,6 +38,55 @@ export function readBrowserRenderedFields(
   };
   let elements = 0,
     nodes = 0;
+  const scoped = input.renderPolicy === 'bounded-rendered-text-v2';
+  let ignoredAncestorSpaces = 0;
+  const nonPaintingSpace = (style: CSSStyleDeclaration) => {
+    const exact = {
+      position: 'static',
+      float: 'none',
+      'z-index': 'auto',
+      'background-image': 'none',
+      'border-image-source': 'none',
+      'outline-style': 'none',
+      'box-shadow': 'none',
+      'text-shadow': 'none',
+      'text-decoration-line': 'none',
+      'text-emphasis-style': 'none',
+      '-webkit-text-stroke-width': '0px',
+      filter: 'none',
+      'backdrop-filter': 'none',
+      transform: 'none',
+      perspective: 'none',
+      clip: 'auto',
+      'clip-path': 'none',
+      'mask-image': 'none',
+      '-webkit-mask-box-image-source': 'none',
+      opacity: '1',
+      'mix-blend-mode': 'normal',
+      visibility: 'visible',
+      'content-visibility': 'visible',
+      'animation-name': 'none',
+      contain: 'none',
+      'overflow-x': 'visible',
+      'overflow-y': 'visible',
+      '-webkit-box-reflect': 'none',
+      rotate: 'none',
+      scale: 'none',
+      translate: 'none',
+      zoom: '1',
+    };
+    return (
+      Object.entries(exact).every(([key, value]) => style.getPropertyValue(key) === value) &&
+      ['block', 'inline', 'table'].includes(style.display) &&
+      ['normal', 'nowrap'].includes(style.whiteSpace) &&
+      ['transparent', 'rgba(0, 0, 0, 0)'].includes(style.backgroundColor) &&
+      ['top', 'right', 'bottom', 'left'].every(
+        (side) => style.getPropertyValue(`border-${side}-width`) === '0px',
+      ) &&
+      !!style.transitionDuration &&
+      style.transitionDuration.split(',').every((v) => v.trim() === '0s')
+    );
+  };
   const visit = (node: Node) => {
     if (nodes >= 6000 || (node.nodeType === 1 && elements >= 2000))
       throw Error('正文扫描预算超限，整次采集未采用');
@@ -213,16 +268,27 @@ export function readBrowserRenderedFields(
         return false;
       }
       for (const pseudo of ['::before', '::after']) {
-        const content = win.getComputedStyle(element, pseudo).content;
-        if (content && !['none', 'normal', '""', "''"].includes(content))
-          report(
-            'generated-content',
-            element,
-            pseudo === '::before' ? 'before' : 'after',
-            /^(?:"[\t\n\f\r ]*"|'[\t\n\f\r ]*')$/.test(content)
-              ? 'whitespace-string'
-              : 'other-generated',
-          );
+        const pseudoStyle = win.getComputedStyle(element, pseudo);
+        const content = pseudoStyle.content;
+        if (content && !['none', 'normal', '""', "''"].includes(content)) {
+          if (
+            scoped &&
+            !descendant &&
+            element !== target &&
+            /^(?:" +"|' +')$/.test(content) &&
+            nonPaintingSpace(pseudoStyle)
+          )
+            ignoredAncestorSpaces++;
+          else
+            report(
+              'generated-content',
+              element,
+              pseudo === '::before' ? 'before' : 'after',
+              /^(?:"[\t\n\f\r ]*"|'[\t\n\f\r ]*')$/.test(content)
+                ? 'whitespace-string'
+                : 'other-generated',
+            );
+        }
       }
       return true;
     };
@@ -249,15 +315,17 @@ export function readBrowserRenderedFields(
       throw Error('诊断目标不唯一或已被替换，请重新检查');
     const issues = inspect(matches[0]);
     return {
-      policy: 'bounded-rendered-text-v1',
+      policy: scoped ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1',
       issues,
       locations,
       truncated,
       scannedElements: elements,
       scannedNodes: nodes,
-    };
+      ...(scoped ? { ignoredAncestorSpaces } : {}),
+    } as RenderingDiagnosticData;
   }
   const fields = input.fields.map((f) => {
+    const priorIgnored = ignoredAncestorSpaces;
     const matches = roots[0].querySelectorAll(f.selector),
       count = matches.length;
     const issues = count === 1 && f.operation === 'rendered-text' ? inspect(matches[0]) : [];
@@ -289,12 +357,19 @@ export function readBrowserRenderedFields(
                   : value.trim() === ''
                     ? 'empty'
                     : 'ok';
-    return { ...f, count, issues, status, value };
+    return {
+      ...f,
+      count,
+      issues,
+      status,
+      value,
+      ...(scoped ? { ignoredAncestorSpaces: ignoredAncestorSpaces - priorIgnored } : {}),
+    };
   });
   const result = {
-    version: 2,
+    version: scoped ? 3 : 2,
     operation: 'collect',
-    renderPolicy: 'bounded-rendered-text-v1',
+    renderPolicy: scoped ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1',
     url: input.url,
     documentUrl: location.href,
     selector: input.selector,
@@ -305,7 +380,7 @@ export function readBrowserRenderedFields(
         (!f.required || f.status === 'ok'),
     ),
     fields,
-  } as BrowserRenderedFieldsResult;
+  } as BrowserRenderedFieldsResult | BrowserScopedRenderedFieldsResult;
   check(result.url, 16384);
   check(result.documentUrl, 16384);
   check(JSON.stringify(result), 131072);

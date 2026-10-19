@@ -105,7 +105,7 @@ export class TypedResults {
     };
     this.store.tx(() => {
       if (browserInput) {
-        if (type !== 'browser' || node.type !== 'browser' || ![5, 6].includes(node.version))
+        if (type !== 'browser' || node.type !== 'browser' || ![5, 6, 7].includes(node.version))
           throw Error('关联字段配置只能登记到对应节点');
         this.store.put('browser-fields-input', digest({ runId, nodeId, nodeInstance }), {
           node: browserInput,
@@ -251,9 +251,9 @@ export class TypedResults {
   ) {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
-    if (!node || node.type !== 'browser' || ![4, 5, 6].includes(node.version))
+    if (!node || node.type !== 'browser' || ![4, 5, 6, 7].includes(node.version))
       throw Error('网页只读结果不属于固定节点');
-    if (node.version === 5 || node.version === 6) {
+    if (node.version === 5 || node.version === 6 || node.version === 7) {
       const saved = this.store.get<{ node: ResolvedBrowserFieldsNode; sha256: string }>(
         'browser-fields-input',
         digest({ runId, nodeId, nodeInstance }),

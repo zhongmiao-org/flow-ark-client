@@ -31,7 +31,7 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
       className="browser-fields-configuration browser-fields-result"
       aria-label="完整关联字段采集结果"
     >
-      <h2>{value.version === 2 ? '关联字段与正文采集结果' : '关联字段采集结果'}</h2>
+      <h2>{value.version >= 2 ? '关联字段与正文采集结果' : '关联字段采集结果'}</h2>
       <div className="browser-fields-top">
         <Card>
           <h2>采集来源</h2>
@@ -50,7 +50,13 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
           <h2>完整性</h2>
           <Alert
             type={value.complete ? 'success' : 'warning'}
-            title={value.complete ? '采集完整' : '采集不完整'}
+            title={
+              value.complete
+                ? value.version === 3
+                  ? '候选通过有限检查'
+                  : '采集完整'
+                : '采集不完整'
+            }
             description={
               value.complete
                 ? `${value.fields.length}项已核对；必填字段均唯一且非空。`
@@ -106,6 +112,11 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
                 title="正文未采用"
                 description={f.issues.map((issue) => reasons[issue]).join('；')}
               />
+            )}
+            {f.operation === 'rendered-text' && 'ignoredAncestorSpaces' in f && (
+              <p>
+                本次核准无绘制祖先空格 {f.ignoredAncestorSpaces} 处；正文候选仍须本人完整阅读核对。
+              </p>
             )}
             <strong>
               {f.operation === 'rendered-text' ? '已排版正文候选 · 仍需本人核对' : '原始值'}

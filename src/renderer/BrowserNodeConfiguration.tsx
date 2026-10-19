@@ -90,7 +90,7 @@ export default function BrowserNodeConfiguration({
     JSON.stringify(target.framePath) === pathKey
       ? target
       : null;
-  if (node.version === 5 || node.version === 6)
+  if (node.version === 5 || node.version === 6 || node.version === 7)
     return (
       <section className="node-configuration">
         <label htmlFor={fieldId + 'collect-operation'}>操作</label>

@@ -238,9 +238,13 @@ export class PlaywrightDriver implements BrowserDriver {
         fields: node.fields,
         framePath: path,
         url,
+        renderPolicy:
+          node.version === 7
+            ? ('bounded-rendered-text-v2' as const)
+            : ('bounded-rendered-text-v1' as const),
       };
       const result =
-        node.version === 6
+        node.version === 6 || node.version === 7
           ? await frame.evaluate(readBrowserRenderedFields, request)
           : await frame.evaluate(readBrowserFields, {
               ...request,

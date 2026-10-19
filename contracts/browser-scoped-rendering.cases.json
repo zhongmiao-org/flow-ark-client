@@ -1,0 +1,2081 @@
+[
+  {
+    "name": "三种方式混合节点",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "根及正文字段支持引用",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": {
+        "$ref": "params.root"
+      },
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": {
+            "$ref": "steps.previous.selector"
+          },
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文属性不得提供名称",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": "data-text",
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "旧版本不属于新节点",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 5,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "不接受另一动作",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "read",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "不得省略字段列表",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": []
+    }
+  },
+  {
+    "name": "字段零项拒绝",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": []
+    }
+  },
+  {
+    "name": "字段21项拒绝",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "item0",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item1",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item2",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item3",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item4",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item5",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item6",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item7",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item8",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item9",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item10",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item11",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item12",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item13",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item14",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item15",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item16",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item17",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item18",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item19",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item20",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "框架9层拒绝",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe"
+      ],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "文字属性不得引用",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": {
+            "$ref": "params.attribute"
+          },
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "保留20项格式上限",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": true,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "item0",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item1",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item2",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item3",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item4",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item5",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item6",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item7",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item8",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item9",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item10",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item11",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item12",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item13",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item14",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item15",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item16",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item17",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item18",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "item19",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "未知字段模式拒绝",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "visible",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "未知节点属性拒绝",
+    "definition": "BrowserScopedRenderedFieldsNode",
+    "valid": false,
+    "value": {
+      "id": "collect",
+      "type": "browser",
+      "version": 7,
+      "operation": "collect",
+      "selector": "#workspace",
+      "framePath": [],
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false
+        }
+      ],
+      "complete": true
+    }
+  },
+  {
+    "name": "同次关联正文结果",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 hidden hidden-target",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "hidden",
+          "value": null,
+          "issues": [
+            "hidden-target"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 hidden hidden-descendant",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "hidden",
+          "value": null,
+          "issues": [
+            "hidden-descendant"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 clipped line-clamp",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "clipped",
+          "value": null,
+          "issues": [
+            "line-clamp"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 clipped overflow-clip",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "clipped",
+          "value": null,
+          "issues": [
+            "overflow-clip"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 unsupported unsupported-layout",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "unsupported",
+          "value": null,
+          "issues": [
+            "unsupported-layout"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 unsupported embedded-content",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "unsupported",
+          "value": null,
+          "issues": [
+            "embedded-content"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "正文状态 unsupported generated-content",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "unsupported",
+          "value": null,
+          "issues": [
+            "generated-content"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "新结果不得冒充旧版本",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 1,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "必须明确渲染策略",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "不接受未知策略",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "innerText-only",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "每项始终带原因数组",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "原因数组不能重复",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [
+            "line-clamp",
+            "line-clamp"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "未知原因拒绝",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [
+            "unknown"
+          ],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "未知状态拒绝",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "verified",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "计数不得为负",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": -1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "计数不得为小数",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1.2,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "文字不得省略",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "结果额外属性拒绝",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ],
+      "accountVerified": true
+    }
+  },
+  {
+    "name": "空文字独立保留",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": false,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "empty",
+          "value": " \n",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "可选属性缺失保留null",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": true,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "missing-attribute",
+          "value": null,
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "Missing counter",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": []
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "Oversized counter",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 129
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "Wrong policy",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v1",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "Wrong result version",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 2,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "Counter on raw field",
+    "definition": "BrowserScopedRenderedFieldsResult",
+    "valid": false,
+    "value": {
+      "version": 3,
+      "operation": "collect",
+      "renderPolicy": "bounded-rendered-text-v2",
+      "url": "https://example.org/records",
+      "documentUrl": "https://example.org/records",
+      "selector": "#workspace",
+      "framePath": [],
+      "complete": true,
+      "fields": [
+        {
+          "key": "title",
+          "selector": "h1",
+          "operation": "text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "示例标题",
+          "issues": [],
+          "ignoredAncestorSpaces": 1
+        },
+        {
+          "key": "body",
+          "selector": "#description",
+          "operation": "rendered-text",
+          "attribute": null,
+          "required": true,
+          "count": 1,
+          "status": "ok",
+          "value": "第一行正文。\n第二行正文。",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        },
+        {
+          "key": "link",
+          "selector": "a",
+          "operation": "attribute",
+          "attribute": "href",
+          "required": false,
+          "count": 1,
+          "status": "ok",
+          "value": "/detail",
+          "issues": [],
+          "ignoredAncestorSpaces": 0
+        }
+      ]
+    }
+  }
+]

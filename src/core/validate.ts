@@ -4,6 +4,7 @@ import {
   assertBrowserFieldsNode,
   browserFieldsCapability,
   browserRenderedFieldsCapability,
+  browserScopedRenderedFieldsCapability,
   browserFieldsCapabilityFor,
 } from '../shared/browser-fields';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
@@ -52,6 +53,7 @@ export const capabilities = [
   browserInspectionCapability,
   browserFieldsCapability,
   browserRenderedFieldsCapability,
+  browserScopedRenderedFieldsCapability,
   'conversation-evidence-v1',
   'conversation-v2',
   'conversation-checkpoint-v1',
@@ -166,7 +168,7 @@ export function validateFlow(value: unknown): Flow {
         mappingPreview(n, parameters);
       }
       if (n.type === 'browser') {
-        if (n.version === 5 || n.version === 6) {
+        if (n.version === 5 || n.version === 6 || n.version === 7) {
           assertBrowserFieldsNode(n);
           if (
             !['browser', browserFieldsCapabilityFor(n.version)].every((c) =>

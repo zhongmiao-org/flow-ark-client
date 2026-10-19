@@ -1,0 +1,81 @@
+{
+  "node": {
+    "id": "collect",
+    "type": "browser",
+    "version": 7,
+    "operation": "collect",
+    "selector": "#workspace",
+    "framePath": [],
+    "fields": [
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "body",
+        "selector": "#description",
+        "operation": "rendered-text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "link",
+        "selector": "a",
+        "operation": "attribute",
+        "attribute": "href",
+        "required": false
+      }
+    ]
+  },
+  "result": {
+    "version": 3,
+    "operation": "collect",
+    "renderPolicy": "bounded-rendered-text-v2",
+    "url": "https://example.org/records",
+    "documentUrl": "https://example.org/records",
+    "selector": "#workspace",
+    "framePath": [],
+    "complete": true,
+    "fields": [
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "示例标题",
+        "issues": [],
+        "ignoredAncestorSpaces": 0
+      },
+      {
+        "key": "body",
+        "selector": "#description",
+        "operation": "rendered-text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "第一行正文。\n第二行正文。",
+        "issues": [],
+        "ignoredAncestorSpaces": 1
+      },
+      {
+        "key": "link",
+        "selector": "a",
+        "operation": "attribute",
+        "attribute": "href",
+        "required": false,
+        "count": 1,
+        "status": "ok",
+        "value": "/detail",
+        "issues": [],
+        "ignoredAncestorSpaces": 0
+      }
+    ]
+  }
+}
