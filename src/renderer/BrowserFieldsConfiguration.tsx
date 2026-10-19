@@ -1,7 +1,11 @@
 import { readableReference } from './value-references';
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Space } from 'antd';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { BrowserRenderedField, FramePath } from '../shared/contracts.generated';
+import type {
+  BrowserRenderedField,
+  BrowserSelectionTextField,
+  FramePath,
+} from '../shared/contracts.generated';
 import { assertBrowserFieldsNode, type BrowserFieldsNode } from '../shared/browser-fields';
 import type { Json } from '../shared/types';
 import type { ReferenceChoice } from './value-references';
@@ -10,6 +14,7 @@ import NodeTiming from './NodeTiming';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import './browser-fields.css';
 import FieldsElementPicker from './FieldsElementPicker';
+type ConfigField = BrowserRenderedField | BrowserSelectionTextField;
 
 export default function BrowserFieldsConfiguration({
   node,
@@ -29,7 +34,7 @@ export default function BrowserFieldsConfiguration({
   const id = useId(),
     root = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState(0),
-    [draft, setDraft] = useState<BrowserRenderedField>(() => structuredClone(node.fields[0]));
+    [draft, setDraft] = useState<ConfigField>(() => structuredClone(node.fields[0]));
   const [original, setOriginal] = useState(() => JSON.stringify(node.fields[0]));
   const pinned = useRef(JSON.stringify(node.fields));
   const [error, setError] = useState(''),
@@ -50,7 +55,7 @@ export default function BrowserFieldsConfiguration({
   }
   const focus = () =>
     root.current?.querySelector<HTMLInputElement>('input[data-field-name]')?.focus();
-  const load = (index: number, fields: BrowserRenderedField[] = node.fields) => {
+  const load = (index: number, fields: ConfigField[] = node.fields) => {
     const next = Math.max(0, Math.min(index, fields.length - 1));
     pinned.current = JSON.stringify(fields);
     setSelected(next);
@@ -68,11 +73,36 @@ export default function BrowserFieldsConfiguration({
     }
     return true;
   };
-  const replace = (fields: BrowserRenderedField[], index: number) => {
+  const replace = (fields: ConfigField[], index: number) => {
     const next = { ...node, fields };
     assertBrowserFieldsNode(next);
     change(next);
     load(index, fields);
+  };
+  const switchRule = (selection: boolean) => {
+    if (!guard()) return;
+    try {
+      const { renderPolicy: _oldPolicy, ...base } = { ...node, renderPolicy: undefined };
+      const next: unknown = {
+        ...base,
+        version: selection ? 9 : 7,
+        ...(selection ? { renderPolicy: 'bounded-selection-text-v1' } : {}),
+        fields: node.fields.map((f) => ({
+          ...f,
+          operation:
+            selection && f.operation === 'rendered-text'
+              ? 'selection-text'
+              : !selection && f.operation === 'selection-text'
+                ? 'rendered-text'
+                : f.operation,
+        })),
+      };
+      assertBrowserFieldsNode(next);
+      change(next);
+      load(selected, next.fields);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
   const apply = () => {
     if (stale) {
@@ -271,10 +301,37 @@ export default function BrowserFieldsConfiguration({
           {node.version === 7 && (
             <p>选区正文规则：只排除经核准无绘制的祖先普通空格；候选仍须本人完整阅读核对。</p>
           )}
+          {(node.version === 6 || node.version === 7) && (
+            <Space direction="vertical">
+              <span>
+                选区文字候选会单独记录选区外装饰，外部覆盖仍未核验。切换同步更新本步骤已排版正文字段，仅用于新运行；后续引用须重新核对。
+              </span>
+              <Button
+                disabled={!node.fields.some((f) => f.operation === 'rendered-text')}
+                onClick={() => switchRule(true)}
+              >
+                使用选区文字
+              </Button>
+              {!node.fields.some((f) => f.operation === 'rendered-text') && (
+                <span>请先将至少一项字段设为已排版正文，再选择文字来源规则。</span>
+              )}
+            </Space>
+          )}
+          {node.version === 9 && (
+            <Space direction="vertical">
+              <strong>选区文字候选 · 外部覆盖未核验</strong>
+              <span>
+                选区外祖先装饰可能绘制；候选不证明完整正文或岗位资格。切换规则会同步更新本步骤候选字段，仅用于新运行。
+              </span>
+              <Button onClick={() => switchRule(false)}>改用已排版正文</Button>
+            </Space>
+          )}
           <p>
-            {node.version >= 6
-              ? '最多 20 项 · DOM文字 / 原始属性 / 已排版正文（待核对）'
-              : '最多 20 项 · DOM文字 / 原始属性'}
+            {node.version === 9
+              ? '最多 20 项 · DOM文字 / 原始属性 / 选区文字候选（待核对）'
+              : node.version >= 6
+                ? '最多 20 项 · DOM文字 / 原始属性 / 已排版正文（待核对）'
+                : '最多 20 项 · DOM文字 / 原始属性'}
           </p>
           <p>
             {node.version >= 6
@@ -310,7 +367,9 @@ export default function BrowserFieldsConfiguration({
                     ? 'DOM文字'
                     : f.operation === 'rendered-text'
                       ? '已排版正文'
-                      : '属性'}{' '}
+                      : f.operation === 'selection-text'
+                        ? '选区文字候选'
+                        : '属性'}{' '}
                   · {f.required ? '必填' : '可选'}
                 </small>
               </Button>
@@ -337,9 +396,11 @@ export default function BrowserFieldsConfiguration({
                   options={[
                     { value: 'text', label: '文字（textContent）' },
                     { value: 'attribute', label: '原始属性' },
-                    ...(node.version >= 6
-                      ? [{ value: 'rendered-text', label: '已排版正文（待核对）' }]
-                      : []),
+                    ...(node.version === 9
+                      ? [{ value: 'selection-text', label: '选区文字候选（待核对）' }]
+                      : node.version >= 6
+                        ? [{ value: 'rendered-text', label: '已排版正文（待核对）' }]
+                        : []),
                   ]}
                   onChange={(operation) =>
                     setDraft({
@@ -368,9 +429,13 @@ export default function BrowserFieldsConfiguration({
                   : undefined
               }
               selector={typeof draft.selector === 'string' ? draft.selector : undefined}
-              rendered={draft.operation === 'rendered-text'}
+              rendered={draft.operation === 'rendered-text' || draft.operation === 'selection-text'}
               renderPolicy={
-                node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1'
+                node.version === 9
+                  ? 'bounded-selection-text-v1'
+                  : node.version === 7
+                    ? 'bounded-rendered-text-v2'
+                    : 'bounded-rendered-text-v1'
               }
               framePath={node.framePath}
               sourceKey={JSON.stringify([
@@ -430,7 +495,13 @@ export default function BrowserFieldsConfiguration({
               </Button>
               <Button
                 danger
-                disabled={node.fields.length <= 1 || selected >= node.fields.length}
+                disabled={
+                  node.fields.length <= 1 ||
+                  selected >= node.fields.length ||
+                  (node.version === 9 &&
+                    node.fields[selected]?.operation === 'selection-text' &&
+                    node.fields.filter((f) => f.operation === 'selection-text').length === 1)
+                }
                 onClick={() => {
                   if (!guard()) return;
                   replace(
@@ -443,6 +514,11 @@ export default function BrowserFieldsConfiguration({
               </Button>
             </Space>
             <p>字段名须唯一，不使用保留键。必填缺失或为空白、任意字段多匹配时，结果标记不完整。</p>
+            {node.version === 9 && (
+              <p>
+                本步骤须至少保留一项选区文字候选。需要改为普通文字或属性采集时，可先改用已排版正文再调整字段。
+              </p>
+            )}
           </section>
         </div>
         <p>

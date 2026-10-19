@@ -110,7 +110,11 @@ const location = z
   });
 const renderingDataBaseSchema = z
   .object({
-    policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']),
+    policy: z.enum([
+      'bounded-rendered-text-v1',
+      'bounded-rendered-text-v2',
+      'bounded-selection-text-v1',
+    ]),
     details: z.literal('ancestor-space-checks-v1').optional(),
     issues: z.array(issue).max(7),
     locations: z.array(location).max(32),
@@ -149,9 +153,21 @@ const renderingDataV2Schema = renderingDataBaseSchema.safeExtend({
   policy: z.literal('bounded-rendered-text-v2'),
   ignoredAncestorSpaces: z.number().int().min(0).max(128),
 });
+const renderingDataSelectionSchema = renderingDataBaseSchema
+  .safeExtend({
+    policy: z.literal('bounded-selection-text-v1'),
+    ignoredAncestorSpaces: z.number().int().min(0).max(128),
+    excludedAncestorDecorations: z.number().int().min(0).max(128),
+    externalAppearanceVerified: z.literal(false),
+  })
+  .superRefine((v, ctx) => {
+    if (v.ignoredAncestorSpaces + v.excludedAncestorDecorations > 128)
+      ctx.addIssue({ code: 'custom', message: '选区文字祖先伪元素计数超限' });
+  });
 export const renderingDiagnosticDataSchema = z.discriminatedUnion('policy', [
   renderingDataV1Schema,
   renderingDataV2Schema,
+  renderingDataSelectionSchema,
 ]);
 export const renderingInspectionRequestSchema = z
   .object({
@@ -159,7 +175,9 @@ export const renderingInspectionRequestSchema = z
     requestId: z.string().min(1).max(100),
     root: fieldsPickRootSchema,
     selector: fieldsPickRootSchema.shape.selector,
-    policy: z.enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2']).optional(),
+    policy: z
+      .enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2', 'bounded-selection-text-v1'])
+      .optional(),
     details: z.literal('ancestor-space-checks-v1').optional(),
   })
   .strict()
@@ -184,6 +202,7 @@ const inspectionMetadata = {
 export const renderingInspectionSchema = z.discriminatedUnion('policy', [
   renderingDataV1Schema.safeExtend(inspectionMetadata),
   renderingDataV2Schema.safeExtend(inspectionMetadata),
+  renderingDataSelectionSchema.safeExtend(inspectionMetadata),
 ]);
 export type RenderingDiagnosticData = z.infer<typeof renderingDiagnosticDataSchema>;
 export type RenderingLocation = RenderingDiagnosticData['locations'][number];

@@ -278,19 +278,29 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
                 navigate: ['url', 'title'],
                 click: ['clicked', 'verified'],
                 check: ['checked'],
-                collect: ['complete', 'url', 'documentUrl', 'fields'],
+                collect: [
+                  'complete',
+                  'url',
+                  'documentUrl',
+                  'fields',
+                  ...(node.version === 9 ? ['renderPolicy', 'externalAppearanceVerified'] : []),
+                ],
               } as Record<string, string[]>
             )[node.operation] ?? [])
           : [];
     for (const key of known) add(path + '.' + key, label + ' / ' + key, '前序步骤', '步骤输出字段');
-    if (node.type === 'browser' && (node.version === 5 || node.version === 6 || node.version === 7))
+    if (
+      node.type === 'browser' &&
+      (node.version === 5 || node.version === 6 || node.version === 7 || node.version === 9)
+    )
       node.fields.forEach((field, i) => {
         for (const key of [
           'value',
           'count',
           'status',
           ...(node.version >= 6 ? ['issues'] : []),
-          ...(node.version === 7 ? ['ignoredAncestorSpaces'] : []),
+          ...(node.version === 7 || node.version === 9 ? ['ignoredAncestorSpaces'] : []),
+          ...(node.version === 9 ? ['excludedAncestorDecorations'] : []),
         ])
           add(
             path + '.fields.' + i + '.' + key,

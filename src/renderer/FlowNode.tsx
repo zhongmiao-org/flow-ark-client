@@ -135,7 +135,12 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
                 : step.type === 'browser'
                   ? {
                       url: '读取当前网址',
-                      collect: step.version >= 6 ? '关联字段与正文' : '读取关联字段',
+                      collect:
+                        step.version === 9
+                          ? '关联字段与选区文字候选'
+                          : step.version >= 6
+                            ? '关联字段与正文'
+                            : '读取关联字段',
                       count: '统计匹配元素',
                       attribute: '读取元素属性',
                       navigate: '打开网页',

@@ -1,3 +1,4 @@
+import { assertBrowserSelectionTextCapabilities } from './browser-selection-text';
 import { assertBrowserTargetCapabilities } from './browser-target-input';
 import { assertRunResultNode, assertRunResultResources } from './run-result-binding';
 import { assertEffectNodeCapabilities } from './effect-node';
@@ -128,6 +129,7 @@ export function validateAuthorDefinition(value: unknown): any {
       assertBrowserRenderedFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertBrowserFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertBrowserTargetCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds, actions: entry.actionIds });
+      assertBrowserSelectionTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertAIOutcomeCapabilities(node, entry.flow.requiredCapabilities);
       assertContinuousConversationCapabilities(node, entry.flow.requiredCapabilities);
       assertConversationSourceNode(node, entry.flow.requiredCapabilities, d, { capabilities: entry.flow.requiredCapabilities, resources: entry.resourceIds });

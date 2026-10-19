@@ -91,6 +91,8 @@ import { validateFlow, validateObject, walk } from '../core/validate';
 import { assertBrowserOperations } from '../adapters/browser-scope';
 import {
   assertBrowserFieldsInvocation,
+  assertBrowserSelectionTextInvocation,
+  assertBrowserSelectionTextCapabilities,
   assertBrowserFieldsResult,
   browserFieldsCapabilityFor,
   type ResolvedBrowserFieldsNode,
@@ -2134,7 +2136,7 @@ export class Runtime {
         runSignal.throwIfAborted();
       }
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
-      if (args.version === 5 || args.version === 6 || args.version === 7) {
+      if (args.version === 5 || args.version === 6 || args.version === 7 || args.version === 9) {
         const { nodeInstance, ...nodeInput } = args;
         const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
         if (
@@ -2149,9 +2151,19 @@ export class Runtime {
           nodeInstance.split('/').at(-1) !== source.id
         )
           throw Error('关联字段节点不在当前固定运行中');
-        fieldsInput = assertBrowserFieldsInvocation(source, nodeInput);
+        fieldsInput =
+          args.version === 9
+            ? assertBrowserSelectionTextInvocation(source, args)
+            : assertBrowserFieldsInvocation(source, nodeInput);
         if (snapshot.bindings.template) {
-          const { entry } = await this.templates.context(snapshot);
+          const { entry, pkg } = await this.templates.context(snapshot);
+          if (args.version === 9)
+            assertBrowserSelectionTextCapabilities(
+              source,
+              snapshot.flow.requiredCapabilities,
+              pkg.manifest,
+              entry,
+            );
           if (
             !['browser', browserFieldsCapabilityFor(args.version)].every((c) =>
               entry.capabilities.includes(c),
@@ -2196,7 +2208,15 @@ export class Runtime {
         framePath: args.framePath,
         value: args.value,
         timeoutMs: args.timeoutMs,
-        ...(fieldsInput ? { version: fieldsInput.version, fields: fieldsInput.fields } : {}),
+        ...(fieldsInput
+          ? {
+              version: fieldsInput.version,
+              fields: fieldsInput.fields,
+              ...(fieldsInput.version === 9 && 'renderPolicy' in fieldsInput
+                ? { renderPolicy: fieldsInput.renderPolicy }
+                : {}),
+            }
+          : {}),
         ...(targetInput ? { version: 8 } : {}),
       };
       if (args.operation === 'upload') {
