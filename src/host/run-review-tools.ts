@@ -2,6 +2,7 @@ import type { FlowRecord, Step } from '../shared/types';
 import type { TaskMcpState } from '../shared/task-mcp-targets';
 import { reviewMcpArguments } from './mcp-argument-review';
 import type { ReviewToolCall } from '../shared/run-review';
+import { taskStepTitle } from '../shared/step-title';
 
 /** Never resolves arguments, reads credentials, or contacts a service. */
 export function reviewToolCalls(record: FlowRecord, states: TaskMcpState[] = []): ReviewToolCall[] {
@@ -44,11 +45,11 @@ export function reviewToolCalls(record: FlowRecord, states: TaskMcpState[] = [])
         });
       }
       if (step.type === 'condition') {
-        visit(step.then, [...context, `第 ${position} 步「${step.name || step.id}」条件成立时`]);
-        visit(step.else, [...context, `第 ${position} 步「${step.name || step.id}」条件不成立时`]);
+        visit(step.then, [...context, `第 ${position} 步「${taskStepTitle(step)}」条件成立时`]);
+        visit(step.else, [...context, `第 ${position} 步「${taskStepTitle(step)}」条件不成立时`]);
       }
       if (step.type === 'loop')
-        visit(step.body, [...context, `第 ${position} 步「${step.name || step.id}」的每次循环`]);
+        visit(step.body, [...context, `第 ${position} 步「${taskStepTitle(step)}」的每次循环`]);
     }
   };
   visit(record.flow.steps, []);
