@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (60e4134b8873b8a4f928723a363af8544dda519cbb25b1867958996a4eb7ecb8). Do not edit. */
+/* Generated from contracts/p1.schema.json (f3bf526ec926bb4f91052ed3518c844be4cf089f6ef2d388c659bbefb985dd2f). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -35,6 +35,7 @@ export const node_browser_6: ValidateFunction;
 export const node_effect_1: ValidateFunction;
 export const node_run_result_1: ValidateFunction;
 export const node_browser_7: ValidateFunction;
+export const node_browser_8: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -88,6 +89,10 @@ export const reduction_run_review_v1: ValidateFunction;
 export const reduction_run_confirmation_v1: ValidateFunction;
 export const reduction_run_review_receipt_v1: ValidateFunction;
 export const document_result_v1: ValidateFunction;
+export const browser_target_invocation_v1: ValidateFunction;
+export const browser_target_click_result_v1: ValidateFunction;
+export const browser_target_wait_result_v1: ValidateFunction;
+export const browser_target_read_result_v1: ValidateFunction;
 export const browser_fields_result_v1: ValidateFunction;
 export const browser_rendered_fields_result_v2: ValidateFunction;
 export const browser_scoped_rendered_fields_result_v3: ValidateFunction;

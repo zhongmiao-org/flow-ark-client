@@ -1,4 +1,4 @@
-import { Select, Input, Collapse, Space } from 'antd';
+import { Button, Select, Input, Collapse, Space } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
@@ -6,7 +6,7 @@ import type { Step } from '../shared/types';
 import ElementPicker, { type ElementPickerControls } from './ElementPicker';
 import type { ElementTarget } from '../shared/element-picker';
 import { formKeys } from '../core/browser-command';
-import { browserActions, changeBrowserOperation } from './browser-actions';
+import { browserActions, changeBrowserOperation, useBrowserTargetInput } from './browser-actions';
 import ValueField from './ValueField';
 import type { ReferenceChoice } from './value-references';
 import './node-configuration.css';
@@ -136,7 +136,7 @@ export default function BrowserNodeConfiguration({
           setTarget(picked);
           change({
             ...node,
-            version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
+            version: node.version === 8 ? 8 : node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
             selector: picked.selector,
             framePath: picked.framePath,
             ...(!node.name
@@ -196,7 +196,7 @@ export default function BrowserNodeConfiguration({
           forceRender: true,
           children: (
             <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-              {node.version !== 4 && (
+              {node.version !== 4 && node.version !== 8 && (
                 <>
                   <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
                   <Input
@@ -223,7 +223,8 @@ export default function BrowserNodeConfiguration({
                   setFrames(e.target.value);
                   change({
                     ...node,
-                    version: node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
+                    version:
+                      node.version === 8 ? 8 : node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
                     framePath: parseFrames(e.target.value) as FramePath,
                   } as BrowserNode);
                 }}
@@ -271,11 +272,19 @@ export default function BrowserNodeConfiguration({
           />
           <p className="node-operation-description">
             {browserActions[node.operation].detail}
-            。切换动作会恢复默认输入；离开只读动作会清除动态目标，请重新配置。可通过草稿撤销恢复。
+            。切换动作会恢复默认输入；变量目标只在点击、读取文字和等待可见之间保留，其他动作请重新配置。可通过草稿撤销恢复。
           </p>
         </>
       )}
-      {node.version === 4 && node.operation !== 'url' && (
+      {node.version !== 8 && ['click', 'read', 'wait'].includes(node.operation) && (
+        <div>
+          <Button onClick={() => change(useBrowserTargetInput(node))}>
+            使用变量目标 · 保存后新运行生效
+          </Button>
+          <p className="note">采用后可从参数、前序步骤或循环项选择目标；既有动作权限仍单独核对。</p>
+        </div>
+      )}
+      {(node.version === 8 || (node.version === 4 && node.operation !== 'url')) && (
         <ValueField
           label="目标选择器"
           value={node.selector}
@@ -290,13 +299,19 @@ export default function BrowserNodeConfiguration({
               <Input
                 id={fieldId + 'inspection-selector'}
                 value={node.selector}
-                maxLength={2000}
+                maxLength={node.version === 8 ? undefined : 2000}
                 placeholder="例如 a.result-link"
                 onChange={(e) => change({ ...node, selector: e.target.value })}
               />
             </>
           ) : undefined}
         </ValueField>
+      )}
+      {node.version === 8 && (
+        <p className="note">
+          目标解析为1–2000个字符的非空文本，框架路径保持固定。每次命令只绑定唯一可见元素；
+          多匹配、替换或导航在派发前停止。点击后仍须核对业务结果，取消或未知结果不会自动重试。
+        </p>
       )}
       {node.version === 4 && node.operation === 'attribute' && (
         <ValueField

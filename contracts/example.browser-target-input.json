@@ -1,0 +1,26 @@
+{
+  "formatVersion": "1.0",
+  "id": "target-example",
+  "name": "通用目标引用示例",
+  "description": "仅为格式资料，不执行网页",
+  "parameters": {
+    "selector": "#example"
+  },
+  "steps": [
+    {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "read",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  ],
+  "requiredCapabilities": [
+    "browser",
+    "browser-target-input-v1"
+  ]
+}

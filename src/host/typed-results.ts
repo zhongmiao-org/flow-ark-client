@@ -1,3 +1,4 @@
+import { assertBrowserTargetResult } from '../shared/browser-target';
 import { verifyRead, verifyPrepared } from '../../contracts/run-result-binding.mjs';
 import { realpathSync, statSync } from 'node:fs';
 import type { Store } from './store';
@@ -251,7 +252,7 @@ export class TypedResults {
   ) {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
-    if (!node || node.type !== 'browser' || ![4, 5, 6, 7].includes(node.version))
+    if (!node || node.type !== 'browser' || ![4, 5, 6, 7, 8].includes(node.version))
       throw Error('网页只读结果不属于固定节点');
     if (node.version === 5 || node.version === 6 || node.version === 7) {
       const saved = this.store.get<{ node: ResolvedBrowserFieldsNode; sha256: string }>(
@@ -266,6 +267,10 @@ export class TypedResults {
       const resolved = assertBrowserFieldsInvocation(node, input ?? saved?.node);
       assertBrowserFieldsResult(resolved, value);
       return 'collect';
+    }
+    if (node.version === 8) {
+      assertBrowserTargetResult(node.operation, value);
+      return node.operation;
     }
     assertBrowserInspectionResult(node.operation, value);
     return node.operation;

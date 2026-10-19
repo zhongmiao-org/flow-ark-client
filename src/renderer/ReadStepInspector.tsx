@@ -1,3 +1,4 @@
+import { referenceChoices } from './value-references';
 import { Alert, Button, Collapse, Input, Space, Tag } from 'antd';
 import { useEffect, useState, type RefObject, type Ref } from 'react';
 import type { FlowRecord, Step } from '../shared/types';
@@ -102,7 +103,7 @@ export default function ReadStepInspector({
       compact={compact}
       pickerControls={pickerControls}
       node={node}
-      choices={[]}
+      choices={referenceChoices(record.flow, node.id)}
       change={change}
       active={active}
       blockingRunId={blockingRunId}

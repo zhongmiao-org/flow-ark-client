@@ -1,0 +1,775 @@
+[
+  {
+    "name": "reference params.selector",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reference steps.lookup.selector",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "steps.lookup.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reference item.selector",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "item.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reference item",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "item"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reference index",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "index"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "literal click",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "literal read",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "read",
+      "selector": "#target",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "literal wait",
+    "kind": "node",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "wait",
+      "selector": "#target",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 8",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 9",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "   ",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 10",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": null,
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 11",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": 12,
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 12",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": [],
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 13",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector",
+        "extra": true
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 14",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "window.target"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 15",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "steps..selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 16",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.__proto__.x"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 17",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 18",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "index.x"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject selector 19",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "\ud800",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject operation 20",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "fill",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject version 21",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 7,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject value 22",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": "x",
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject framePath 23",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [
+        {
+          "$ref": "params.frame"
+        }
+      ]
+    }
+  },
+  {
+    "name": "reject framePath 24",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [
+        " "
+      ]
+    }
+  },
+  {
+    "name": "reject framePath 25",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe",
+        "iframe"
+      ]
+    }
+  },
+  {
+    "name": "reject timeoutMs 26",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [],
+      "timeoutMs": 99
+    }
+  },
+  {
+    "name": "reject unknown 27",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [],
+      "unknown": true
+    }
+  },
+  {
+    "name": "resolved reference",
+    "kind": "invocation",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "resolved literal",
+    "kind": "invocation",
+    "valid": true,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject invocation id",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "another",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject invocation operation",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "read",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject invocation selector",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": null,
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject invocation framePath",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [
+        "iframe"
+      ],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject invocation nodeInstance",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/another"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "reject changed literal",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#another",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "loop[0]/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": []
+    }
+  },
+  {
+    "name": "read result",
+    "kind": "result",
+    "valid": true,
+    "value": "\u5317\u4eac",
+    "operation": "read"
+  },
+  {
+    "name": "read empty result",
+    "kind": "result",
+    "valid": true,
+    "value": "",
+    "operation": "read"
+  },
+  {
+    "name": "read unicode bytes limit",
+    "kind": "result",
+    "valid": true,
+    "operation": "read",
+    "valueSource": {
+      "repeat": "\u754c",
+      "count": 21845
+    }
+  },
+  {
+    "name": "reject read bytes overflow",
+    "kind": "result",
+    "valid": false,
+    "operation": "read",
+    "valueSource": {
+      "repeat": "\u754c",
+      "count": 21846
+    }
+  },
+  {
+    "name": "reject invalid unicode result",
+    "kind": "result",
+    "valid": false,
+    "value": "\ud800",
+    "operation": "read"
+  },
+  {
+    "name": "click unverified",
+    "kind": "result",
+    "valid": true,
+    "value": {
+      "clicked": true,
+      "verified": false
+    },
+    "operation": "click"
+  },
+  {
+    "name": "reject business success",
+    "kind": "result",
+    "valid": false,
+    "value": {
+      "clicked": true,
+      "verified": true
+    },
+    "operation": "click"
+  },
+  {
+    "name": "wait visible",
+    "kind": "result",
+    "valid": true,
+    "value": true,
+    "operation": "wait"
+  },
+  {
+    "name": "reject wait false",
+    "kind": "result",
+    "valid": false,
+    "value": false,
+    "operation": "wait"
+  },
+  {
+    "name": "reject invalid Unicode metadata",
+    "kind": "node",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": [],
+      "name": "\ud800"
+    }
+  },
+  {
+    "name": "reject invalid Unicode invocation identity",
+    "kind": "invocation",
+    "valid": false,
+    "value": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": "#target",
+      "value": null,
+      "framePath": [],
+      "nodeInstance": "\ud800/target"
+    },
+    "source": {
+      "id": "target",
+      "type": "browser",
+      "version": 8,
+      "operation": "click",
+      "selector": {
+        "$ref": "params.selector"
+      },
+      "value": null,
+      "framePath": []
+    }
+  }
+]
