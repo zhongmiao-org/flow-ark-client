@@ -1,6 +1,7 @@
 import { Button, Input } from 'antd';
 import { useEffect, useId, useRef, useState } from 'react';
 import { stepTitle, type OutlineEntry } from './flow-outline';
+import { kinds } from './node-kinds';
 
 export default function OutlineStepSearch({
   query,
@@ -51,7 +52,7 @@ export default function OutlineStepSearch({
           aria-controls={open ? `${id}-results` : undefined}
           aria-activedescendant={open && selected >= 0 ? `${id}-option-${selected}` : undefined}
           value={query}
-          placeholder="名称、步骤编号或动作类型"
+          placeholder="名称、步骤序号或动作类型"
           autoComplete="off"
           onFocus={() => setExpanded(true)}
           onChange={(event) => {
@@ -121,11 +122,11 @@ export default function OutlineStepSearch({
                 onClick={() => accept(item)}
               >
                 {item.ordinal} · {stepTitle(item.step)}
-                <small>{item.step.id}</small>
+                <small>{kinds[item.step.type].label}</small>
               </div>
             ))}
           </div>
-          {!matches.length && <p>没有匹配的步骤，试试名称、编号或动作类型。</p>}
+          {!matches.length && <p>没有匹配的步骤，试试名称、序号或动作类型。</p>}
         </div>
       )}
     </div>
