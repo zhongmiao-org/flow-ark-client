@@ -174,7 +174,7 @@ export default function TemplateResources({
                               ? [
                                   {
                                     value: binding.browserId,
-                                    label: <>原绑定（不在本机清单）：{binding.browserId}</>,
+                                    label: '原浏览器不在本机清单，请重新选择',
                                   },
                                 ]
                               : []),

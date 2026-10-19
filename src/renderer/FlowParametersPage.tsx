@@ -459,7 +459,7 @@ export default function FlowParametersPage({
                       ? [
                           {
                             value: draft.bindings.browserId,
-                            label: <>原浏览器绑定不可用 · {draft.bindings.browserId}</>,
+                            label: '原浏览器绑定不可用，请重新选择',
                           },
                         ]
                       : []),

@@ -73,9 +73,7 @@ function Contents({
         <section>
           <Card size="small" className="run-review-card">
             <h2>关联原运行，从头执行</h2>
-            <p>
-              {preview.rerun.name} · {preview.rerun.runId}
-            </p>
+            <p>{preview.rerun.name}</p>
             <p>已核对原输出与外部结果；新运行不恢复旧脚本内部现场，可能再次产生外部更改。</p>
           </Card>
         </section>

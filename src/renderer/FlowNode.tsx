@@ -129,7 +129,7 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
           </span>
           <div className="flow-node-text">
             <small>{kind.label}</small>
-            <b title={typeof step.name === 'string' ? step.name : step.id}>
+            <b title={typeof step.name === 'string' && step.name ? step.name : kind.label}>
               {typeof step.name === 'string' && step.name
                 ? step.name
                 : step.type === 'browser'
@@ -151,7 +151,7 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
                       inputValue: '读取输入值',
                       press: '按下按键',
                     }[step.operation]
-                  : step.id}
+                  : kind.label}
             </b>
           </div>
           <span className="flow-node-version">v{step.version}</span>

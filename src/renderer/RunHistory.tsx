@@ -84,7 +84,7 @@ export default function RunHistory({
     scope?.name ?? flows.find((flow) => flow.id === selectedFlowId)?.flow.name;
   const additionalFilters = [
     query.query && `搜索：${query.query}`,
-    selectedFlowId && `${scope ? '当前流程' : '流程'}：${selectedFlowName || selectedFlowId}`,
+    selectedFlowId && `${scope ? '当前流程' : '流程'}：${selectedFlowName || '名称待核对'}`,
     query.source && `触发来源：${runSourceLabels[query.source]}`,
   ].filter(Boolean);
   const canClearFilters = !!(
