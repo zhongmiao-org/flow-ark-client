@@ -693,79 +693,136 @@ export class EmbeddedPage {
       framePath: path,
       fields: command.fields,
     });
-    if (this.contents.isLoading()) throw Error('网页正在加载，关联采集未开始');
-    const epoch = this.documentEpoch,
-      url = this.contents.getURL();
+    this.abort.signal.throwIfAborted();
+    if (this.contents.isDestroyed()) throw Error('网页会话已关闭');
+    if (this.contents.isLoadingMainFrame()) throw Error('主页面正在加载，关联采集未开始');
+    const url = this.contents.getURL();
+    const changedFrames = new Set<string>(),
+      usedFrames = new Set<string>();
+    let rootChanged = false;
+    const changed = (frameId?: string) => {
+      if (frameId === undefined) rootChanged = true;
+      else changedFrames.add(frameId);
+    };
+    // Subscribe before the first asynchronous lookup. Changes to a frame that is
+    // bound later still invalidate this command; unrelated frames and Workers do not.
+    this.targetWatches.add(changed);
+    const handles: {
+      scope: Scope;
+      objectId: string;
+      selector: string;
+      frameId: string;
+    }[] = [];
     const verify = () => {
       remaining();
       this.abort.signal.throwIfAborted();
       if (
-        this.documentEpoch !== epoch ||
+        this.contents.isDestroyed() ||
+        rootChanged ||
+        [...usedFrames].some((id) => changedFrames.has(id)) ||
         this.contents.getURL() !== url ||
-        this.contents.isLoading()
+        this.contents.isLoadingMainFrame()
       )
         throw Error('采集期间网页或框架发生导航/更换，整次结果未采用');
     };
-    const { frameTree } = await this.send('Page.getFrameTree');
-    let frameId: string = frameTree.frame.id,
-      session: string | undefined;
-    let scope = await this.world(frameId, session);
-    const chain: { scope: Scope; frameId: string; loaderId: string }[] = [];
-    const remember = async () => {
-      const { frameTree } = await this.send('Page.getFrameTree', {}, scope.session);
-      const find = (tree: any): any =>
-        tree.frame.id === frameId ? tree.frame : (tree.childFrames ?? []).map(find).find(Boolean);
-      const frame = find(frameTree);
-      if (!frame?.loaderId) throw Error('无法核对采集框架文档身份');
-      chain.push({ scope, frameId, loaderId: frame.loaderId });
-    };
-    await remember();
-    for (const selector of path) {
-      verify();
-      const parent = scope;
-      const handle = await this.evaluate(
-        scope,
-        `(()=>{const found=document.querySelectorAll(${JSON.stringify(selector)});if(found.length!==1||found[0].tagName!=='IFRAME')throw Error('采集框架须唯一匹配 iframe');return found[0];})()`,
-        false,
-      );
-      if (!handle.objectId) throw Error('采集框架不可用');
-      try {
+    const checkPaths = async () => {
+      for (const item of handles) {
+        verify();
+        const same = await this.call(
+          item.scope,
+          item.objectId,
+          `function(selector) {
+            const found=document.querySelectorAll(selector);
+            return this.isConnected && this.tagName==='IFRAME' && found.length===1 && found[0]===this;
+          }`,
+          item.selector,
+        );
+        verify();
+        if (same !== true) throw Error('采集框架路径已变化，整次结果未采用');
         const { node: element } = await this.send(
           'DOM.describeNode',
-          { objectId: handle.objectId },
+          { objectId: item.objectId },
+          item.scope.session,
+        );
+        verify();
+        if (element.frameId !== item.frameId) throw Error('采集框架关联已变化，整次结果未采用');
+      }
+    };
+    try {
+      verify();
+      const { frameTree } = await this.send('Page.getFrameTree');
+      let frameId: string = frameTree.frame.id,
+        session: string | undefined;
+      usedFrames.add(frameId);
+      verify();
+      let scope = await this.world(frameId, session);
+      const chain: { scope: Scope; frameId: string; loaderId: string }[] = [];
+      const remember = async () => {
+        verify();
+        const { frameTree } = await this.send('Page.getFrameTree', {}, scope.session);
+        verify();
+        const find = (tree: any): any =>
+          tree.frame.id === frameId ? tree.frame : (tree.childFrames ?? []).map(find).find(Boolean);
+        const frame = find(frameTree);
+        if (!frame?.loaderId) throw Error('无法核对采集框架文档身份');
+        chain.push({ scope, frameId, loaderId: frame.loaderId });
+      };
+      await remember();
+      for (const selector of path) {
+        verify();
+        const handle = await this.evaluate(
+          scope,
+          `(()=>{const found=document.querySelectorAll(${JSON.stringify(selector)});if(found.length!==1||found[0].tagName!=='IFRAME')throw Error('采集框架须唯一匹配 iframe');return found[0];})()`,
+          false,
+        );
+        if (!handle.objectId) throw Error('采集框架不可用');
+        const item = { scope, objectId: handle.objectId, selector, frameId: '' };
+        handles.push(item);
+        verify();
+        const { node: element } = await this.send(
+          'DOM.describeNode',
+          { objectId: item.objectId },
           scope.session,
         );
         if (!element.frameId) throw Error('采集框架不可用');
-        frameId = element.frameId;
+        item.frameId = frameId = element.frameId;
+        usedFrames.add(frameId);
+        verify();
         session = this.frames.get(frameId) ?? scope.session;
         scope = await this.world(frameId, session);
+        verify();
         await remember();
-      } finally {
-        await this.send(
-          'Runtime.releaseObject',
-          { objectId: handle.objectId },
-          parent.session,
-        ).catch(() => {});
       }
+      await checkPaths();
+      verify();
+      const result = await this.evaluate(
+        scope,
+        `(${(node.version >= 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url, renderPolicy: node.version === 9 ? 'bounded-selection-text-v1' : node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1' })})`,
+      );
+      for (const prior of chain) {
+        verify();
+        const { frameTree } = await this.send('Page.getFrameTree', {}, prior.scope.session);
+        verify();
+        const find = (tree: any): any =>
+          tree.frame.id === prior.frameId
+            ? tree.frame
+            : (tree.childFrames ?? []).map(find).find(Boolean);
+        if (find(frameTree)?.loaderId !== prior.loaderId)
+          throw Error('采集框架文档已更换，整次结果未采用');
+        await this.evaluate(prior.scope, 'document.readyState');
+      }
+      await checkPaths();
+      verify();
+      assertBrowserFieldsResult(node, result);
+      return result;
+    } finally {
+      this.targetWatches.delete(changed);
+      await Promise.all(
+        handles.map(({ scope, objectId }) =>
+          this.send('Runtime.releaseObject', { objectId }, scope.session).catch(() => {}),
+        ),
+      );
     }
-    verify();
-    const result = await this.evaluate(
-      scope,
-      `(${(node.version >= 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url, renderPolicy: node.version === 9 ? 'bounded-selection-text-v1' : node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1' })})`,
-    );
-    for (const prior of chain) {
-      const { frameTree } = await this.send('Page.getFrameTree', {}, prior.scope.session);
-      const find = (tree: any): any =>
-        tree.frame.id === prior.frameId
-          ? tree.frame
-          : (tree.childFrames ?? []).map(find).find(Boolean);
-      if (find(frameTree)?.loaderId !== prior.loaderId)
-        throw Error('采集框架文档已更换，整次结果未采用');
-      await this.evaluate(prior.scope, 'document.readyState');
-    }
-    verify();
-    assertBrowserFieldsResult(node, result);
-    return result;
   }
   private async revealTarget(scope: Scope, element: string) {
     const root = scope.ancestors[0]?.scope ?? scope;
