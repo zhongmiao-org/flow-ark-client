@@ -100,6 +100,15 @@ for (const name of [
 for (const name of ['RunReview', 'RunConfirmation', 'RunReviewReceipt'])
   validators['reduction_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/SourceReduction${name}`;
+// Fixed host storage policy/ledger/capacity formats; no runtime activation implied.
+for (const name of [
+  'ResultRetentionPolicy',
+  'ResultRetentionRetentionSet',
+  'ResultRetentionResultLedger',
+  'RunResultCapacity',
+])
+  validators[name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/${name}`;
 validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 for (const name of ['Invocation', 'ClickResult', 'WaitResult', 'ReadResult'])
   validators['browser_target_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
