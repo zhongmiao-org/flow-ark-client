@@ -1,5 +1,5 @@
 import { Button, Space } from 'antd';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import './readonly-value.css';
 type Annotation = { path: string; label: string; description?: string };
 const pointer = (key: string) => key.replace(/~/g, '~0').replace(/\//g, '~1');
@@ -18,6 +18,16 @@ function Branch({
     [start, setStart] = useState(0),
     [count, setCount] = useState(20);
   const [characters, setCharacters] = useState(4000);
+  const origin = useRef<HTMLElement | null>(null),
+    position = useRef<HTMLParagraphElement>(null);
+  useLayoutEffect(() => {
+    const control = origin.current;
+    origin.current = null;
+    if (!control) return;
+    const target =
+      control.isConnected && !control.hasAttribute('disabled') ? control : position.current;
+    target?.focus({ preventScroll: true });
+  }, [open, start, count, characters]);
   if (value === null) return <span>空值（null）</span>;
   if (typeof value === 'boolean') return <span>{value ? '是（true）' : '否（false）'}</span>;
   if (typeof value === 'number') return <span>{String(value)}</span>;
@@ -30,8 +40,18 @@ function Branch({
         ) : (
           <span>空文本</span>
         )}
+        {value.length > 4000 && (
+          <p ref={position} tabIndex={-1} className="readonly-value-muted" role="status">
+            当前已展开 {Math.min(visible.length, value.length)} / {value.length} 字符
+          </p>
+        )}
         {characters < value.length && (
-          <Button onClick={() => setCharacters((n) => n + 4000)}>
+          <Button
+            onClick={(event) => {
+              origin.current = event.currentTarget;
+              setCharacters((n) => n + 4000);
+            }}
+          >
             继续阅读文本（尚有 {value.length - visible.length} 字符）
           </Button>
         )}
@@ -73,10 +93,14 @@ function Branch({
               );
             })}
           </dl>
+          <p ref={position} tabIndex={-1} className="readonly-value-muted" role="status">
+            当前第 {start + 1}—{Math.min(start + count, entries.length)} 项，共 {entries.length} 项
+          </p>
           <Space wrap>
             {start > 0 && (
               <Button
-                onClick={() => {
+                onClick={(event) => {
+                  origin.current = event.currentTarget;
                   setStart((n) => Math.max(0, n - 200));
                   setCount(200);
                 }}
@@ -86,7 +110,8 @@ function Branch({
             )}
             {start + count < entries.length && (
               <Button
-                onClick={() => {
+                onClick={(event) => {
+                  origin.current = event.currentTarget;
                   if (count < 200) setCount((n) => Math.min(200, n + 20));
                   else {
                     setStart((n) => n + 200);

@@ -1,7 +1,7 @@
 import TechnicalDetails from './TechnicalDetails';
 import type { Flow } from '../shared/types';
 import { runInstancePresenter } from './run-instance-presentation';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Descriptions, Space } from 'antd';
 import { assertDataReceipt, type DataReceipt } from '../shared/template-data';
 import ContextResultView from './ContextResultView';
@@ -36,10 +36,27 @@ export default function RunContextOperations({
     epoch = useRef(0),
     mounted = useRef(true),
     inspectLock = useRef<string | null>(null),
+    pageOrigin = useRef<HTMLElement | null>(null),
+    previousPage = useRef<HTMLButtonElement>(null),
+    nextPage = useRef<HTMLButtonElement>(null),
+    pagePosition = useRef<HTMLSpanElement>(null),
     owner = useRef(runId),
     expanded = useRef(open);
   owner.current = runId;
   expanded.current = open;
+  useLayoutEffect(() => {
+    const origin = pageOrigin.current;
+    pageOrigin.current = null;
+    if (!origin) return;
+    const other = origin === nextPage.current ? previousPage.current : nextPage.current;
+    const target =
+      origin.isConnected && !origin.hasAttribute('disabled')
+        ? origin
+        : other && !other.disabled
+          ? other
+          : pagePosition.current;
+    target?.focus({ preventScroll: true });
+  }, [page]);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -149,7 +166,7 @@ export default function RunContextOperations({
               type="error"
               title={error}
               action={
-                <Button disabled={loading} onClick={() => setRevision((v) => v + 1)}>
+                <Button loading={loading} onClick={() => setRevision((v) => v + 1)}>
                   重新读取回执
                 </Button>
               }
@@ -164,27 +181,31 @@ export default function RunContextOperations({
               </p>
               <Space wrap>
                 <Button
+                  ref={previousPage}
                   disabled={page === 0}
-                  onClick={() => {
+                  onClick={(event) => {
+                    pageOrigin.current = event.currentTarget;
                     setPage((n) => Math.max(0, n - 1));
                     setSelected(null);
                   }}
                 >
                   上一页回执
                 </Button>
-                <span>
+                <span ref={pagePosition} tabIndex={-1}>
                   第 {page + 1} / {lastPage + 1} 页
                 </span>
                 <Button
+                  ref={nextPage}
                   disabled={page >= lastPage}
-                  onClick={() => {
+                  onClick={(event) => {
+                    pageOrigin.current = event.currentTarget;
                     setPage((n) => Math.min(lastPage, n + 1));
                     setSelected(null);
                   }}
                 >
                   下一页回执
                 </Button>
-                <Button disabled={loading} onClick={() => setRevision((v) => v + 1)}>
+                <Button loading={loading} onClick={() => setRevision((v) => v + 1)}>
                   重新读取回执
                 </Button>
               </Space>
@@ -248,7 +269,7 @@ export default function RunContextOperations({
                     {['prepared', 'unknown'].includes(op.receipt.status) && (
                       <Button
                         loading={inspecting === op.receipt.operationId}
-                        disabled={inspecting !== null}
+                        disabled={inspecting !== null && inspecting !== op.receipt.operationId}
                         onClick={() => void inspect(op)}
                       >
                         核对原操作
