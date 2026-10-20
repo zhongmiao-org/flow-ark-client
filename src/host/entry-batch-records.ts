@@ -1,5 +1,5 @@
 import type { Store } from './store';
-import type { Run } from '../shared/types';
+import type { Run, FlowRecord, PreparedScripts } from '../shared/types';
 import type {
   BatchAdmissionProof,
   BatchHistoryPage,
@@ -11,7 +11,8 @@ import type {
   BatchStopRequest,
 } from '../shared/entry-batches';
 import { batchMethods } from '../shared/entry-batches';
-import { digest, now } from '../shared/utils';
+import { digest, now, redact } from '../shared/utils';
+import { executionVersion } from './run-rerun';
 import { validateObject } from '../core/validate';
 import {
   batchTerminalPhases,
@@ -74,16 +75,25 @@ export class EntryBatchRecords {
     const previous = this.store.get<BatchRunLink>(links, key);
     if (previous && digest(previous) !== digest(link)) throw Error('同一连续批次已登记另一Run');
     const run = this.store.get<Run>('run', link.runId);
-    const snapshot = this.store.get<{ batchAdmissionProof?: BatchAdmissionProof }>(
-      'snapshot',
-      link.runId,
-    );
+    const snapshot = this.store.get<
+      FlowRecord &
+        PreparedScripts & {
+          batchAdmissionProof?: BatchAdmissionProof;
+          runReviewAuthorization?: unknown;
+        }
+    >('snapshot', link.runId);
     if (
       !run ||
       run.flowId !== view.flowId ||
       run.state !== 'QUEUED' ||
+      run.batch?.sessionId !== view.sessionId ||
+      run.batch.ordinal !== proof.run.ordinal ||
+      run.batch.scopeSha256 !== view.scopeSha256 ||
       !snapshot?.batchAdmissionProof ||
-      digest(snapshot?.batchAdmissionProof) !== digest(proof)
+      digest(snapshot.batchAdmissionProof) !== digest(proof) ||
+      !snapshot.runReviewAuthorization ||
+      digest(snapshot.runReviewAuthorization) !== proof.authorizationSha256 ||
+      executionVersion(snapshot, snapshot) !== run.versionId
     )
       throw Error('批次Run或固定准入快照未在同一事务登记');
     const runRef = this.store.get<{ sessionId: string; ordinal: number }>(
@@ -162,7 +172,13 @@ export class EntryBatchRecords {
         if (row.value.scopeSha256 !== session.scopeSha256) throw Error('批次历史固定来源不一致');
         const run = this.store.get<Run>('run', row.value.runId);
         if (!run || run.flowId !== session.flowId) throw Error('批次原Run缺失，请保留记录核对');
-        const value: BatchHistoryRow = { ...row.value, runName: run.name, runState: run.state };
+        const name = redact(run.name) as string;
+        const value: BatchHistoryRow = {
+          ...row.value,
+          runName:
+            name.trim() && name.length <= 200 && !/[\uD800-\uDFFF]/.test(name) ? name : '批次运行',
+          runState: run.state,
+        };
         const candidate = { position: row.position, row: value };
         if (Buffer.byteLength(JSON.stringify([...items, candidate])) > MAX_RESPONSE_BYTES - 4096) {
           if (!items.length) throw Error('批次历史超过可读容量，请保留原记录核对');

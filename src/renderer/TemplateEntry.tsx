@@ -30,6 +30,7 @@ export default function TemplateEntry({
   entryId,
   selectEntry,
   showRun,
+  review,
   schedule,
   savedAt,
   change,
@@ -51,6 +52,7 @@ export default function TemplateEntry({
   entryId: string;
   selectEntry: (entryId: string) => void;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
+  review: (origin: TemplateEntryOrigin, debug: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
   savedAt: string;
   change: (detail: TemplateDetail) => void;
@@ -81,6 +83,7 @@ export default function TemplateEntry({
   const [inputSaved, setInputSaved] = useState(0);
   const focusedInputSave = useRef(0);
   const readinessNotice = useRef<HTMLDivElement>(null);
+  // The stop-and-handoff path has its own creation receipt; ordinary starts use RunReview.
   const [createdRun, setCreatedRun] = useState<{ id: string; origin: TemplateEntryOrigin }>();
   const createdRunNotice = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -336,14 +339,7 @@ export default function TemplateEntry({
   };
   const start = async (debug: boolean) => {
     if (createdRun || hasInvalidInput()) return;
-    const from = origin();
-    const run = await work(async () => {
-      const run = await api('flow.run', { id: flowId, debug, templateSource: from.source });
-      // Keep the creation receipt even if the outer bootstrap refresh fails.
-      setCreatedRun({ id: run.id, origin: from });
-      return run;
-    }, '已创建入口运行');
-    if (run) await inspectRun(run.id, from);
+    review(origin(), debug);
   };
   const blocked = busy || checking || sourceChecking || !!sourceError;
   const cannotStart =
@@ -594,7 +590,7 @@ export default function TemplateEntry({
                     void (createdRun ? inspectRun(createdRun.id, createdRun.origin) : start(false))
                   }
                 >
-                  {createdRun ? '查看已创建运行' : '运行此入口'}
+                  {createdRun ? '查看已创建运行' : '运行前核对'}
                 </Button>
                 <Button
                   className="template-entry-debug"

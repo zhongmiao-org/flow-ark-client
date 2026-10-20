@@ -21,7 +21,10 @@ import {
 } from '../../contracts/entry-result-view.mjs';
 import { redact } from '../shared/utils';
 
-type Snapshot = FlowRecord & Partial<PreparedScripts>;
+type Snapshot = FlowRecord &
+  Partial<PreparedScripts> & {
+    batchAdmissionProof?: import('../shared/entry-batches').BatchAdmissionProof;
+  };
 type Reason = Extract<EntryResultView, { viewStatus: 'unavailable' }>['reason'];
 type Saved = { source: EntryResultSource; schema: unknown; value: unknown; present: boolean };
 export type ReuseCapture = {

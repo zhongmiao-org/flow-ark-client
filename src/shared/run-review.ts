@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import { batchLimitsSchema } from './entry-batches';
+import type { FlowArkP1 } from './contracts.generated';
 import type { McpArgumentReview } from './mcp-argument-review';
 import type { Run, ScriptBundle, Step } from './types';
 import type { TaskMcpTarget } from './task-mcp-targets';
 import type { ToolDefinition } from './tool-connections';
 
 const selection = {
+  batches: batchLimitsSchema.optional(),
   rerun: z
     .object({ runId: z.string().min(1).max(100), reviewed: z.literal(true) })
     .strict()
@@ -81,6 +84,7 @@ export type ReviewToolCall = {
   reason: string;
 };
 export type RunReviewPreview = {
+  batches?: NonNullable<FlowArkP1['BatchPreviewDetails']>;
   desktop?: {
     flowHash: string;
     replacement: string;

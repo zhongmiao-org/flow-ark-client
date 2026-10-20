@@ -247,6 +247,7 @@ function WorkspaceApp() {
   const [flowReview, setFlowReview] = useState<{
     selection: RunReviewInput;
     source: string;
+    origin?: TemplateEntryOrigin;
   }>();
   const [settingsTabRequest, setSettingsTabRequest] = useState<SettingsTabRequest>();
   const [editorPanel, setEditorPanel] = useState('canvas');
@@ -827,6 +828,7 @@ function WorkspaceApp() {
   const selectedNavigation =
     section === 'author' ||
     section === 'context-debug' ||
+    (section === 'flow-review' && !!flowReview?.origin) ||
     (section === 'editor' && authorEditorOrigin?.flowId === edit?.id)
       ? 'templates'
       : section === 'runs' && detail && runOrigin === 'task'
@@ -981,7 +983,11 @@ function WorkspaceApp() {
     section === 'editor' && !!nodeSession && nodeSession.kind !== 'parameters',
   );
   usePageBack(taskNavigation.back, section === 'tasks');
-  usePageBack(() => setSection('editor'), section === 'flow-review');
+  function returnFlowReview() {
+    flowReview?.origin?.back();
+    setSection(flowReview?.origin ? 'templates' : 'editor');
+  }
+  usePageBack(returnFlowReview, section === 'flow-review');
   usePageBack(attentionNavigation?.back, section === 'inbox');
   usePageBack(
     settingsNavigation?.back ?? (taskReturn ? returnToTaskEditor : undefined),
@@ -1565,8 +1571,8 @@ function WorkspaceApp() {
               </Button>
             )}
             {section === 'flow-review' && (
-              <Button className="context-back" onClick={() => setSection('editor')}>
-                ← 返回流程编排
+              <Button className="context-back" onClick={returnFlowReview}>
+                {flowReview?.origin ? '← 返回模板入口' : '← 返回流程编排'}
               </Button>
             )}
             {section === 'inbox' && attentionNavigation?.back && (
@@ -1578,23 +1584,24 @@ function WorkspaceApp() {
               {section === 'flow-review' && (
                 <>
                   <a
-                    href="#flows"
+                    href={flowReview?.origin ? '#templates' : '#flows'}
                     onClick={(event) => {
                       event.preventDefault();
-                      returnHome();
+                      if (flowReview?.origin) returnFlowReview();
+                      else returnHome();
                     }}
                   >
-                    我的流程
+                    {flowReview?.origin ? '模板库' : '我的流程'}
                   </a>
                   <span aria-hidden="true">/</span>
                   <a
-                    href="#editor"
+                    href={flowReview?.origin ? '#template-entry' : '#editor'}
                     onClick={(event) => {
                       event.preventDefault();
-                      setSection('editor');
+                      returnFlowReview();
                     }}
                   >
-                    {edit?.flow.name}
+                    {flowReview?.origin?.title ?? edit?.flow.name}
                   </a>
                   <span aria-hidden="true">/</span>
                 </>
@@ -2150,6 +2157,14 @@ function WorkspaceApp() {
                 setDetail(next);
                 setSection('runs');
               }}
+              review={(origin, debug) => {
+                setFlowReview({
+                  selection: { id: origin.flowId, debug },
+                  source: JSON.stringify([origin.source, origin.savedAt]),
+                  origin,
+                });
+                setSection('flow-review');
+              }}
               schedule={(origin) => {
                 setTemplateOrigin(origin);
                 setSection('template-schedule');
@@ -2200,14 +2215,18 @@ function WorkspaceApp() {
             active={section === 'flow-review'}
             selection={flowReview?.selection}
             source={flowReview?.source ?? ''}
-            back={() => setSection('editor')}
+            back={returnFlowReview}
             edit={() => {
-              setSection('editor');
-              openParameters();
+              if (flowReview?.origin) returnFlowReview();
+              else {
+                setSection('editor');
+                openParameters();
+              }
             }}
             openDetail={(next) => {
               setDetail(next);
-              setRunOrigin('editor');
+              if (flowReview?.origin) setTemplateOrigin(flowReview.origin);
+              setRunOrigin(flowReview?.origin ? 'template' : 'editor');
               setRunTab('current');
               setRunFilter(false);
               setSection('runs');

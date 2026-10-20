@@ -11,6 +11,7 @@ import type { RunReviewInput, RunReviewPreview, ReviewResource } from '../shared
 import { RunReviewSession } from './run-review-session';
 import RunReviewTools from './RunReviewTools';
 import RunReviewCheck, { reviewRecoveryIssue } from './RunReviewCheck';
+import RunBatchSettings from './RunBatchSettings';
 
 type Props = {
   active: boolean;
@@ -248,6 +249,7 @@ function Contents({
 }
 export default function RunReviewPage(props: Props) {
   const [binding, setBinding] = useState(false);
+  const [batchEditing, setBatchEditing] = useState(false);
   const bindings = useRef(new Set<string>());
   const heading = useRef<HTMLHeadingElement>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
@@ -270,6 +272,7 @@ export default function RunReviewPage(props: Props) {
   const selectionKey = JSON.stringify(props.selection);
   useLayoutEffect(() => {
     focusGeneration.current++;
+    setBatchEditing(false);
     if (props.active && props.selection) {
       session.enter(props.selection, props.source);
       document.querySelector('main')?.scrollTo({ top: 0 });
@@ -358,7 +361,7 @@ export default function RunReviewPage(props: Props) {
   const debugToggle = !attempt ? (
     <Checkbox
       checked={!!state.selection?.debug}
-      disabled={state.loading || binding || undefined}
+      disabled={state.loading || binding || !!state.selection?.batches || batchEditing || undefined}
       onChange={(e) => {
         const debug = e.target.checked;
         void reviewAction(() => session.refresh(debug));
@@ -371,7 +374,7 @@ export default function RunReviewPage(props: Props) {
   const refreshButton = !locked && !hasInlineRefresh && (
     <Button
       onClick={() => void reviewAction(() => session.refresh())}
-      disabled={state.loading || state.opening || binding || undefined}
+      disabled={state.loading || state.opening || binding || batchEditing || undefined}
     >
       {attempt?.run ? '检查新的试运行' : '重新检查'}
     </Button>
@@ -425,6 +428,19 @@ export default function RunReviewPage(props: Props) {
           </p>
         </div>
       </div>
+      {!desktopReview && !compactReview && (
+        <RunBatchSettings
+          key={props.selection?.id + ':' + props.source}
+          limits={attempt ? attempt.input.batches : state.selection?.batches}
+          disabled={state.loading || locked || !!attempt}
+          supported={!state.selection?.debug && !state.selection?.task && !state.selection?.rerun}
+          editing={(pending) => {
+            setBatchEditing(pending);
+            session.setReviewed(false);
+          }}
+          change={(limits) => void reviewAction(() => session.configureBatches(limits))}
+        />
+      )}
       <div className="run-review-columns">
         <Card className="run-review-surface run-review-summary">
           {binding && props.selection?.task && preview?.desktop && props.bound ? (
@@ -476,7 +492,7 @@ export default function RunReviewPage(props: Props) {
                       compact={compactReview}
                       configure={props.edit}
                       refresh={() => void reviewAction(() => session.refresh())}
-                      disabled={state.loading || state.opening || binding || locked}
+                      disabled={state.loading || state.opening || binding || locked || batchEditing}
                     />
                   ))}
                 {!compactReview && !desktopReview && debugToggle}
@@ -487,7 +503,9 @@ export default function RunReviewPage(props: Props) {
                 )}
                 <Checkbox
                   checked={state.reviewed}
-                  disabled={!preview?.ready || state.loading || binding || undefined}
+                  disabled={
+                    !preview?.ready || state.loading || binding || batchEditing || undefined
+                  }
                   onChange={(e) => session.setReviewed(e.target.checked)}
                   className="run-review-toggle"
                 >
@@ -505,11 +523,20 @@ export default function RunReviewPage(props: Props) {
                 <Button
                   type="primary"
                   disabled={
-                    !preview?.ready || !state.reviewed || state.loading || binding || undefined
+                    !preview?.ready ||
+                    !state.reviewed ||
+                    state.loading ||
+                    binding ||
+                    batchEditing ||
+                    undefined
                   }
                   onClick={() => void reviewAction(() => session.confirm())}
                 >
-                  {preview?.desktop ? '确认修改并试运行' : '开始试运行'}
+                  {preview?.desktop
+                    ? '确认修改并试运行'
+                    : state.selection?.batches
+                      ? '确认连续运行'
+                      : '开始试运行'}
                 </Button>
               </>
             )}

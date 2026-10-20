@@ -17,7 +17,7 @@ import {
 import type { AuthorDefinition, AuthorEntry } from '../shared/template-author';
 import { promptMarker } from '../shared/template-author';
 import type { Flow, Json } from '../shared/types';
-import { validateFlow, walk, capabilities } from '../core/validate';
+import { validateFlow, validateObject, walk, capabilities } from '../core/validate';
 import { declareNativeBoundaries } from './export-boundaries';
 import { schemaDefaults } from '../shared/template-config';
 import { assertPortableSourceFlow } from './source-boundaries';
@@ -139,6 +139,7 @@ export async function compileAuthor(input: AuthorDefinition): Promise<PackageDat
       capabilities: [...new Set([...flow.requiredCapabilities, ...e.capabilities])],
       resources: [...e.resourceIds],
       actions: [],
+      ...(e.batching ? { batching: structuredClone(e.batching) } : {}),
     };
     m.entries.push(entry);
     declareNativeBoundaries(flow, m, entry.id, e.actionIds);
@@ -226,6 +227,14 @@ export function authorFromPackage(pkg: PackageData, identity: string): AuthorDef
       flow: flow as AuthorEntry['flow'],
       inputSchema: jsonFile(pkg.files, e.inputSchema),
       resultSchema: jsonFile(pkg.files, e.resultSchema),
+      ...(e.batching
+        ? {
+            batching: validateObject<NonNullable<AuthorEntry['batching']>>(
+              'BatchDeclaration',
+              structuredClone(e.batching),
+            ),
+          }
+        : {}),
       capabilities: e.capabilities,
       resourceIds: e.resources,
       actionIds: e.actions,

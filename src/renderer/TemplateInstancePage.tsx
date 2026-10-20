@@ -65,6 +65,7 @@ export default function TemplateInstancePage({
   action,
   navigation,
   showRun,
+  review,
   schedule,
   settings,
   returnLabel,
@@ -84,6 +85,7 @@ export default function TemplateInstancePage({
   action: (fn: () => Promise<any>, message?: string) => Promise<any>;
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
+  review: (origin: TemplateEntryOrigin, debug: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
   settings: (entry: AISettingsEntry) => void;
   returnLabel: string;
@@ -672,6 +674,7 @@ export default function TemplateInstancePage({
                 setEntryId(id);
               }}
               showRun={showRun}
+              review={review}
               schedule={schedule}
               savedAt={
                 data.flows.find((flow) => flow.id === instance.entryFlows[entry.id])?.updatedAt ??

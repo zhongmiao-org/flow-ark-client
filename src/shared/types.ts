@@ -53,6 +53,7 @@ export type FlowRecord = {
   versionId?: string;
 };
 export type Run = {
+  batch?: import('./entry-batches').BatchRunReference;
   task?: { id: string; revision: number };
   id: string;
   flowId: string;

@@ -1,4 +1,5 @@
 import TechnicalDetails from './TechnicalDetails';
+import RunBatchPanel from './RunBatchPanel';
 import { recordTime } from './readable-labels';
 import ActionButton from './ActionButton';
 import { runStateColors, runStepColors } from './theme';
@@ -342,7 +343,10 @@ export default function RunDetail({
                   ) : (
                     <>
                       {tab !== 'current' && `${r.name} · `}
-                      {runSourceLabels[runSource(r)] ?? '运行记录'} · {time(r.createdAt)}
+                      {r.batch
+                        ? `连续运行 · 第${r.batch.ordinal}批`
+                        : (runSourceLabels[runSource(r)] ?? '运行记录')}{' '}
+                      · {time(r.createdAt)}
                     </>
                   )}
                 </p>
@@ -353,6 +357,19 @@ export default function RunDetail({
                 </Button>
               )}
             </div>
+            {r.batch && (
+              <RunBatchPanel
+                key={r.batch.sessionId}
+                run={r}
+                open={(next) =>
+                  inspectRelated(next, {
+                    runId: r.id,
+                    tab,
+                    scroll: document.querySelector('main')?.scrollTop ?? 0,
+                  })
+                }
+              />
+            )}
             <section
               className="run-runtime-summary"
               aria-label="运行状态"
