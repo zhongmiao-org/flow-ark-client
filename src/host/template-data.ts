@@ -375,6 +375,7 @@ export class TemplateData {
     resolved: any,
     signal: AbortSignal,
     active: () => void,
+    beforeWrite: (result: DataOutput) => void = () => {},
   ): Promise<DataOutput> {
     const context = record.templateData;
     if (!context) throw Error('运行没有固定配置与状态上下文');
@@ -458,6 +459,21 @@ export class TemplateData {
           receipt: value,
         });
       };
+      const at = now(),
+        result: DataOutput = {
+          version: 1,
+          operation: 'state.write',
+          contextId: context.id,
+          operationId,
+          previousRevision: request.expectedRevision,
+          revision: request.expectedRevision + 1,
+          value: structuredClone(request.value),
+          committedAt: at,
+        };
+      validateTemplateDataOutput(result);
+      // No await between this exact quota reservation and the original CAS transaction.
+      // Preserve the original conflict receipt when the expected revision is already stale.
+      if (this.readState(context).revision === request.expectedRevision) beforeWrite(result);
       persist(receipt);
       try {
         receipt = this.store.tx(() => {
@@ -475,18 +491,6 @@ export class TemplateData {
             persist(conflict);
             return conflict;
           }
-          const at = now(),
-            result = {
-              version: 1 as const,
-              operation: 'state.write' as const,
-              contextId: context.id,
-              operationId,
-              previousRevision: current.revision,
-              revision: current.revision + 1,
-              value: structuredClone(request.value),
-              committedAt: at,
-            };
-          validateTemplateDataOutput(result);
           const target = this.location(context);
           this.store.put(target.kind, target.id, result.value);
           this.store.put(target.meta, target.id, { revision: result.revision, updatedAt: at });

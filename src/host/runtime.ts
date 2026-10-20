@@ -1812,6 +1812,7 @@ export class Runtime {
       this.secrets = [];
       this.aiNodes.release(run.id);
       this.templateData.release(run.id);
+      this.typedResults.release(run.id);
       this.effectNodes.release(run.id);
       await this.documents.release(run.id);
       this.scripts.finishRun(run.id);
@@ -1892,17 +1893,25 @@ export class Runtime {
         !(args.nodeInstance === node.id || args.nodeInstance.endsWith('/' + node.id))
       )
         throw Error('配置与状态节点不属于当前执行实例');
-      const result = await this.templateData.perform(
-        snapshot,
-        id,
-        node,
-        args.nodeInstance,
-        args.input,
-        runSignal,
-        () => this.checkActive(active),
-      );
-      this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
-      return result;
+      let release = () => {};
+      try {
+        const result = await this.templateData.perform(
+          snapshot,
+          id,
+          node,
+          args.nodeInstance,
+          args.input,
+          runSignal,
+          () => this.checkActive(active),
+          (result) => {
+            release = this.typedResults.reserveState(id, node.id, args.nodeInstance, result);
+          },
+        );
+        this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
+        return result;
+      } finally {
+        release();
+      }
     }
     if (method === 'reduction.node') {
       const active = this.active,
