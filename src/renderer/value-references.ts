@@ -228,8 +228,8 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
         add(path + '.' + key, label + ' / ' + key, '前序步骤', '确认后才有完整对话；先判断 status');
     if (node.type === 'ai') {
       const schema = node.schema as { properties?: Record<string, unknown> };
-      const prefix = node.version === 2 ? '.result' : '';
-      if (node.version === 2)
+      const prefix = node.version !== 1 ? '.result' : '';
+      if (node.version !== 1)
         for (const key of [
           'status',
           'result',
@@ -257,7 +257,7 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           path + prefix + '.' + key,
           label + ' / ' + (prefix ? 'result / ' : '') + key,
           '前序步骤',
-          node.version === 2 ? '仅status=success时可读取完整结果' : 'AI已校验结果字段',
+          node.version !== 1 ? '仅status=success时可读取完整结果' : 'AI已校验结果字段',
         );
       for (const key of Object.keys(schema.properties ?? {}))
         if (referenceKey(key))

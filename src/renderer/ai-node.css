@@ -5,6 +5,7 @@
   min-width: 0;
 }
 .ai-node-configuration .ai-node-binding,
+.ai-node-configuration .ai-generation-settings,
 .ai-node-configuration .ai-output-field {
   display: flex;
   flex-direction: column;

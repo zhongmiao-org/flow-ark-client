@@ -1,3 +1,4 @@
+import { assertAIGenerationOptions } from '../../contracts/ai-generation';
 import type { Bindings, Flow, Json, Step } from './types';
 import { aiOutcomeModel } from './ai-outcome';
 
@@ -64,6 +65,7 @@ export function assertAISchema(schema: unknown): asserts schema is Record<string
   visit(schema, 0);
 }
 export function assertAIRequest(node: AINode, input: unknown = node.input) {
+  if (node.version === 3) assertAIGenerationOptions(node.generation);
   if (!node.instructions.trim()) throw new Error('AI 指令不能为空或只有空白');
   assertAISchema(node.schema);
   if (bytes({ instructions: node.instructions, input, schema: node.schema }) > 1024 * 1024)
@@ -76,7 +78,7 @@ export function aiBinding(bindings: Bindings, id: string, version = 1) {
     !['deepseek', 'openai-codex'].includes(binding.provider ?? '') ||
     !binding.model ||
     !/^[\x21-\x7e]{1,100}$/.test(binding.model) ||
-    (version === 2 && !aiOutcomeModel.test(binding.model)) ||
+    (version >= 2 && !aiOutcomeModel.test(binding.model)) ||
     binding.path !== undefined ||
     binding.browserId !== undefined
   )

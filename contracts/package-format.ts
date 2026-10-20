@@ -1,3 +1,4 @@
+import { assertAIGenerationCapabilities } from './ai-generation';
 import { assertBrowserSelectionTextCapabilities } from './browser-selection-text';
 import { assertBrowserTargetCapabilities } from './browser-target-input';
 import { assertRunResultNode, assertRunResultResources } from './run-result-binding';
@@ -85,6 +86,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
   assertBrowserTargetCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserSelectionTextCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertAIOutcomeCapabilities(n,flow.requiredCapabilities);
+  assertAIGenerationCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertContinuousConversationCapabilities(n,flow.requiredCapabilities);
   assertConversationSourceNode(n,flow.requiredCapabilities,manifest,entry);
   assertSourceReductionNode(n,flow.requiredCapabilities,manifest,entry);

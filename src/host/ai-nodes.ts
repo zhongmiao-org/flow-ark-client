@@ -1,3 +1,4 @@
+import { assertAIGenerationOptions } from '../../contracts/ai-generation';
 import Ajv from 'ajv/dist/2020.js';
 import { generate } from '../ai/providers';
 import { AIRequestFailureError } from '../ai/request-failure';
@@ -41,7 +42,8 @@ export class AINodes {
       assertAIRequest(node);
       new Ajv({ strict: false, allErrors: true, logger: false }).compile(node.schema as any);
       const binding = aiBinding(record.bindings, node.binding, node.version);
-      if (node.version === 2 && !this.deps.outcomeReceipt) throw new Error('AI v2收据存储不可用');
+      if (node.version === 3) assertAIGenerationOptions(node.generation, binding.provider);
+      if (node.version !== 1 && !this.deps.outcomeReceipt) throw new Error('AI v2收据存储不可用');
       const config = await this.deps.configuration(binding.provider);
       if (!config.configured || !config.revision)
         throw new Error(`AI 资源「${node.binding}」需要先配置用户自己的 Key`);
@@ -111,7 +113,8 @@ export class AINodes {
     assertAIRequest(node, args.input);
     new Ajv({ strict: false, allErrors: true, logger: false }).compile(node.schema as any);
     const binding = aiBinding(record.bindings, node.binding, node.version);
-    if (node.version === 2 && !this.deps.outcomeReceipt) throw new Error('AI v2收据存储不可用');
+    if (node.version === 3) assertAIGenerationOptions(node.generation, binding.provider);
+    if (node.version !== 1 && !this.deps.outcomeReceipt) throw new Error('AI v2收据存储不可用');
     const config = await until(this.deps.configuration(binding.provider), signal);
     current();
     if (!config.configured || !config.revision) throw new Error('用户 AI Key 不可用');
@@ -133,13 +136,14 @@ export class AINodes {
           undefined,
           [],
           'standard',
-          node.version === 2,
+          node.version !== 1,
+          node.version === 3 ? node.generation : undefined,
         ),
         signal,
       );
     } catch (error) {
       current();
-      if (node.version !== 2 || !(error instanceof AIRequestFailureError)) throw error;
+      if (node.version === 1 || !(error instanceof AIRequestFailureError)) throw error;
       const failure = error.failure;
       if (failure.provider !== binding.provider || !ai_outcome_v1(failure))
         throw new Error('AI请求故障收据无效，未采用');
@@ -150,7 +154,7 @@ export class AINodes {
       return failure;
     }
     current();
-    if (node.version === 2) {
+    if (node.version !== 1) {
       const metadata = aiMetadata(binding.provider, binding.model, {
         model: result.model,
         id: result.requestId,

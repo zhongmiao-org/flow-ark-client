@@ -1983,7 +1983,8 @@ export class Runtime {
         const resource = pkg.manifest.resources.find((r) => r.id === node.binding);
         if (
           !entry.capabilities.includes('ai-node-v1') ||
-          (node.version === 2 && !entry.capabilities.includes('ai-outcome-v1')) ||
+          (node.version !== 1 && !entry.capabilities.includes('ai-outcome-v1')) ||
+          (node.version === 3 && !entry.capabilities.includes('ai-generation-v1')) ||
           !entry.capabilities.includes('ai') ||
           !entry.resources.includes(node.binding) ||
           resource?.kind !== 'ai' ||

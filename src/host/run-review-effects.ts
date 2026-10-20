@@ -136,7 +136,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'ai':
         return effect(
           'network',
-          `将本节点指令和选定输入发送到AI资源“${node.binding}”绑定的模型，消耗用户自己的token额度；仅生成数据，不执行其他动作。${node.version === 2 ? (node.failureMode === 'result' ? '请求故障返回失败状态供后续处理；取消、权限、资源和节点期限仍中断。' : '请求故障停止运行；成功结果在result.output。') : ''}`,
+          `将本节点指令和选定输入发送到AI资源“${node.binding}”绑定的模型，消耗用户自己的token额度；仅生成数据，不执行其他动作。${node.version !== 1 ? (node.failureMode === 'result' ? '请求故障返回失败状态供后续处理；取消、权限、资源和节点期限仍中断。' : '请求故障停止运行；成功结果在result.output。') : ''}${node.version === 3 ? `思考模式：${{ 'provider-default': '服务默认', disabled: '关闭', enabled: '开启' }[node.generation.thinking]}；最大输出${node.generation.maxOutputTokens} Token（含供应商计入的思考与正文）。` : ''}`,
         );
       case 'http':
         return effect(

@@ -274,6 +274,22 @@ export type Node =
     }
   | {
       id: string;
+      name?: string;
+      timeoutMs?: number;
+      type: 'ai';
+      version: 3;
+      binding: string;
+      instructions: string;
+      input: Value;
+      schema: {
+        type: 'object';
+        [k: string]: Json | 'object';
+      };
+      failureMode: 'stop' | 'result';
+      generation: AIGenerationOptions;
+    }
+  | {
+      id: string;
       type: 'conversation';
       version: 1;
       name?: string;
@@ -2838,6 +2854,7 @@ export interface FlowArkP1 {
   BrowserSelectionTextFieldsInvocation?: BrowserSelectionTextFieldsInvocation;
   BrowserSelectionTextFieldResult?: BrowserSelectionTextFieldResult;
   BrowserSelectionTextFieldsResult?: BrowserSelectionTextFieldsResult;
+  AIGenerationOptions?: AIGenerationOptions;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -2851,6 +2868,10 @@ export interface ExcelColumnMapping {
   column: string;
   header: string;
   type: 'text' | 'number' | 'boolean';
+}
+export interface AIGenerationOptions {
+  thinking: 'provider-default' | 'disabled' | 'enabled';
+  maxOutputTokens: number;
 }
 export interface RunResultNode {
   id: RunResultId;
