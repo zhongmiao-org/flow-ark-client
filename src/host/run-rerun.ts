@@ -37,6 +37,7 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
     ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
     ...(prepared.resultSources ? { resultSources: prepared.resultSources } : {}),
+    ...(prepared.resultRetention ? { resultRetention: prepared.resultRetention } : {}),
   });
 }
 

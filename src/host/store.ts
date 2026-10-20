@@ -9,6 +9,7 @@ import { dirname } from 'node:path';
 import { now, redact } from '../shared/utils';
 import type { AINodeReceipt, Event, Run, RunState } from '../shared/types';
 import { ai_receipt_v1 } from '../shared/node-schema.generated';
+import { RunResultLedgerStore } from './result-ledger';
 
 // Development storage has one current layout; no legacy migration runs at startup.
 export function initializeStore(db: DatabaseSync) {
@@ -29,6 +30,8 @@ export function initializeStore(db: DatabaseSync) {
 export class Store {
   private db: DatabaseSync;
   private key: Buffer;
+  private transactionDepth = 0;
+  readonly resultLedgers: RunResultLedgerStore;
   fault?: string;
   constructor(path: string, key: Buffer) {
     if (key.length !== 32) throw new Error('受保护的数据密钥不可用');
@@ -43,6 +46,7 @@ export class Store {
       this.db.close();
       throw error;
     }
+    this.resultLedgers = new RunResultLedgerStore(this);
   }
   private seal(v: any): string {
     const iv = randomBytes(12);
@@ -63,8 +67,10 @@ export class Store {
   tx<T>(fn: () => T): T {
     if (this.fault) throw new Error(this.fault);
     this.write(() => this.db.exec('BEGIN IMMEDIATE'));
+    this.transactionDepth++;
     try {
       const r = fn();
+      this.resultLedgers.prepareCommit();
       this.write(() => this.db.exec('COMMIT'));
       return r;
     } catch (e) {
@@ -74,7 +80,17 @@ export class Store {
         this.fault = '本地存储回滚失败，已停止新运行';
       }
       throw e;
+    } finally {
+      this.transactionDepth--;
+      this.resultLedgers.finishTransaction();
     }
+  }
+  get inTransaction() {
+    return this.transactionDepth > 0;
+  }
+  /** Reuse the original host transaction; never nest BEGIN or commit a caller's partial writes. */
+  atomic<T>(fn: () => T): T {
+    return this.inTransaction ? fn() : this.tx(fn);
   }
   private write<T>(fn: () => T): T {
     if (this.fault) throw new Error(this.fault);
@@ -87,16 +103,22 @@ export class Store {
   }
   put(kind: string, id: string, value: any) {
     if (this.fault) throw new Error(this.fault);
-    try {
-      this.db
-        .prepare(
-          'INSERT INTO documents VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET payload=excluded.payload',
-        )
-        .run(kind, id, this.seal(value));
-    } catch (e) {
-      this.fault = '本地存储写入失败，已停止新运行';
-      throw e;
-    }
+    return this.atomic(() => {
+      // Match the actual protected JSON row; optional undefined headers are not persisted.
+      const stored = JSON.parse(JSON.stringify(value));
+      if (this.resultLedgers.observes(kind))
+        this.resultLedgers.beforePut(kind, id, stored, this.get(kind, id));
+      try {
+        this.db
+          .prepare(
+            'INSERT INTO documents VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET payload=excluded.payload',
+          )
+          .run(kind, id, this.seal(stored));
+      } catch (e) {
+        this.fault = '本地存储写入失败，已停止新运行';
+        throw e;
+      }
+    });
   }
   get<T = any>(kind: string, id: string): T | undefined {
     const row = this.db
@@ -112,7 +134,20 @@ export class Store {
     ).map((r) => this.open(r.payload));
   }
   remove(kind: string, id: string) {
-    this.write(() => this.db.prepare('DELETE FROM documents WHERE kind=? AND id=?').run(kind, id));
+    return this.atomic(() => {
+      if (this.resultLedgers.observes(kind))
+        this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
+      this.write(() =>
+        this.db.prepare('DELETE FROM documents WHERE kind=? AND id=?').run(kind, id),
+      );
+    });
+  }
+  eventAt(runId: string, sequence: number): Event | undefined {
+    if (!Number.isSafeInteger(sequence) || sequence < 1) throw Error('运行回执位置无效');
+    const row = this.db
+      .prepare('SELECT payload FROM events WHERE run_id=? AND seq=?')
+      .get(runId, sequence) as { payload: string } | undefined;
+    return row ? this.open(row.payload) : undefined;
   }
   lastPosition(kind: string): number {
     const row = this.db
@@ -124,7 +159,9 @@ export class Store {
     return n;
   }
   position(kind: string, id: string): number {
-    const row = this.db.prepare('SELECT rowid AS n FROM documents WHERE kind=? AND id=?').get(kind, id) as { n: number } | undefined;
+    const row = this.db
+      .prepare('SELECT rowid AS n FROM documents WHERE kind=? AND id=?')
+      .get(kind, id) as { n: number } | undefined;
     const n = Number(row?.n);
     if (!Number.isSafeInteger(n) || n < 1) throw new Error('本地记录位置不存在或无效');
     return n;
@@ -166,25 +203,30 @@ export class Store {
     });
   }
   private appendEvent(runId: string, type: string, nodeInstance: string, data: any): Event {
-    const sequence = Number(
-      (
-        this.db
-          .prepare('SELECT COALESCE(MAX(seq),0)+1 n FROM events WHERE run_id=?')
-          .get(runId) as any
-      ).n,
-    );
-    const event = {
-      runId,
-      sequence,
-      time: now(),
-      type,
-      nodeInstance,
-      data,
-    };
-    this.write(() =>
-      this.db.prepare('INSERT INTO events VALUES(?,?,?)').run(runId, sequence, this.seal(event)),
-    );
-    return event;
+    return this.atomic(() => {
+      const sequence = Number(
+        (
+          this.db
+            .prepare('SELECT COALESCE(MAX(seq),0)+1 n FROM events WHERE run_id=?')
+            .get(runId) as any
+        ).n,
+      );
+      const event = JSON.parse(
+        JSON.stringify({
+          runId,
+          sequence,
+          time: now(),
+          type,
+          nodeInstance,
+          data,
+        }),
+      ) as Event;
+      this.resultLedgers.beforeEvent(event);
+      this.write(() =>
+        this.db.prepare('INSERT INTO events VALUES(?,?,?)').run(runId, sequence, this.seal(event)),
+      );
+      return event;
+    });
   }
   events(runId: string): Event[] {
     return (
