@@ -99,7 +99,7 @@ export function taskStepSummary(step: Step, flow: Flow, context: TaskStepContext
       return `引导会话「${step.title}」 · 键：${value(step.key)} · ${step.version === 2 ? `历史窗口${step.historyWindow}轮，无总次数限制` : `最多${step.maxRequests}次请求`} · 待用户确认后继续`;
     case 'ai': {
       const binding = context.bindings?.resources?.[step.binding];
-      return `AI资源「${step.binding}」 · ${binding?.provider ?? '尚未绑定服务'} / ${binding?.model || '尚未选择模型'} · 输入：${value(step.input)} · ${step.version === 2 ? (step.failureMode === 'result' ? 'v2：请求失败返回状态，取消与资源缺口仍停止' : 'v2：请求失败停止，成功结果在result.output') : 'v1：仅生成结构化结果，请求失败停止'}`;
+      return `AI资源「${step.binding}」 · ${binding?.provider ?? '尚未绑定服务'} / ${binding?.model || '尚未选择模型'} · 输入：${value(step.input)} · ${step.version !== 1 ? (step.failureMode === 'result' ? 'v2：请求失败返回状态，取消与资源缺口仍停止' : 'v2：请求失败停止，成功结果在result.output') : 'v1：仅生成结构化结果，请求失败停止'}${step.version === 3 ? ` · 思考${{ 'provider-default': '服务默认', disabled: '关闭', enabled: '开启' }[step.generation.thinking]} / 输出上限${step.generation.maxOutputTokens} Token` : ''}`;
     }
     case 'http':
       return `${step.method} 请求 · 地址：${value(step.url)}`;

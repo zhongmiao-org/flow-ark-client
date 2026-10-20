@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.45.1/p1.schema.json",
-  "title": "FlowArk P1 0.44.0",
+  "$id": "https://flowark.local/contracts/0.46.0/p1.schema.json",
+  "title": "FlowArk P1 0.46.0",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -1206,6 +1206,77 @@
             "input",
             "schema",
             "failureMode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 3600000
+            },
+            "type": {
+              "const": "ai"
+            },
+            "version": {
+              "const": 3
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,99}$"
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "input": {
+              "$ref": "#/$defs/Value"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "const": "object"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": {
+                "$ref": "#/$defs/Json"
+              }
+            },
+            "failureMode": {
+              "enum": [
+                "stop",
+                "result"
+              ]
+            },
+            "generation": {
+              "$ref": "#/$defs/AIGenerationOptions"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "version",
+            "binding",
+            "instructions",
+            "input",
+            "schema",
+            "failureMode",
+            "generation"
           ],
           "additionalProperties": false
         },
@@ -15135,6 +15206,28 @@
         "fields",
         "renderPolicy",
         "externalAppearanceVerified"
+      ],
+      "additionalProperties": false
+    },
+    "AIGenerationOptions": {
+      "type": "object",
+      "properties": {
+        "thinking": {
+          "enum": [
+            "provider-default",
+            "disabled",
+            "enabled"
+          ]
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 16384
+        }
+      },
+      "required": [
+        "thinking",
+        "maxOutputTokens"
       ],
       "additionalProperties": false
     }

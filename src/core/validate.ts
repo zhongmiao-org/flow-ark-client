@@ -1,3 +1,7 @@
+import {
+  assertAIGenerationCapabilities,
+  aiGenerationCapability,
+} from '../../contracts/ai-generation';
 import { browserTargetCapability, assertBrowserTargetCapabilities } from '../shared/browser-target';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { assertEffectNodeCapabilities, effectNodeCapability } from '../../contracts/effect-node';
@@ -73,6 +77,7 @@ export const capabilities = [
   'conversation',
   aiNodeCapability,
   aiOutcomeCapability,
+  aiGenerationCapability,
   parameterSourceCapability,
   'desktop-selection-v1',
   'mcp-tool-v1',
@@ -144,6 +149,7 @@ export function validateFlow(value: unknown): Flow {
       }
       if (n.type === 'ai') {
         assertAIOutcomeCapabilities(n, flow.requiredCapabilities);
+        assertAIGenerationCapabilities(n, flow.requiredCapabilities);
         if (!flow.requiredCapabilities.includes(aiNodeCapability))
           throw new Error('AI 节点需要声明 ai-node-v1 能力');
         assertAIRequest(n);

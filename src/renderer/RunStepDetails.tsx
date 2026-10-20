@@ -121,13 +121,24 @@ function fields(node: Step): [string, string][] {
       ];
     case 'ai':
       return [
-        ['结果格式', node.version === 2 ? 'v2：status / result.output' : 'v1：output'],
+        ['结果格式', node.version !== 1 ? 'v2：status / result.output' : 'v1：output'],
         [
           '请求失败时',
-          node.version === 2 && node.failureMode === 'result'
+          node.version !== 1 && node.failureMode === 'result'
             ? '返回失败状态，供后续条件判断'
             : '停止运行',
         ],
+        ...(node.version === 3
+          ? ([
+              [
+                '思考模式',
+                { 'provider-default': '服务默认', disabled: '关闭', enabled: '开启' }[
+                  node.generation.thinking
+                ],
+              ],
+              ['最大输出 Token', String(node.generation.maxOutputTokens)],
+            ] as [string, string][])
+          : []),
         ['AI资源', node.binding],
         ['指令', configured(node.instructions)],
         ['输入', configured(node.input)],
@@ -272,7 +283,7 @@ export function RunAIOutcome({
   events: Event[];
   showConfiguration: () => void;
 }) {
-  if (node.version !== 2) return null;
+  if (node.version === 1) return null;
   const saved = events.findLast((event) => event.type === 'ai-outcome');
   if (!saved || !ai_receipt_v1(saved.data))
     return (

@@ -1,3 +1,4 @@
+import { assertAIGenerationOptions, type AIGenerationOptions } from '../../contracts/ai-generation';
 import type { AIRequest, AIResult } from '../shared/types';
 import Ajv from 'ajv/dist/2020.js';
 import { aiMetadata } from '../shared/ai-outcome';
@@ -53,8 +54,10 @@ export async function generate(
   images: PlanningImageV1[] = [],
   budget: 'standard' | 'planning' = 'standard',
   structuredOutcome = false,
+  generation?: AIGenerationOptions,
 ): Promise<AIResult> {
   validateObject('AIRequest', input);
+  if (generation !== undefined) assertAIGenerationOptions(generation, input.provider);
   // Local preparation is outside the request fault boundary. Invalid schemas are not
   // model failures and must never consume a request or become a handled result.
   let validateOutput: ReturnType<Ajv['compile']> | undefined;
@@ -75,7 +78,7 @@ export async function generate(
     throw new AIRequestFailureError(code, metadata, httpStatus, message);
   };
   const deep = input.provider === 'deepseek';
-  const maxTokens = budget === 'planning' ? 16384 : 4096;
+  const maxTokens = generation?.maxOutputTokens ?? (budget === 'planning' ? 16384 : 4096);
   const timeoutMs = budget === 'planning' ? 120000 : 45000;
   let total = 0;
   if (images.length > 4) throw new Error('每次最多发送四张图片');
@@ -134,6 +137,9 @@ export async function generate(
             ],
             response_format: { type: 'json_object' },
             max_tokens: maxTokens,
+            ...(generation && generation.thinking !== 'provider-default'
+              ? { thinking: { type: generation.thinking } }
+              : {}),
             stream: false,
           }
         : {

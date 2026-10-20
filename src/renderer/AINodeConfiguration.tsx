@@ -1,6 +1,6 @@
 import AIServiceBinding from './AIServiceBinding';
 import AIOutputSchemaWorkspace from './AIOutputSchemaWorkspace';
-import { Alert, Button, Checkbox, Collapse, Input, Select } from 'antd';
+import { Alert, Button, Checkbox, Collapse, Input, InputNumber, Select } from 'antd';
 import { useEffect, useId, useState } from 'react';
 import type { Bindings, Json, Step } from '../shared/types';
 import { assertAISchema } from '../shared/ai-node';
@@ -104,6 +104,15 @@ export default function AINodeConfiguration({
 }) {
   const id = useId();
   const [schemaOpen, setSchemaOpen] = useState(false);
+  const outputBudget = node.version === 3 ? node.generation.maxOutputTokens : 4096;
+  const [budgetDraft, setBudgetDraft] = useState<number | null>(outputBudget);
+  useEffect(() => setBudgetDraft(outputBudget), [node.id, outputBudget]);
+  const budgetValid =
+    Number.isSafeInteger(budgetDraft) && budgetDraft! >= 256 && budgetDraft! <= 16384;
+  const unsupportedThinking =
+    node.version === 3 &&
+    bindings.resources?.[node.binding]?.provider === 'openai-codex' &&
+    node.generation.thinking !== 'provider-default';
   const schema: any = node.schema;
   const properties: Record<string, any> = schema.properties ?? {};
   const names = Object.keys(properties);
@@ -148,6 +157,96 @@ export default function AINodeConfiguration({
         bindings={bindings}
         changeBindings={changeBindings}
       />
+      {node.version !== 1 && (
+        <fieldset
+          className="ai-generation-settings"
+          data-value-invalid={
+            node.version === 3 && (!budgetValid || unsupportedThinking)
+              ? '请修正AI生成设置。'
+              : undefined
+          }
+        >
+          <legend>生成设置</legend>
+          <Checkbox
+            checked={node.version === 3}
+            onChange={(event) => {
+              if (event.target.checked) {
+                change({
+                  ...node,
+                  version: 3,
+                  generation: { thinking: 'provider-default', maxOutputTokens: 4096 },
+                });
+              } else if (node.version === 3) {
+                const { generation: _generation, ...previous } = node;
+                change({ ...previous, version: 2 });
+              }
+            }}
+          >
+            启用生成设置
+          </Checkbox>
+          {node.version === 3 ? (
+            <>
+              <label htmlFor={id + '-thinking'}>思考模式</label>
+              <Select
+                id={id + '-thinking'}
+                aria-label="AI思考模式"
+                value={node.generation.thinking}
+                options={[
+                  { value: 'provider-default', label: '服务默认（不发送思考参数）' },
+                  { value: 'disabled', label: '关闭思考（仅 DeepSeek）' },
+                  { value: 'enabled', label: '开启思考（仅 DeepSeek）' },
+                ]}
+                onChange={(thinking) =>
+                  change({ ...node, generation: { ...node.generation, thinking } })
+                }
+              />
+              <label htmlFor={id + '-budget'}>最大输出 Token</label>
+              <InputNumber
+                id={id + '-budget'}
+                aria-label="最大输出Token"
+                min={256}
+                max={16384}
+                step={256}
+                value={budgetDraft}
+                status={budgetValid ? undefined : 'error'}
+                aria-invalid={!budgetValid}
+                onChange={(value) => {
+                  setBudgetDraft(value);
+                  if (
+                    typeof value === 'number' &&
+                    Number.isSafeInteger(value) &&
+                    value >= 256 &&
+                    value <= 16384
+                  )
+                    change({ ...node, generation: { ...node.generation, maxOutputTokens: value } });
+                }}
+              />
+              {!budgetValid && (
+                <p role="alert" className="field-error">
+                  请输入256至16384的整数。
+                </p>
+              )}
+              {unsupportedThinking && (
+                <Alert
+                  type="error"
+                  title="当前服务不支持所选思考模式"
+                  description="OpenAI 当前仅支持服务默认。请修改思考模式后再运行；不会自动切换服务或模型。"
+                />
+              )}
+              <p className="note">
+                输出预算包含供应商计入的思考与正文，不是实际用量；既有请求期限保持。输出不完整仍不采用，不自动重试。
+              </p>
+            </>
+          ) : (
+            <p className="note">
+              当前使用原请求设置。显式启用后可设置思考模式和输出预算，结果与失败分支格式保持。
+            </p>
+          )}
+          <p className="note">
+            设置随流程保存、导出，并固定到本次运行；费用由你绑定的 API Key 承担。
+          </p>
+        </fieldset>
+      )}
       <label htmlFor={id + '-instructions'}>指令</label>
       <Input.TextArea
         id={id + '-instructions'}
@@ -176,7 +275,7 @@ export default function AINodeConfiguration({
           }}
         />
       )}
-      {node.version === 2 ? (
+      {node.version !== 1 ? (
         <>
           <label htmlFor={id + '-failure'}>请求失败时</label>
           <Select

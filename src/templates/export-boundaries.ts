@@ -201,10 +201,16 @@ export function declareNativeBoundaries(
             ? 'conversation-v2'
             : 'conversation-v1';
       if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
-      if (node.type === 'ai' && node.version === 2) {
+      if (node.type === 'ai' && node.version !== 1) {
         if (!entry.capabilities.includes('ai-outcome-v1')) entry.capabilities.push('ai-outcome-v1');
         if (!flow.requiredCapabilities.includes('ai-outcome-v1'))
           flow.requiredCapabilities.push('ai-outcome-v1');
+      }
+      if (node.type === 'ai' && node.version === 3) {
+        if (!entry.capabilities.includes('ai-generation-v1'))
+          entry.capabilities.push('ai-generation-v1');
+        if (!flow.requiredCapabilities.includes('ai-generation-v1'))
+          flow.requiredCapabilities.push('ai-generation-v1');
       }
       if (node.type === 'conversation') {
         const evidenceCapability =

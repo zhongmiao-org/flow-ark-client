@@ -25,6 +25,7 @@ export const capabilityLabel = (name: string) =>
       ai: 'AI 服务',
       'ai-node-v1': '结构化 AI v1',
       'ai-outcome-v1': 'AI请求结果与失败分支',
+      'ai-generation-v1': 'AI思考模式与输出预算',
       conversation: '引导会话',
       'conversation-v1': '持久会话 v1',
       'conversation-v2': '持续会话 v2',
