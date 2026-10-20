@@ -3328,6 +3328,70 @@ export type BatchStopReceipt = {
   targetRunId?: string;
   currentCancellation: 'not-requested' | 'requested' | 'already-terminal' | 'not-running' | 'needs-check';
 };
+export type ResultRetentionHash = string;
+export type ResultRetentionCell =
+  | {
+      kind: 'json';
+      text: string;
+    }
+  | {
+      kind: 'bytes';
+      data: string;
+    }
+  | {
+      kind: 'text';
+      body: string;
+    }
+  | {
+      kind: 'concat';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      parts: [string, ...string[]];
+    }
+  | {
+      kind: 'list';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      parts: [string, ...string[]];
+    }
+  | {
+      kind: 'array';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      parts: [string, ...string[]];
+    }
+  | {
+      kind: 'object';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      parts: [string, ...string[]];
+    }
+  | {
+      kind: 'members';
+      /**
+       * @minItems 1
+       * @maxItems 32
+       */
+      entries: [
+        {
+          key: string;
+          value: string;
+        },
+        ...{
+          key: string;
+          value: string;
+        }[]
+      ];
+    };
+export type RunResultCapacity = ResultRetainedCapacity | ResultLegacyCapacity | ResultUnavailableCapacity;
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -3602,6 +3666,21 @@ export interface FlowArkP1 {
   BatchHistoryPage?: BatchHistoryPage;
   BatchStopRequest?: BatchStopRequest;
   BatchStopReceipt?: BatchStopReceipt;
+  ResultRetentionHash?: ResultRetentionHash;
+  ResultRetentionCell?: ResultRetentionCell;
+  ResultRetentionCellRecord?: ResultRetentionCellRecord;
+  ResultRetentionValueRoot?: ResultRetentionValueRoot;
+  ResultRetentionRetentionSet?: ResultRetentionRetentionSet;
+  ResultRetentionLedgerOwner?: ResultRetentionLedgerOwner;
+  ResultRetentionLogicalResultMeta?: ResultRetentionLogicalResultMeta;
+  ResultRetentionRawCopy?: ResultRetentionRawCopy;
+  ResultRetentionResultLedger?: ResultRetentionResultLedger;
+  ResultRetentionPolicy?: ResultRetentionPolicy;
+  ResultCapacityLimits?: ResultCapacityLimits;
+  ResultRetainedCapacity?: ResultRetainedCapacity;
+  ResultLegacyCapacity?: ResultLegacyCapacity;
+  ResultUnavailableCapacity?: ResultUnavailableCapacity;
+  RunResultCapacity?: RunResultCapacity;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -4465,6 +4544,7 @@ export interface RunSnapshot {
   templateData?: TemplateDataContext;
   authorSdk?: TemplateAuthorSdkContext;
   resultSources?: RunResultPreparedSources;
+  resultRetention?: ResultRetentionPolicy;
 }
 export interface ScriptBundle {
   nodeId: string;
@@ -4559,6 +4639,10 @@ export interface RunResultAuthorSource {
   contextId: RunResultId;
   definitionSha256: RunResultSha256;
   schemaSha256: RunResultSha256;
+}
+export interface ResultRetentionPolicy {
+  version: 1;
+  policy: 'run-owned-results-v1';
 }
 export interface RunEvent {
   runId: string;
@@ -86679,4 +86763,117 @@ export interface BatchStopRequest {
   requestId: string;
   sessionId: string;
   mode: 'after-batch' | 'cancel-current';
+}
+export interface ResultRetentionCellRecord {
+  id: string;
+  cell: ResultRetentionCell;
+}
+export interface ResultRetentionValueRoot {
+  resultId: string;
+  root: string;
+  sha256: string;
+  bytes: number;
+}
+export interface ResultRetentionRetentionSet {
+  version: 1;
+  runId: string;
+  /**
+   * @maxItems 1000
+   */
+  roots: ResultRetentionValueRoot[];
+  /**
+   * @maxItems 16384
+   */
+  cells: ResultRetentionCellRecord[];
+}
+export interface ResultRetentionLedgerOwner {
+  runId: string;
+  flowId: string;
+  versionId: string;
+  snapshotSha256: string;
+}
+export interface ResultRetentionLogicalResultMeta {
+  id: string;
+  nodeId: string;
+  nodeInstance: string;
+  type:
+    | 'document'
+    | 'skill'
+    | 'context'
+    | 'conversation'
+    | 'browser'
+    | 'run-result'
+    | 'source'
+    | 'source-reduce'
+    | 'effect';
+  label: string;
+  bytes: number;
+  sha256: string;
+}
+export interface ResultRetentionRawCopy {
+  family:
+    | 'state-operation'
+    | 'effect-operation'
+    | 'entry-result'
+    | 'entry-display'
+    | 'entry-reuse'
+    | 'browser-input-proof'
+    | 'document-source-proof'
+    | 'typed-result-record'
+    | 'typed-result-index'
+    | 'ai-receipt'
+    | 'run-output';
+  id: string;
+  sha256: string;
+  bytes: number;
+}
+export interface ResultRetentionResultLedger {
+  version: 1;
+  policy: 'run-owned-results-v1';
+  owner: ResultRetentionLedgerOwner;
+  revision: number;
+  values: ResultRetentionRetentionSet;
+  /**
+   * @maxItems 1000
+   */
+  results: ResultRetentionLogicalResultMeta[];
+  /**
+   * @maxItems 8192
+   */
+  copies: ResultRetentionRawCopy[];
+}
+export interface ResultCapacityLimits {
+  count: 1000;
+  retainedBytes: 8388608;
+}
+export interface ResultRetainedCapacity {
+  version: 1;
+  runId: string;
+  status: 'available';
+  limits: ResultCapacityLimits;
+  count: number;
+  logicalBytes: number;
+  retainedBytes: number;
+  policy: 'run-owned-results-v1';
+  revision: number;
+  catalogBytes: number;
+  copyBytes: number;
+  copyCount: number;
+}
+export interface ResultLegacyCapacity {
+  version: 1;
+  runId: string;
+  status: 'available';
+  limits: ResultCapacityLimits;
+  count: number;
+  logicalBytes: number;
+  retainedBytes: number;
+  policy: 'legacy-full-values-v1';
+}
+export interface ResultUnavailableCapacity {
+  version: 1;
+  runId: string;
+  status: 'unavailable';
+  policy: 'run-owned-results-v1' | 'legacy-full-values-v1';
+  reason: 'missing' | 'owner-mismatch' | 'integrity' | 'limit' | 'storage';
 }

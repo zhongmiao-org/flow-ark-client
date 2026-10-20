@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.50.0/p1.schema.json",
-  "title": "FlowArk P1 0.48.0",
+  "$id": "https://flowark.local/contracts/0.51.0/p1.schema.json",
+  "title": "FlowArk P1 0.51.0",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -2756,6 +2756,9 @@
         },
         "resultSources": {
           "$ref": "#/$defs/RunResultPreparedSources"
+        },
+        "resultRetention": {
+          "$ref": "#/$defs/ResultRetentionPolicy"
         }
       },
       "required": [
@@ -17733,6 +17736,657 @@
               "targetRunId"
             ]
           }
+        }
+      ]
+    },
+    "ResultRetentionHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "ResultRetentionCell": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "json"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "kind",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "bytes"
+            },
+            "data": {
+              "type": "string",
+              "minLength": 4,
+              "maxLength": 5464,
+              "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "body": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "concat"
+            },
+            "parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "parts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "list"
+            },
+            "parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "parts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "array"
+            },
+            "parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "parts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "object"
+            },
+            "parts": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "parts"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "members"
+            },
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "key",
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "entries"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResultRetentionCellRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "cell": {
+          "$ref": "#/$defs/ResultRetentionCell"
+        }
+      },
+      "required": [
+        "id",
+        "cell"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionValueRoot": {
+      "type": "object",
+      "properties": {
+        "resultId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        }
+      },
+      "required": [
+        "resultId",
+        "root",
+        "sha256",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionRetentionSet": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]+$"
+        },
+        "roots": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ResultRetentionValueRoot"
+          }
+        },
+        "cells": {
+          "type": "array",
+          "maxItems": 16384,
+          "items": {
+            "$ref": "#/$defs/ResultRetentionCellRecord"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "roots",
+        "cells"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionLedgerOwner": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "flowId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "versionId": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "snapshotSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "runId",
+        "flowId",
+        "versionId",
+        "snapshotSha256"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionLogicalResultMeta": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "type": {
+          "enum": [
+            "document",
+            "skill",
+            "context",
+            "conversation",
+            "browser",
+            "run-result",
+            "source",
+            "source-reduce",
+            "effect"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2000,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "nodeId",
+        "nodeInstance",
+        "type",
+        "label",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionRawCopy": {
+      "type": "object",
+      "properties": {
+        "family": {
+          "enum": [
+            "state-operation",
+            "effect-operation",
+            "entry-result",
+            "entry-display",
+            "entry-reuse",
+            "browser-input-proof",
+            "document-source-proof",
+            "typed-result-record",
+            "typed-result-index",
+            "ai-receipt",
+            "run-output"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        }
+      },
+      "required": [
+        "family",
+        "id",
+        "sha256",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionResultLedger": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "policy": {
+          "const": "run-owned-results-v1"
+        },
+        "owner": {
+          "$ref": "#/$defs/ResultRetentionLedgerOwner"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "values": {
+          "$ref": "#/$defs/ResultRetentionRetentionSet"
+        },
+        "results": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/ResultRetentionLogicalResultMeta"
+          }
+        },
+        "copies": {
+          "type": "array",
+          "maxItems": 8192,
+          "items": {
+            "$ref": "#/$defs/ResultRetentionRawCopy"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "policy",
+        "owner",
+        "revision",
+        "values",
+        "results",
+        "copies"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetentionPolicy": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "policy": {
+          "const": "run-owned-results-v1"
+        }
+      },
+      "required": [
+        "version",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "ResultCapacityLimits": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "const": 1000
+        },
+        "retainedBytes": {
+          "const": 8388608
+        }
+      },
+      "required": [
+        "count",
+        "retainedBytes"
+      ],
+      "additionalProperties": false
+    },
+    "ResultRetainedCapacity": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "status": {
+          "const": "available"
+        },
+        "limits": {
+          "$ref": "#/$defs/ResultCapacityLimits"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "logicalBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608000
+        },
+        "retainedBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "policy": {
+          "const": "run-owned-results-v1"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "catalogBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8388608
+        },
+        "copyBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "copyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8192
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "status",
+        "limits",
+        "count",
+        "logicalBytes",
+        "retainedBytes",
+        "policy",
+        "revision",
+        "catalogBytes",
+        "copyBytes",
+        "copyCount"
+      ],
+      "additionalProperties": false
+    },
+    "ResultLegacyCapacity": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "status": {
+          "const": "available"
+        },
+        "limits": {
+          "$ref": "#/$defs/ResultCapacityLimits"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "logicalBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608000
+        },
+        "retainedBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8388608
+        },
+        "policy": {
+          "const": "legacy-full-values-v1"
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "status",
+        "limits",
+        "count",
+        "logicalBytes",
+        "retainedBytes",
+        "policy"
+      ],
+      "additionalProperties": false
+    },
+    "ResultUnavailableCapacity": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "status": {
+          "const": "unavailable"
+        },
+        "policy": {
+          "enum": [
+            "run-owned-results-v1",
+            "legacy-full-values-v1"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "missing",
+            "owner-mismatch",
+            "integrity",
+            "limit",
+            "storage"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "runId",
+        "status",
+        "policy",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "RunResultCapacity": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ResultRetainedCapacity"
+        },
+        {
+          "$ref": "#/$defs/ResultLegacyCapacity"
+        },
+        {
+          "$ref": "#/$defs/ResultUnavailableCapacity"
         }
       ]
     }
