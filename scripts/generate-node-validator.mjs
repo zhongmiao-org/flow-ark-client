@@ -104,6 +104,9 @@ validators.document_result_v1 = `${schema.$id}#/$defs/DocumentResult`;
 for (const name of ['Invocation', 'ClickResult', 'WaitResult', 'ReadResult'])
   validators['browser_target_' + name.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() + '_v1'] =
     `${schema.$id}#/$defs/BrowserTarget${name}`;
+for (const name of ['Invocation', 'Result'])
+  validators['browser_scroll_' + name.toLowerCase() + '_v1'] =
+    `${schema.$id}#/$defs/BrowserScroll${name}`;
 validators.browser_fields_result_v1 = `${schema.$id}#/$defs/BrowserFieldsResult`;
 validators.browser_rendered_fields_result_v2 = `${schema.$id}#/$defs/BrowserRenderedFieldsResult`;
 validators.browser_scoped_rendered_fields_result_v3 = `${schema.$id}#/$defs/BrowserScopedRenderedFieldsResult`;

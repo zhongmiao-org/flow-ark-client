@@ -1,4 +1,9 @@
 import {
+  assertBrowserScrollInvocation,
+  assertBrowserScrollCapabilities,
+  assertBrowserScrollResult,
+} from '../shared/browser-scroll';
+import {
   assertBrowserTargetInvocation,
   assertBrowserTargetCapabilities,
   assertBrowserTargetResult,
@@ -2146,6 +2151,30 @@ export class Runtime {
         }
         runSignal.throwIfAborted();
       }
+      if (args.version === 12) {
+        const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
+        if (
+          !source ||
+          source.type !== 'browser' ||
+          source.version !== 12 ||
+          typeof args.nodeInstance !== 'string' ||
+          !active?.nodeInstances?.has(args.nodeInstance)
+        )
+          throw Error('滚动节点不在当前固定运行中');
+        assertBrowserScrollInvocation(source, args);
+        assertBrowserScrollCapabilities(source, snapshot.flow.requiredCapabilities);
+        if (snapshot.bindings.template) {
+          const { entry, pkg } = await this.templates.context(snapshot);
+          assertBrowserScrollCapabilities(
+            source,
+            snapshot.flow.requiredCapabilities,
+            pkg.manifest,
+            entry,
+          );
+          this.checkActive(active);
+        }
+        runSignal.throwIfAborted();
+      }
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
       if (
         args.version === 5 ||
@@ -2243,6 +2272,9 @@ export class Runtime {
             }
           : {}),
         ...(targetInput ? { version: 8 } : {}),
+        ...(args.version === 12
+          ? { version: 12, direction: args.direction, distance: args.distance }
+          : {}),
       };
       if (args.operation === 'upload') {
         const source = uploadSource(args.value);
@@ -2270,6 +2302,11 @@ export class Runtime {
       );
       this.checkActive(active);
       runSignal.throwIfAborted();
+      if (args.version === 12) {
+        assertBrowserScrollResult(args, result);
+        this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result, args);
+        return result;
+      }
       if (targetInput) {
         assertBrowserTargetResult(args.operation, result);
         this.typedResults.save(id, args.id, args.nodeInstance, 'browser', result);

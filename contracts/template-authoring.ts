@@ -1,3 +1,4 @@
+import { assertBrowserScrollCapabilities } from './browser-scroll';
 import { assertBrowserVisibleTextCapabilities } from './browser-visible-text';
 import { assertBrowserEmptyLeafTextCapabilities } from './browser-empty-leaf-text';
 import { assertAIGenerationCapabilities } from './ai-generation';
@@ -132,6 +133,7 @@ export function validateAuthorDefinition(value: unknown): any {
       assertBrowserRenderedFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertBrowserFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertBrowserTargetCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds, actions: entry.actionIds });
+      assertBrowserScrollCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertBrowserSelectionTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertBrowserEmptyLeafTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertBrowserVisibleTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });

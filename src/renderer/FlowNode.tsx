@@ -134,6 +134,7 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
                 ? step.name
                 : step.type === 'browser'
                   ? {
+                      scroll: '滚动网页区域',
                       url: '读取当前网址',
                       collect:
                         step.version === 11

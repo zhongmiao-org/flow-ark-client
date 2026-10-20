@@ -18,6 +18,8 @@ export function assertBrowserOperations(
 ) {
   for (const command of commands) {
     framePathOf(command);
+    if (command.version === 12 && !['chrome', 'embedded'].includes(binding.product))
+      throw Error('此浏览器尚未实现区域滚动，请选择内置浏览器或 Chrome；不会切换驱动。');
     if (command.version === 8 && !['chrome', 'embedded'].includes(binding.product))
       throw Error(
         '此浏览器尚未实现变量目标的固定元素核对，请选择内置浏览器或 Chrome；不会改用旧节点执行。',

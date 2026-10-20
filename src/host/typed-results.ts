@@ -1,3 +1,5 @@
+import { assertBrowserScrollInvocation, assertBrowserScrollResult } from '../shared/browser-scroll';
+import type { BrowserScrollInvocation } from '../shared/contracts.generated';
 import { assertBrowserTargetResult } from '../shared/browser-target';
 import { verifyRead, verifyPrepared } from '../../contracts/run-result-binding.mjs';
 import { realpathSync, statSync } from 'node:fs';
@@ -57,7 +59,7 @@ export class TypedResults {
     nodeInstance: string,
     type: TypedResultMeta['type'],
     value: unknown,
-    browserInput?: ResolvedBrowserFieldsNode,
+    browserInput?: ResolvedBrowserFieldsNode | BrowserScrollInvocation,
   ) {
     if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
       throw Error('结构化结果步骤身份无效');
@@ -105,7 +107,12 @@ export class TypedResults {
       sha256,
     };
     this.store.tx(() => {
-      if (browserInput) {
+      if (browserInput?.version === 12) {
+        this.store.put('browser-scroll-input', digest({ runId, nodeId, nodeInstance }), {
+          node: browserInput,
+          sha256,
+        });
+      } else if (browserInput) {
         if (
           type !== 'browser' ||
           node.type !== 'browser' ||
@@ -252,12 +259,27 @@ export class TypedResults {
     nodeId: string,
     nodeInstance: string,
     value: unknown,
-    input?: ResolvedBrowserFieldsNode,
+    input?: ResolvedBrowserFieldsNode | BrowserScrollInvocation,
   ) {
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
-    if (!node || node.type !== 'browser' || ![4, 5, 6, 7, 8, 9, 10, 11].includes(node.version))
+    if (!node || node.type !== 'browser' || ![4, 5, 6, 7, 8, 9, 10, 11, 12].includes(node.version))
       throw Error('网页只读结果不属于固定节点');
+    if (node.version === 12) {
+      const saved = this.store.get<{ node: BrowserScrollInvocation; sha256: string }>(
+        'browser-scroll-input',
+        digest({ runId, nodeId, nodeInstance }),
+      );
+      if (
+        saved &&
+        (saved.sha256 !== digest(value) || (input && digest(saved.node) !== digest(input)))
+      )
+        throw Error('滚动调用来源或回执摘要不一致');
+      const resolved = assertBrowserScrollInvocation(node, input ?? saved?.node);
+      if (resolved.nodeInstance !== nodeInstance) throw Error('滚动结果步骤身份不一致');
+      assertBrowserScrollResult(resolved, value);
+      return 'scroll';
+    }
     if (
       node.version === 5 ||
       node.version === 6 ||

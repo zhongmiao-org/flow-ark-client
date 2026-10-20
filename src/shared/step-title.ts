@@ -27,6 +27,7 @@ export const stepKindLabels: Record<Step['type'], string> = {
 };
 
 export const browserLabels = {
+  scroll: '滚动网页区域',
   collect: '读取关联字段',
   url: '读取当前网址',
   count: '统计匹配元素',

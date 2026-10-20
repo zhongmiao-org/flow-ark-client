@@ -118,6 +118,11 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
           return effect('read', '读取唯一目标的原始DOM属性，属性缺失为null；不点击或填写。');
         if (node.operation === 'inputValue')
           return effect('read', '读取本步骤指定的表单输入内容。');
+        if (node.operation === 'scroll')
+          return effect(
+            'read',
+            `在最近纵向滚动区域${node.direction === 'down' ? '向下' : '向上'}移动最多${node.distance}像素；可能触发网站加载，不点击或提交，到边界不滚动父区域，结果另行核对。`,
+          );
         if (node.operation === 'wait') return effect('read', '等待本步骤指定的网页元素出现。');
         if (node.operation === 'navigate')
           return effect(

@@ -106,6 +106,7 @@ export default function TaskStepInspector({
         );
       if (
         ![
+          'scroll',
           'navigate',
           'screenshot',
           'read',
@@ -119,7 +120,16 @@ export default function TaskStepInspector({
       )
         facts.push([
           step.operation === 'attribute' ? '属性名' : '操作内容',
-          step.operation === 'collect' ? `${step.fields.length}个关联字段` : value(step.value),
+          step.operation === 'collect'
+            ? `${step.fields.length}个关联字段`
+            : 'value' in step
+              ? value(step.value)
+              : '无附加输入',
+        ]);
+      if (step.operation === 'scroll')
+        facts.push([
+          '滚动范围',
+          `${step.direction === 'down' ? '向下' : '向上'} ${step.distance} 像素；最近纵向区域，到边界不滚动父区域`,
         ]);
       facts.push([
         '内嵌页面',

@@ -138,6 +138,8 @@ export type Bridge = {
   ): () => void;
 };
 export type BrowserCommand = {
+  direction?: 'up' | 'down';
+  distance?: number;
   renderPolicy?:
     | 'bounded-selection-text-v1'
     | 'bounded-selection-text-v2'

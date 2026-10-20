@@ -1202,7 +1202,35 @@ export type Node =
       renderPolicy: 'bounded-selection-text-v1';
     }
   | BrowserEmptyLeafTextFieldsNode
-  | BrowserVisibleTextFieldsNode;
+  | BrowserVisibleTextFieldsNode
+  | {
+      id: string;
+      type: 'browser';
+      version: 12;
+      name?: string;
+      timeoutMs?: number;
+      operation: 'scroll';
+      selector:
+        | string
+        | {
+            $ref: string;
+          };
+      /**
+       * @maxItems 8
+       */
+      framePath:
+        | []
+        | [string]
+        | [string, string]
+        | [string, string, string]
+        | [string, string, string, string]
+        | [string, string, string, string, string]
+        | [string, string, string, string, string, string]
+        | [string, string, string, string, string, string, string]
+        | [string, string, string, string, string, string, string, string];
+      direction: 'up' | 'down';
+      distance: number;
+    };
 export type Value =
   | Json
   | {
@@ -3429,6 +3457,9 @@ export interface FlowArkP1 {
   BrowserVisibleTextFieldResult?: BrowserVisibleTextFieldResult;
   BrowserVisibleTextFieldsResult?: BrowserVisibleTextFieldsResult;
   BrowserVisibleTextFieldsInvocation?: BrowserVisibleTextFieldsInvocation;
+  BrowserScrollNode?: BrowserScrollNode;
+  BrowserScrollInvocation?: BrowserScrollInvocation;
+  BrowserScrollResult?: BrowserScrollResult;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -85806,4 +85837,78 @@ export interface BrowserVisibleTextFieldsInvocation {
       ];
   renderPolicy: 'bounded-visible-text-v1';
   nodeInstance: string;
+}
+export interface BrowserScrollNode {
+  id: string;
+  type: 'browser';
+  version: 12;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'scroll';
+  selector:
+    | string
+    | {
+        $ref: string;
+      };
+  /**
+   * @maxItems 8
+   */
+  framePath:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string];
+  direction: 'up' | 'down';
+  distance: number;
+}
+export interface BrowserScrollInvocation {
+  id: string;
+  type: 'browser';
+  version: 12;
+  name?: string;
+  timeoutMs?: number;
+  operation: 'scroll';
+  selector: string;
+  /**
+   * @maxItems 8
+   */
+  framePath:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string];
+  direction: 'up' | 'down';
+  distance: number;
+  nodeInstance: string;
+}
+export interface BrowserScrollResult {
+  version: 1;
+  operation: 'scroll';
+  url: string;
+  documentUrl: string;
+  selector: string;
+  framePath: FramePath;
+  direction: 'up' | 'down';
+  distance: number;
+  region: 'target' | 'ancestor' | 'document';
+  ancestorDepth: number;
+  offsetBefore: number;
+  offsetAfter: number;
+  heightBefore: number;
+  heightAfter: number;
+  viewportBefore: number;
+  viewportAfter: number;
+  moved: boolean;
+  atStart: boolean;
+  atEnd: boolean;
 }

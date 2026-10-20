@@ -1,3 +1,4 @@
+import { browserScrollCapability, assertBrowserScrollCapabilities } from '../shared/browser-scroll';
 import {
   assertAIGenerationCapabilities,
   aiGenerationCapability,
@@ -60,6 +61,7 @@ export const capabilities = [
   'run-result-read-v1',
   browserInspectionCapability,
   browserTargetCapability,
+  browserScrollCapability,
   browserFieldsCapability,
   browserRenderedFieldsCapability,
   browserScopedRenderedFieldsCapability,
@@ -183,6 +185,7 @@ export function validateFlow(value: unknown): Flow {
       }
       if (n.type === 'browser') {
         assertBrowserTargetCapabilities(n, flow.requiredCapabilities);
+        assertBrowserScrollCapabilities(n, flow.requiredCapabilities);
         if (
           n.version === 5 ||
           n.version === 6 ||
