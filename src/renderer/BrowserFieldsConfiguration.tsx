@@ -79,15 +79,21 @@ export default function BrowserFieldsConfiguration({
     change(next);
     load(index, fields);
   };
-  const switchRule = (selection: boolean, skipEmpty = false) => {
+  const switchRule = (selection: boolean, skipEmpty = false, visible = false) => {
     if (!guard()) return;
     try {
       const { renderPolicy: _oldPolicy, ...base } = { ...node, renderPolicy: undefined };
       const next: unknown = {
         ...base,
-        version: selection ? (skipEmpty ? 10 : 9) : 7,
+        version: selection ? (visible ? 11 : skipEmpty ? 10 : 9) : 7,
         ...(selection
-          ? { renderPolicy: skipEmpty ? 'bounded-selection-text-v2' : 'bounded-selection-text-v1' }
+          ? {
+              renderPolicy: visible
+                ? 'bounded-visible-text-v1'
+                : skipEmpty
+                  ? 'bounded-selection-text-v2'
+                  : 'bounded-selection-text-v1',
+            }
           : {}),
         fields: node.fields.map((f) => ({
           ...f,
@@ -319,27 +325,43 @@ export default function BrowserFieldsConfiguration({
               )}
             </Space>
           )}
-          {(node.version === 9 || node.version === 10) && (
+          {(node.version === 9 || node.version === 10 || node.version === 11) && (
             <Space direction="vertical">
-              <strong>选区文字候选 · 外部覆盖未核验</strong>
+              <strong>
+                {node.version === 11
+                  ? '可见文字候选 · 隐藏叶子已排除'
+                  : '选区文字候选 · 外部覆盖未核验'}
+              </strong>
               <span>
                 选区外祖先装饰可能绘制；候选不证明完整正文或岗位资格。切换规则会同步更新本步骤候选字段，仅用于新运行。
               </span>
               <span>
-                {node.version === 10
-                  ? '已启用空叶子规则：仅跳过同步核验无子节点、无生成内容且整节点不绘制的隐藏后代；非空或无法核验仍拒绝。'
-                  : '原严格规则：隐藏后代均拒绝。可显式启用空叶子规则，仅影响新运行。'}
+                {node.version === 11
+                  ? '已选择可见文字：仅排除经核验不显示的纯文字叶子；隐藏内容未采用，候选不证明隐藏全文或外部覆盖。'
+                  : node.version === 10
+                    ? '已启用空叶子规则：仅跳过同步核验无子节点、无生成内容且整节点不绘制的隐藏后代；非空或无法核验仍拒绝。'
+                    : '原严格规则：隐藏后代均拒绝。可显式启用空叶子规则，仅影响新运行。'}
               </span>
               <Space wrap>
-                <Button onClick={() => switchRule(true, node.version !== 10)}>
-                  {node.version === 10 ? '恢复原规则' : '跳过空节点'}
-                </Button>
+                {node.version === 11 ? (
+                  <>
+                    <Button onClick={() => switchRule(true)}>恢复严格规则</Button>
+                    <Button onClick={() => switchRule(true, true)}>仅跳过空节点</Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={() => switchRule(true, false, true)}>只读可见文字</Button>
+                    <Button onClick={() => switchRule(true, node.version !== 10)}>
+                      {node.version === 10 ? '恢复原规则' : '跳过空节点'}
+                    </Button>
+                  </>
+                )}
                 <Button onClick={() => switchRule(false)}>改用已排版正文</Button>
               </Space>
             </Space>
           )}
           <p>
-            {node.version === 9 || node.version === 10
+            {node.version === 9 || node.version === 10 || node.version === 11
               ? '最多 20 项 · DOM文字 / 原始属性 / 选区文字候选（待核对）'
               : node.version >= 6
                 ? '最多 20 项 · DOM文字 / 原始属性 / 已排版正文（待核对）'
@@ -347,7 +369,9 @@ export default function BrowserFieldsConfiguration({
           </p>
           <p>
             {node.version >= 6
-              ? '同一同步 DOM 读取；正文单项 64 KiB，原始字段 8 KiB，总结果 128 KiB。隐藏、裁切或无法判定时不采用正文；不自动展开或滚动。'
+              ? node.version === 11
+                ? '同一同步 DOM 读取；正文单项 64 KiB，原始字段 8 KiB，总结果 128 KiB。排除已核验隐藏文字叶子；其余隐藏、裁切或未知时不采用正文，不自动展开或滚动。'
+                : '同一同步 DOM 读取；正文单项 64 KiB，原始字段 8 KiB，总结果 128 KiB。隐藏、裁切或无法判定时不采用正文；不自动展开或滚动。'
               : '同一同步 DOM 读取；单项 8 KiB，总结果 64 KiB。'}
           </p>
           <p>不完整时返回明确状态；导航、框架变化或超限时整次拒绝。</p>
@@ -408,7 +432,7 @@ export default function BrowserFieldsConfiguration({
                   options={[
                     { value: 'text', label: '文字（textContent）' },
                     { value: 'attribute', label: '原始属性' },
-                    ...(node.version === 9 || node.version === 10
+                    ...(node.version === 9 || node.version === 10 || node.version === 11
                       ? [{ value: 'selection-text', label: '选区文字候选（待核对）' }]
                       : node.version >= 6
                         ? [{ value: 'rendered-text', label: '已排版正文（待核对）' }]
@@ -443,13 +467,15 @@ export default function BrowserFieldsConfiguration({
               selector={typeof draft.selector === 'string' ? draft.selector : undefined}
               rendered={draft.operation === 'rendered-text' || draft.operation === 'selection-text'}
               renderPolicy={
-                node.version === 10
-                  ? 'bounded-selection-text-v2'
-                  : node.version === 9
-                    ? 'bounded-selection-text-v1'
-                    : node.version === 7
-                      ? 'bounded-rendered-text-v2'
-                      : 'bounded-rendered-text-v1'
+                node.version === 11
+                  ? 'bounded-visible-text-v1'
+                  : node.version === 10
+                    ? 'bounded-selection-text-v2'
+                    : node.version === 9
+                      ? 'bounded-selection-text-v1'
+                      : node.version === 7
+                        ? 'bounded-rendered-text-v2'
+                        : 'bounded-rendered-text-v1'
               }
               framePath={node.framePath}
               sourceKey={JSON.stringify([
@@ -512,7 +538,7 @@ export default function BrowserFieldsConfiguration({
                 disabled={
                   node.fields.length <= 1 ||
                   selected >= node.fields.length ||
-                  ((node.version === 9 || node.version === 10) &&
+                  ((node.version === 9 || node.version === 10 || node.version === 11) &&
                     node.fields[selected]?.operation === 'selection-text' &&
                     node.fields.filter((f) => f.operation === 'selection-text').length === 1)
                 }
@@ -528,7 +554,7 @@ export default function BrowserFieldsConfiguration({
               </Button>
             </Space>
             <p>字段名须唯一，不使用保留键。必填缺失或为空白、任意字段多匹配时，结果标记不完整。</p>
-            {(node.version === 9 || node.version === 10) && (
+            {(node.version === 9 || node.version === 10 || node.version === 11) && (
               <p>
                 本步骤须至少保留一项选区文字候选。需要改为普通文字或属性采集时，可先改用已排版正文再调整字段。
               </p>

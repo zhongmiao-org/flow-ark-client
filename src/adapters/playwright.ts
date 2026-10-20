@@ -70,7 +70,9 @@ export class PlaywrightDriver implements BrowserDriver {
     assertBrowserOperations(this.binding, [c]);
     const path = framePathOf(c);
     const remaining = commandBudget(
-      c.version === 9 || c.version === 10 ? Math.min(c.timeoutMs ?? 15000, 15000) : c.timeoutMs,
+      c.version === 9 || c.version === 10 || c.version === 11
+        ? Math.min(c.timeoutMs ?? 15000, 15000)
+        : c.timeoutMs,
     );
     const page = this.page;
     if (c.version === 8) return this.target(c, page, path, remaining);
@@ -303,7 +305,9 @@ export class PlaywrightDriver implements BrowserDriver {
       id: 'driver',
       type: 'browser',
       version: c.version ?? 5,
-      ...(c.version === 9 || c.version === 10 ? { renderPolicy: c.renderPolicy } : {}),
+      ...(c.version === 9 || c.version === 10 || c.version === 11
+        ? { renderPolicy: c.renderPolicy }
+        : {}),
       operation: 'collect',
       selector: c.selector,
       framePath: path,
@@ -351,16 +355,22 @@ export class PlaywrightDriver implements BrowserDriver {
         framePath: path,
         url,
         renderPolicy:
-          node.version === 10
-            ? ('bounded-selection-text-v2' as const)
-            : node.version === 9
-              ? ('bounded-selection-text-v1' as const)
-              : node.version === 7
-                ? ('bounded-rendered-text-v2' as const)
-                : ('bounded-rendered-text-v1' as const),
+          node.version === 11
+            ? ('bounded-visible-text-v1' as const)
+            : node.version === 10
+              ? ('bounded-selection-text-v2' as const)
+              : node.version === 9
+                ? ('bounded-selection-text-v1' as const)
+                : node.version === 7
+                  ? ('bounded-rendered-text-v2' as const)
+                  : ('bounded-rendered-text-v1' as const),
       };
       const result =
-        node.version === 6 || node.version === 7 || node.version === 9 || node.version === 10
+        node.version === 6 ||
+        node.version === 7 ||
+        node.version === 9 ||
+        node.version === 10 ||
+        node.version === 11
           ? await frame.evaluate(readBrowserRenderedFields, request)
           : await frame.evaluate(readBrowserFields, {
               ...request,

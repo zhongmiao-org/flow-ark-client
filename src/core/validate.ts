@@ -12,6 +12,7 @@ import {
   browserScopedRenderedFieldsCapability,
   browserSelectionTextCapability,
   browserEmptyLeafTextCapability,
+  browserVisibleTextCapability,
   browserFieldsCapabilityFor,
 } from '../shared/browser-fields';
 import { assertContinuousConversationCapabilities } from '../../contracts/continuous-conversation';
@@ -64,6 +65,7 @@ export const capabilities = [
   browserScopedRenderedFieldsCapability,
   browserSelectionTextCapability,
   browserEmptyLeafTextCapability,
+  browserVisibleTextCapability,
   'conversation-evidence-v1',
   'conversation-v2',
   'conversation-checkpoint-v1',
@@ -186,7 +188,8 @@ export function validateFlow(value: unknown): Flow {
           n.version === 6 ||
           n.version === 7 ||
           n.version === 9 ||
-          n.version === 10
+          n.version === 10 ||
+          n.version === 11
         ) {
           assertBrowserFieldsNode(n);
           if (

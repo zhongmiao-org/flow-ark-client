@@ -4,6 +4,9 @@ import {
   node_browser_7,
   node_browser_9,
   node_browser_10,
+  node_browser_11,
+  browser_visible_text_result_v6,
+  browser_visible_text_invocation_v1,
   browser_empty_leaf_text_result_v5,
   browser_empty_leaf_text_invocation_v1,
   browser_fields_result_v1,
@@ -19,11 +22,18 @@ import type {
   BrowserScopedRenderedFieldsResult,
   BrowserSelectionTextFieldsResult,
   BrowserEmptyLeafTextFieldsResult,
+  BrowserVisibleTextFieldsResult,
 } from './contracts.generated';
 
-export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 | 7 | 9 | 10 }>;
+export type BrowserFieldsNode = Extract<
+  Step,
+  { type: 'browser'; version: 5 | 6 | 7 | 9 | 10 | 11 }
+>;
 export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fields'> & {
-  renderPolicy?: 'bounded-selection-text-v1' | 'bounded-selection-text-v2';
+  renderPolicy?:
+    | 'bounded-selection-text-v1'
+    | 'bounded-selection-text-v2'
+    | 'bounded-visible-text-v1';
   selector: string;
   fields: (Omit<BrowserFieldsNode['fields'][number], 'selector' | 'attribute'> & {
     selector: string;
@@ -33,6 +43,7 @@ export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fi
 export const browserFieldsCapability = 'browser-fields-v1';
 export const browserRenderedFieldsCapability = 'browser-rendered-fields-v1';
 export const browserScopedRenderedFieldsCapability = 'browser-rendered-fields-v2';
+export const browserVisibleTextCapability = 'browser-visible-text-v1';
 export const browserEmptyLeafTextCapability = 'browser-empty-leaf-text-v1';
 export const browserSelectionTextCapability = 'browser-selection-text-v1';
 export type BrowserCollectedResult =
@@ -40,7 +51,8 @@ export type BrowserCollectedResult =
   | BrowserRenderedFieldsResult
   | BrowserScopedRenderedFieldsResult
   | BrowserSelectionTextFieldsResult
-  | BrowserEmptyLeafTextFieldsResult;
+  | BrowserEmptyLeafTextFieldsResult
+  | BrowserVisibleTextFieldsResult;
 export const renderedIssueOrder = [
   'hidden-target',
   'hidden-descendant',
@@ -51,15 +63,17 @@ export const renderedIssueOrder = [
   'generated-content',
 ] as const;
 export function browserFieldsCapabilityFor(version: number) {
-  return version === 10
-    ? browserEmptyLeafTextCapability
-    : version === 9
-      ? browserSelectionTextCapability
-      : version === 7
-        ? browserScopedRenderedFieldsCapability
-        : version === 6
-          ? browserRenderedFieldsCapability
-          : browserFieldsCapability;
+  return version === 11
+    ? browserVisibleTextCapability
+    : version === 10
+      ? browserEmptyLeafTextCapability
+      : version === 9
+        ? browserSelectionTextCapability
+        : version === 7
+          ? browserScopedRenderedFieldsCapability
+          : version === 6
+            ? browserRenderedFieldsCapability
+            : browserFieldsCapability;
 }
 const encoder = new TextEncoder();
 const forbidden = ['__proto__', 'prototype', 'constructor'];
@@ -96,11 +110,13 @@ export function assertBrowserFieldsNode(
     !node_browser_6(value) &&
     !node_browser_7(value) &&
     !node_browser_9(value) &&
-    !node_browser_10(value)
+    !node_browser_10(value) &&
+    !node_browser_11(value)
   )
     throw Error('关联字段配置无效，请核对根定位、字段名、相对定位和读取方式');
   const n = value as BrowserFieldsNode;
-  if ((n.version === 9 || n.version === 10) && typeof n.name === 'string') unicode(n.name);
+  if ((n.version === 9 || n.version === 10 || n.version === 11) && typeof n.name === 'string')
+    unicode(n.name);
   input(n.selector, resolved);
   n.framePath.forEach(unicode);
   const keys = new Set<string>();
@@ -122,7 +138,7 @@ export function assertBrowserFieldsInvocation(
   assertBrowserFieldsNode(source);
   const n = resolvedBrowserFields(value);
   if (
-    (source.version === 9 || source.version === 10) &&
+    (source.version === 9 || source.version === 10 || source.version === 11) &&
     (!('renderPolicy' in n) || source.renderPolicy !== n.renderPolicy)
   )
     throw Error('选区文字政策与固定节点不一致');
@@ -168,13 +184,23 @@ export function assertBrowserEmptyLeafTextInvocation(source: unknown, value: unk
     throw Error('空叶子文字调用身份与固定节点不符');
   return node;
 }
+export function assertBrowserVisibleTextInvocation(source: unknown, value: unknown) {
+  if (!browser_visible_text_invocation_v1(value)) throw Error('可见文字调用未解析或格式无效');
+  const { nodeInstance, ...input } =
+    value as import('./contracts.generated').BrowserVisibleTextFieldsInvocation;
+  unicode(nodeInstance);
+  const node = assertBrowserFieldsInvocation(source, input);
+  if (node.version !== 11 || nodeInstance.split('/').at(-1) !== node.id)
+    throw Error('可见文字调用身份与固定节点不符');
+  return node;
+}
 export function assertBrowserSelectionTextCapabilities(
   value: any,
   capabilities: string[],
   manifest?: any,
   entry?: any,
 ) {
-  if (value?.type !== 'browser' || ![9, 10].includes(value.version)) return;
+  if (value?.type !== 'browser' || ![9, 10, 11].includes(value.version)) return;
   assertBrowserFieldsNode(value);
   const required = ['browser', browserFieldsCapabilityFor(value.version)];
   if (!required.every((c) => capabilities.includes(c)))
@@ -195,15 +221,17 @@ export function assertBrowserFieldsResult(
 ): asserts value is BrowserCollectedResult {
   resolvedBrowserFields(node);
   if (
-    !(node.version === 10
-      ? browser_empty_leaf_text_result_v5(value)
-      : node.version === 9
-        ? browser_selection_text_result_v4(value)
-        : node.version === 7
-          ? browser_scoped_rendered_fields_result_v3(value)
-          : node.version === 6
-            ? browser_rendered_fields_result_v2(value)
-            : browser_fields_result_v1(value))
+    !(node.version === 11
+      ? browser_visible_text_result_v6(value)
+      : node.version === 10
+        ? browser_empty_leaf_text_result_v5(value)
+        : node.version === 9
+          ? browser_selection_text_result_v4(value)
+          : node.version === 7
+            ? browser_scoped_rendered_fields_result_v3(value)
+            : node.version === 6
+              ? browser_rendered_fields_result_v2(value)
+              : browser_fields_result_v1(value))
   )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
@@ -220,6 +248,7 @@ export function assertBrowserFieldsResult(
   }
   let complete = true;
   let excludedHiddenEmptyLeaves = 0;
+  let excludedHiddenTextLeaves = 0;
   for (let i = 0; i < node.fields.length; i++) {
     const f = r.fields[i],
       configured = node.fields[i];
@@ -232,6 +261,11 @@ export function assertBrowserFieldsResult(
         (['rendered-text', 'selection-text'].includes(f.operation) ? 65536 : 8192)
       )
         throw Error('关联字段单项结果超限');
+    }
+    if ('excludedHiddenTextLeaves' in f) {
+      if ((f.operation !== 'selection-text' || f.count !== 1) && f.excludedHiddenTextLeaves !== 0)
+        throw Error('隐藏文字叶子计数不属于唯一选区字段');
+      excludedHiddenTextLeaves += f.excludedHiddenTextLeaves;
     }
     if ('excludedHiddenEmptyLeaves' in f) {
       if ((f.operation !== 'selection-text' || f.count !== 1) && f.excludedHiddenEmptyLeaves !== 0)
@@ -290,6 +324,7 @@ export function assertBrowserFieldsResult(
       complete = false;
   }
   if (excludedHiddenEmptyLeaves > 2000) throw Error('隐藏空叶子排除总数超限');
+  if (excludedHiddenTextLeaves > 2000) throw Error('隐藏文字叶子排除总数超限');
   if (r.complete !== complete) throw Error('关联字段完整性不符');
   if (encoder.encode(JSON.stringify(r)).length > (node.version >= 6 ? 131072 : 65536))
     throw Error('关联字段总结果超限，未截断或采用');
@@ -301,7 +336,8 @@ export function assertBrowserFieldsValue(value: unknown): asserts value is Brows
     !browser_rendered_fields_result_v2(value) &&
     !browser_scoped_rendered_fields_result_v3(value) &&
     !browser_selection_text_result_v4(value) &&
-    !browser_empty_leaf_text_result_v5(value)
+    !browser_empty_leaf_text_result_v5(value) &&
+    !browser_visible_text_result_v6(value)
   )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
@@ -309,7 +345,17 @@ export function assertBrowserFieldsValue(value: unknown): asserts value is Brows
     id: 'result',
     type: 'browser',
     version:
-      r.version === 5 ? 10 : r.version === 4 ? 9 : r.version === 3 ? 7 : r.version === 2 ? 6 : 5,
+      r.version === 6
+        ? 11
+        : r.version === 5
+          ? 10
+          : r.version === 4
+            ? 9
+            : r.version === 3
+              ? 7
+              : r.version === 2
+                ? 6
+                : 5,
     ...(r.version >= 4 && 'renderPolicy' in r ? { renderPolicy: r.renderPolicy } : {}),
     operation: 'collect',
     selector: r.selector,

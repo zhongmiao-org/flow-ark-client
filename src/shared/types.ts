@@ -138,7 +138,10 @@ export type Bridge = {
   ): () => void;
 };
 export type BrowserCommand = {
-  renderPolicy?: 'bounded-selection-text-v1' | 'bounded-selection-text-v2';
+  renderPolicy?:
+    | 'bounded-selection-text-v1'
+    | 'bounded-selection-text-v2'
+    | 'bounded-visible-text-v1';
   version?: number;
   operation: string;
   selector?: string;

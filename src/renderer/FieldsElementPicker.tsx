@@ -106,7 +106,8 @@ export default function FieldsElementPicker({
     | 'bounded-rendered-text-v1'
     | 'bounded-rendered-text-v2'
     | 'bounded-selection-text-v1'
-    | 'bounded-selection-text-v2';
+    | 'bounded-selection-text-v2'
+    | 'bounded-visible-text-v1';
   beforeStart?: () => boolean;
   onApply: (candidate: FieldsPickCandidate) => void;
 }) {
@@ -346,7 +347,8 @@ export default function FieldsElementPicker({
       ...(renderPolicy === 'bounded-rendered-text-v2'
         ? { policy: renderPolicy, details: 'ancestor-space-checks-v1' as const }
         : renderPolicy === 'bounded-selection-text-v1' ||
-            renderPolicy === 'bounded-selection-text-v2'
+            renderPolicy === 'bounded-selection-text-v2' ||
+            renderPolicy === 'bounded-visible-text-v1'
           ? { policy: renderPolicy }
           : {}),
     };
@@ -461,7 +463,8 @@ export default function FieldsElementPicker({
             </p>
           )}
           {(inspection.policy === 'bounded-selection-text-v1' ||
-            inspection.policy === 'bounded-selection-text-v2') && (
+            inspection.policy === 'bounded-selection-text-v2' ||
+            inspection.policy === 'bounded-visible-text-v1') && (
             <p>
               本次核准无绘制祖先空格 {inspection.ignoredAncestorSpaces} 处；选区外祖先装饰{' '}
               {inspection.excludedAncestorDecorations}{' '}
@@ -472,6 +475,12 @@ export default function FieldsElementPicker({
             <p>
               本次跳过隐藏空叶子 {inspection.excludedHiddenEmptyLeaves}{' '}
               处；隐藏非空正文仍拒绝，外部覆盖未核验。
+            </p>
+          )}
+          {inspection.policy === 'bounded-visible-text-v1' && (
+            <p>
+              本次排除隐藏文字叶子 {inspection.excludedHiddenTextLeaves}{' '}
+              处；隐藏原文未读取或采用，外部覆盖未核验。
             </p>
           )}
           {inspection.truncated && (

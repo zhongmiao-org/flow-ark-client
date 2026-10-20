@@ -283,7 +283,7 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
                   'url',
                   'documentUrl',
                   'fields',
-                  ...(node.version === 9 || node.version === 10
+                  ...(node.version === 9 || node.version === 10 || node.version === 11
                     ? ['renderPolicy', 'externalAppearanceVerified']
                     : []),
                 ],
@@ -297,7 +297,8 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
         node.version === 6 ||
         node.version === 7 ||
         node.version === 9 ||
-        node.version === 10)
+        node.version === 10 ||
+        node.version === 11)
     )
       node.fields.forEach((field, i) => {
         for (const key of [
@@ -306,10 +307,13 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           'status',
           ...(node.version >= 6 ? ['issues'] : []),
           ...(node.version === 10 ? ['excludedHiddenEmptyLeaves'] : []),
-          ...(node.version === 7 || node.version === 9 || node.version === 10
+          ...(node.version === 11 ? ['excludedHiddenTextLeaves'] : []),
+          ...(node.version === 7 || node.version === 9 || node.version === 10 || node.version === 11
             ? ['ignoredAncestorSpaces']
             : []),
-          ...(node.version === 9 || node.version === 10 ? ['excludedAncestorDecorations'] : []),
+          ...(node.version === 9 || node.version === 10 || node.version === 11
+            ? ['excludedAncestorDecorations']
+            : []),
         ])
           add(
             path + '.fields.' + i + '.' + key,

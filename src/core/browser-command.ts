@@ -12,7 +12,10 @@ export function framePathOf(command: {
       (s) =>
         typeof s !== 'string' ||
         !s.trim() ||
-        (command.version === 8 || command.version === 9 || command.version === 10
+        (command.version === 8 ||
+        command.version === 9 ||
+        command.version === 10 ||
+        command.version === 11
           ? [...s].length
           : s.length) > 2000,
     )

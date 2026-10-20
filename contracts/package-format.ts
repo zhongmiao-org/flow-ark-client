@@ -1,3 +1,4 @@
+import { assertBrowserVisibleTextCapabilities } from './browser-visible-text';
 import { assertBrowserEmptyLeafTextCapabilities } from './browser-empty-leaf-text';
 import { assertAIGenerationCapabilities } from './ai-generation';
 import { assertBrowserSelectionTextCapabilities } from './browser-selection-text';
@@ -87,6 +88,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
   assertBrowserTargetCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserSelectionTextCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertBrowserEmptyLeafTextCapabilities(n,flow.requiredCapabilities,manifest,entry);
+  assertBrowserVisibleTextCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertAIOutcomeCapabilities(n,flow.requiredCapabilities);
   assertAIGenerationCapabilities(n,flow.requiredCapabilities,manifest,entry);
   assertContinuousConversationCapabilities(n,flow.requiredCapabilities);

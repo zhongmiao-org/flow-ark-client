@@ -32,13 +32,22 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
       aria-label="完整关联字段采集结果"
     >
       <h2>
-        {value.version === 4
-          ? '关联字段与选区文字候选'
-          : value.version >= 2
-            ? '关联字段与正文采集结果'
-            : '关联字段采集结果'}
+        {value.version === 6
+          ? '关联字段与可见文字候选'
+          : value.version === 4 || value.version === 5
+            ? '关联字段与选区文字候选'
+            : value.version >= 2
+              ? '关联字段与正文采集结果'
+              : '关联字段采集结果'}
       </h2>
-      {value.version === 4 && (
+      {value.version === 6 && (
+        <Alert
+          type="info"
+          title="可见文字候选 · 隐藏内容未采用"
+          description="仅按本次规则采用可见文字；不证明隐藏全文、外部覆盖、完整JD或动作资格。"
+        />
+      )}
+      {(value.version === 4 || value.version === 5) && (
         <Alert
           type="info"
           title="选区文字候选 · 外部覆盖未核验"
@@ -146,12 +155,20 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
                 处；隐藏非空正文仍拒绝，外部覆盖未核验。
               </p>
             )}
+            {'excludedHiddenTextLeaves' in f && (
+              <p>
+                本次排除隐藏文字叶子 {f.excludedHiddenTextLeaves}{' '}
+                处；隐藏原文未读取或采用，外部覆盖未核验。
+              </p>
+            )}
             <strong>
-              {f.operation === 'selection-text'
-                ? '选区文字候选 · 外部覆盖未核验'
-                : f.operation === 'rendered-text'
-                  ? '已排版正文候选 · 仍需本人核对'
-                  : '原始值'}
+              {value.version === 6 && f.operation === 'selection-text'
+                ? '可见文字候选 · 隐藏内容未采用'
+                : f.operation === 'selection-text'
+                  ? '选区文字候选 · 外部覆盖未核验'
+                  : f.operation === 'rendered-text'
+                    ? '已排版正文候选 · 仍需本人核对'
+                    : '原始值'}
             </strong>
             <div className="browser-fields-value">
               {f.value === null ? (

@@ -3,6 +3,7 @@ import type {
   BrowserScopedRenderedFieldsResult,
   BrowserSelectionTextFieldsResult,
   BrowserEmptyLeafTextFieldsResult,
+  BrowserVisibleTextFieldsResult,
 } from '../shared/contracts.generated';
 import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
 import type {
@@ -22,7 +23,8 @@ type Input = {
     | 'bounded-rendered-text-v1'
     | 'bounded-rendered-text-v2'
     | 'bounded-selection-text-v1'
-    | 'bounded-selection-text-v2';
+    | 'bounded-selection-text-v2'
+    | 'bounded-visible-text-v1';
 };
 type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticsOnly: true;
@@ -37,7 +39,8 @@ export function readBrowserRenderedFields(
   | BrowserRenderedFieldsResult
   | BrowserScopedRenderedFieldsResult
   | BrowserSelectionTextFieldsResult
-  | BrowserEmptyLeafTextFieldsResult;
+  | BrowserEmptyLeafTextFieldsResult
+  | BrowserVisibleTextFieldsResult;
 /** Serialized into one document. Synchronous, closure-free, read-only and fail-closed. */
 export function readBrowserRenderedFields(
   input: Input | DiagnosticInput,
@@ -46,6 +49,7 @@ export function readBrowserRenderedFields(
   | BrowserScopedRenderedFieldsResult
   | BrowserSelectionTextFieldsResult
   | BrowserEmptyLeafTextFieldsResult
+  | BrowserVisibleTextFieldsResult
   | RenderingDiagnosticData {
   const encoder = new TextEncoder();
   const check = (value: string, limit: number) => {
@@ -56,8 +60,9 @@ export function readBrowserRenderedFields(
   };
   let elements = 0,
     nodes = 0;
+  const visibleText = input.renderPolicy === 'bounded-visible-text-v1';
   const emptyLeaf = input.renderPolicy === 'bounded-selection-text-v2';
-  const selection = input.renderPolicy === 'bounded-selection-text-v1' || emptyLeaf;
+  const selection = input.renderPolicy === 'bounded-selection-text-v1' || emptyLeaf || visibleText;
   const scoped = input.renderPolicy === 'bounded-rendered-text-v2' || selection;
   const deadline = selection ? performance.now() + 15000 : Infinity;
   const explainSpace =
@@ -68,6 +73,7 @@ export function readBrowserRenderedFields(
   let ignoredAncestorSpaces = 0;
   let excludedAncestorDecorations = 0;
   let excludedHiddenEmptyLeaves = 0;
+  let excludedHiddenTextLeaves = 0;
   const nonPaintingSpace = (
     style: CSSStyleDeclaration,
     failed?: (failure: AncestorSpaceFailure) => void,
@@ -291,6 +297,43 @@ export function readBrowserRenderedFields(
           visibilityProperty: true,
         });
       if (hidden) {
+        // v11: only demonstrably non-rendered, text/comment-only leaves. Never read hidden text.
+        let suppressedTextLeaf = false;
+        if (visibleText && descendant && element !== target) {
+          try {
+            suppressedTextLeaf =
+              element.namespaceURI === 'http://www.w3.org/1999/xhtml' &&
+              !element.localName.includes('-') &&
+              !/^(iframe|canvas|img|picture|video|audio|object|embed|input|textarea|select|button|meter|progress)$/.test(
+                element.localName,
+              ) &&
+              element.shadowRoot === null &&
+              (style.display === 'none' || style.visibility === 'hidden') &&
+              ['::before', '::after'].every((pseudo) =>
+                ['none', 'normal', '""', "''"].includes(
+                  win.getComputedStyle(element, pseudo).content,
+                ),
+              ) &&
+              !element.getAnimations().some((a) => a.playState === 'running' || a.pending);
+          } catch {
+            suppressedTextLeaf = false;
+          }
+          if (suppressedTextLeaf) {
+            // Charge every inspected child against the original budget. Budget errors propagate.
+            for (let child = element.firstChild; child; child = child.nextSibling) {
+              visit(child);
+              if (child.nodeType !== 3 && child.nodeType !== 8) {
+                suppressedTextLeaf = false;
+                break;
+              }
+            }
+          }
+        }
+        if (suppressedTextLeaf) {
+          excludedHiddenTextLeaves++;
+          if (excludedHiddenTextLeaves > 2000) throw Error('隐藏文字叶子排除预算超限');
+          return false;
+        }
         // Opt-in v10 only. No text reads or DOM/style mutation; counts consume the original scan.
         let emptySuppressedLeaf = false;
         if (emptyLeaf && descendant && element !== target) {
@@ -446,13 +489,15 @@ export function readBrowserRenderedFields(
       throw Error('诊断目标不唯一或已被替换，请重新检查');
     const issues = inspect(matches[0]);
     return {
-      policy: emptyLeaf
-        ? 'bounded-selection-text-v2'
-        : selection
-          ? 'bounded-selection-text-v1'
-          : scoped
-            ? 'bounded-rendered-text-v2'
-            : 'bounded-rendered-text-v1',
+      policy: visibleText
+        ? 'bounded-visible-text-v1'
+        : emptyLeaf
+          ? 'bounded-selection-text-v2'
+          : selection
+            ? 'bounded-selection-text-v1'
+            : scoped
+              ? 'bounded-rendered-text-v2'
+              : 'bounded-rendered-text-v1',
       issues,
       locations,
       truncated,
@@ -460,6 +505,7 @@ export function readBrowserRenderedFields(
       scannedNodes: nodes,
       ...(scoped ? { ignoredAncestorSpaces } : {}),
       ...(emptyLeaf ? { excludedHiddenEmptyLeaves } : {}),
+      ...(visibleText ? { excludedHiddenTextLeaves } : {}),
       ...(selection ? { excludedAncestorDecorations, externalAppearanceVerified: false } : {}),
       ...(explainSpace ? { details: 'ancestor-space-checks-v1' as const } : {}),
     } as RenderingDiagnosticData;
@@ -468,6 +514,7 @@ export function readBrowserRenderedFields(
     const priorIgnored = ignoredAncestorSpaces;
     const priorExcluded = excludedAncestorDecorations;
     const priorEmptyLeaves = excludedHiddenEmptyLeaves;
+    const priorTextLeaves = excludedHiddenTextLeaves;
     const matches = roots[0].querySelectorAll(f.selector),
       count = matches.length;
     const isTextCandidate = f.operation === 'rendered-text' || f.operation === 'selection-text';
@@ -507,6 +554,9 @@ export function readBrowserRenderedFields(
       status,
       value,
       ...(scoped ? { ignoredAncestorSpaces: ignoredAncestorSpaces - priorIgnored } : {}),
+      ...(visibleText
+        ? { excludedHiddenTextLeaves: excludedHiddenTextLeaves - priorTextLeaves }
+        : {}),
       ...(emptyLeaf
         ? { excludedHiddenEmptyLeaves: excludedHiddenEmptyLeaves - priorEmptyLeaves }
         : {}),
@@ -516,15 +566,17 @@ export function readBrowserRenderedFields(
     };
   });
   const result = {
-    version: emptyLeaf ? 5 : selection ? 4 : scoped ? 3 : 2,
+    version: visibleText ? 6 : emptyLeaf ? 5 : selection ? 4 : scoped ? 3 : 2,
     operation: 'collect',
-    renderPolicy: emptyLeaf
-      ? 'bounded-selection-text-v2'
-      : selection
-        ? 'bounded-selection-text-v1'
-        : scoped
-          ? 'bounded-rendered-text-v2'
-          : 'bounded-rendered-text-v1',
+    renderPolicy: visibleText
+      ? 'bounded-visible-text-v1'
+      : emptyLeaf
+        ? 'bounded-selection-text-v2'
+        : selection
+          ? 'bounded-selection-text-v1'
+          : scoped
+            ? 'bounded-rendered-text-v2'
+            : 'bounded-rendered-text-v1',
     ...(selection ? { externalAppearanceVerified: false } : {}),
     url: input.url,
     documentUrl: location.href,
@@ -540,7 +592,8 @@ export function readBrowserRenderedFields(
     | BrowserRenderedFieldsResult
     | BrowserScopedRenderedFieldsResult
     | BrowserSelectionTextFieldsResult
-    | BrowserEmptyLeafTextFieldsResult;
+    | BrowserEmptyLeafTextFieldsResult
+    | BrowserVisibleTextFieldsResult;
   check(result.url, 16384);
   check(result.documentUrl, 16384);
   check(JSON.stringify(result), 131072);

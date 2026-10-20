@@ -237,19 +237,22 @@ export function declareNativeBoundaries(
         node.version === 6 ||
         node.version === 7 ||
         node.version === 9 ||
-        node.version === 10
+        node.version === 10 ||
+        node.version === 11
       ) {
         for (const capability of [
           'browser',
-          node.version === 10
-            ? 'browser-empty-leaf-text-v1'
-            : node.version === 9
-              ? 'browser-selection-text-v1'
-              : node.version === 7
-                ? 'browser-rendered-fields-v2'
-                : node.version === 6
-                  ? 'browser-rendered-fields-v1'
-                  : 'browser-fields-v1',
+          node.version === 11
+            ? 'browser-visible-text-v1'
+            : node.version === 10
+              ? 'browser-empty-leaf-text-v1'
+              : node.version === 9
+                ? 'browser-selection-text-v1'
+                : node.version === 7
+                  ? 'browser-rendered-fields-v2'
+                  : node.version === 6
+                    ? 'browser-rendered-fields-v1'
+                    : 'browser-fields-v1',
         ]) {
           if (!entry.capabilities.includes(capability)) entry.capabilities.push(capability);
           if (!flow.requiredCapabilities.includes(capability))

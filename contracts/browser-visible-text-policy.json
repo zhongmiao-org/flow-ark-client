@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "renderPolicy": "bounded-visible-text-v1",
+  "nodeVersion": 11,
+  "resultVersion": 6,
+  "capability": "browser-visible-text-v1",
+  "inherits": "bounded-selection-text-v1",
+  "exclusion": {
+    "scope": "descendant-only",
+    "namespace": "http://www.w3.org/1999/xhtml",
+    "childNodeTypesOnly": [
+      "TEXT_NODE",
+      "COMMENT_NODE"
+    ],
+    "elementChildrenExactly": 0,
+    "openShadowRoot": "absent",
+    "customElementName": "reject-hyphen",
+    "replacementElements": "reject-as-existing-inspector",
+    "mustBeHidden": true,
+    "suppressionAnyOf": [
+      {
+        "computedDisplay": "none"
+      },
+      {
+        "computedVisibility": "hidden"
+      }
+    ],
+    "beforeAndAfterContentAllowed": [
+      "none",
+      "normal",
+      "\"\"",
+      "''"
+    ],
+    "activeOrPendingAnimations": "reject",
+    "styleOrPseudoUnavailable": "reject",
+    "childNodesConsumeOriginalBudget": true,
+    "readsHiddenText": false
+  },
+  "counts": {
+    "field": "excludedHiddenTextLeaves",
+    "maximumPerField": 2000,
+    "maximumAcrossFields": 2000,
+    "rawOrNonUniqueField": 0,
+    "includedInOriginalScanBudgets": true
+  },
+  "nonExclusions": [
+    "target",
+    "ancestors",
+    "hidden nodes with element children",
+    "opacity-zero-only",
+    "content-visibility-hidden-only",
+    "visibility-collapse",
+    "generated pseudo content including whitespace",
+    "open shadow root",
+    "custom or replacement elements",
+    "unknown styles or active animation"
+  ],
+  "diagnostics": {
+    "method": "browser.embedded.fields.rendering.inspect",
+    "requestVersion": 1,
+    "policy": "bounded-visible-text-v1",
+    "additionalRequiredResponseField": "excludedHiddenTextLeaves",
+    "bodyRead": false,
+    "sourceRevisionRequired": true,
+    "oldPoliciesUnchanged": true
+  },
+  "invariants": {
+    "externalAppearanceVerified": false,
+    "hiddenContentAdopted": false,
+    "modifiesDOMOrStyles": false,
+    "grantsActionOrModelPermission": false,
+    "oldPoliciesAndRunSnapshotsUnchanged": true
+  }
+}

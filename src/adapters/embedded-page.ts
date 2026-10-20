@@ -394,7 +394,7 @@ export class EmbeddedPage {
     validateFormCommand(command);
     const path = framePathOf(command),
       remaining = commandBudget(
-        command.version === 9 || command.version === 10
+        command.version === 9 || command.version === 10 || command.version === 11
           ? Math.min(command.timeoutMs ?? 15000, 15000)
           : command.timeoutMs,
       );
@@ -689,7 +689,7 @@ export class EmbeddedPage {
       id: 'driver',
       type: 'browser',
       version: command.version ?? 5,
-      ...(command.version === 9 || command.version === 10
+      ...(command.version === 9 || command.version === 10 || command.version === 11
         ? { renderPolicy: command.renderPolicy }
         : {}),
       operation: 'collect',
@@ -801,7 +801,7 @@ export class EmbeddedPage {
       verify();
       const result = await this.evaluate(
         scope,
-        `(${(node.version >= 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url, renderPolicy: node.version === 10 ? 'bounded-selection-text-v2' : node.version === 9 ? 'bounded-selection-text-v1' : node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1' })})`,
+        `(${(node.version >= 6 ? readBrowserRenderedFields : readBrowserFields).toString()})(${JSON.stringify({ selector: node.selector, fields: node.fields, framePath: path, url, renderPolicy: node.version === 11 ? 'bounded-visible-text-v1' : node.version === 10 ? 'bounded-selection-text-v2' : node.version === 9 ? 'bounded-selection-text-v1' : node.version === 7 ? 'bounded-rendered-text-v2' : 'bounded-rendered-text-v1' })})`,
       );
       for (const prior of chain) {
         verify();

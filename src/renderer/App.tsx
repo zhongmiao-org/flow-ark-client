@@ -3271,6 +3271,9 @@ function Editor({
             ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 8)
               ? ['browser', 'browser-target-input-v1']
               : []),
+            ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 11)
+              ? ['browser', 'browser-visible-text-v1']
+              : []),
             ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 10)
               ? ['browser', 'browser-empty-leaf-text-v1']
               : []),
@@ -3354,6 +3357,9 @@ function Editor({
                 : []),
               ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 8)
                 ? ['browser', 'browser-target-input-v1']
+                : []),
+              ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 11)
+                ? ['browser', 'browser-visible-text-v1']
                 : []),
               ...(flatten(steps).some((node) => node.type === 'browser' && node.version === 10)
                 ? ['browser', 'browser-empty-leaf-text-v1']
@@ -3804,7 +3810,8 @@ function Editor({
               selectedNode.version !== 6 &&
               selectedNode.version !== 7 &&
               selectedNode.version !== 9 &&
-              selectedNode.version !== 10
+              selectedNode.version !== 10 &&
+              selectedNode.version !== 11
             )
               setBrowserActionOpen(false);
             setPanel('node');
@@ -3816,7 +3823,8 @@ function Editor({
               selectedNode.version === 6 ||
               selectedNode.version === 7 ||
               selectedNode.version === 9 ||
-              selectedNode.version === 10)
+              selectedNode.version === 10 ||
+              selectedNode.version === 11)
               ? browserPanel({
                   pickLabel: '查看左侧定位',
                   pick: () => {
@@ -4866,7 +4874,8 @@ function Editor({
               selectedNode.version === 6 ||
               selectedNode.version === 7 ||
               selectedNode.version === 9 ||
-              selectedNode.version === 10)
+              selectedNode.version === 10 ||
+              selectedNode.version === 11)
           ) &&
             browserPanel({
               ...(selectedNode?.type === 'browser' &&
@@ -4874,7 +4883,8 @@ function Editor({
                 selectedNode.version === 6 ||
                 selectedNode.version === 7 ||
                 selectedNode.version === 9 ||
-                selectedNode.version === 10)
+                selectedNode.version === 10 ||
+                selectedNode.version === 11)
                 ? {
                     pickLabel: '配置采集范围与字段',
                     pick: () => {
