@@ -848,15 +848,23 @@ export class Runtime {
       next = bindings.resources ?? {};
     const hasResults = [...Object.values(before), ...Object.values(next)].some((v) => v.result);
     if (!hasResults) return this.saveFlow(flow, bindings);
-    if (!previous || previous.bindings.template || revision !== previous.updatedAt)
+    if (!previous || revision !== previous.updatedAt)
       throw Error('结果绑定目标已变化，请重新读取后保存；原绑定保留');
+    if (
+      previous.bindings.template &&
+      (canonical(bindings) !== canonical(previous.bindings) || Object.keys(choices).length > 0)
+    )
+      throw Error('模板实例结果来源、资源与授权请在实例配置中修改');
     const fingerprint = digest(previous);
+    // An instance editor may change steps while keeping its exact existing bindings.
+    // Reuse the instance owner proof; never treat it as an author checkout or grant
+    // source-selection rights to flow.save. saveFlow retains the parameter guard.
+    if (previous.bindings.template) await this.templates.context(previous);
+    const target = previous.bindings.template
+      ? this.resultTarget(previous)
+      : { kind: 'author-flow' as const, id: flow.id, revision };
     const check = Object.values(next).some((v) => v.result)
-      ? await this.resultSources.prepareChanges(
-          { kind: 'author-flow', id: flow.id, revision },
-          next,
-          choices,
-        )
+      ? await this.resultSources.prepareChanges(target, next, choices)
       : () => {};
     const record = this.store.tx(() => {
       if (digest(this.store.get('flow', flow.id)) !== fingerprint)
