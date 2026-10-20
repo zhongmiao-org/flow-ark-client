@@ -1907,9 +1907,16 @@ export class Runtime {
           args.input,
           runSignal,
           () => this.checkActive(active),
-          (result) => {
-            release = this.typedResults.reserveState(id, node.id, args.nodeInstance, result);
+          (result, stages) => {
+            release = this.typedResults.reserveState(
+              id,
+              node.id,
+              args.nodeInstance,
+              result,
+              stages,
+            );
           },
+          (result) => this.typedResults.save(id, node.id, args.nodeInstance, 'context', result),
         );
         this.typedResults.save(id, node.id, args.nodeInstance, 'context', result);
         return result;

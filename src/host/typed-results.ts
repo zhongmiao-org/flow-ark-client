@@ -5,7 +5,7 @@ import { verifyRead, verifyPrepared } from '../../contracts/run-result-binding.m
 import { realpathSync, statSync } from 'node:fs';
 import type { Store } from './store';
 import { validateConversationOutput } from '../../contracts/skill-trial';
-import type { FlowRecord, Run, PreparedScripts } from '../shared/types';
+import type { FlowRecord, Run, PreparedScripts, Step } from '../shared/types';
 import { assertDocumentResult } from '../shared/document';
 import { assertSkillVersion, skillBytes } from '../shared/skill';
 import { digest } from '../shared/utils';
@@ -31,6 +31,15 @@ import { assertEffectResult, effectOperations } from '../shared/effect-node';
 import { sha256 as effectId } from '../../contracts/package-format';
 import { resultBytes, savedResultBudget, TYPED_RESULT_LIMITS } from '../shared/typed-result-budget';
 import { storedTypedResult } from './result-ledger';
+import type { StateReceiptStages } from './result-ledger';
+const resultLabel = (node: Step) =>
+  typeof node.name === 'string' && node.name.trim()
+    ? node.name
+    : node.type === 'effect'
+      ? effectOperations[node.operation]
+      : node.type === 'context'
+        ? contextOperations[node.operation]
+        : node.id;
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
@@ -82,9 +91,13 @@ export class TypedResults {
       );
   }
   /** Exact upcoming state output only. This is neither a future-region permit nor a disk guarantee. */
-  reserveState(runId: string, nodeId: string, nodeInstance: string, value: unknown) {
-    if (this.store.resultLedgers.owned(runId))
-      throw Error('完整结果政策的状态提交预留尚未接通；未创建状态操作');
+  reserveState(
+    runId: string,
+    nodeId: string,
+    nodeInstance: string,
+    value: unknown,
+    stages?: StateReceiptStages,
+  ) {
     if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
       throw Error('结构化结果步骤身份无效');
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
@@ -92,6 +105,23 @@ export class TypedResults {
     if (node?.type !== 'context' || node.operation !== 'state.write')
       throw Error('状态结果空间不属于当前固定节点');
     const id = digest({ runId, nodeId, nodeInstance, type: 'context' });
+    if (this.store.resultLedgers.owned(runId)) {
+      if (!stages) throw Error('状态提交缺少完整阶段预算，未创建状态操作');
+      return this.store.resultLedgers.reserveState(
+        runId,
+        {
+          id,
+          nodeId,
+          nodeInstance,
+          type: 'context',
+          label: resultLabel(node),
+          sha256: digest(value),
+          bytes: skillBytes(value),
+        },
+        value,
+        stages,
+      );
+    }
     if (this.reservations.has(id)) throw Error('此状态结果已有未消费预留');
     const item = { runId, sha256: digest(value), bytes: skillBytes(value) };
     if (this.capacity(runId, id, item.sha256, item.bytes)) return () => {};
@@ -101,6 +131,7 @@ export class TypedResults {
     };
   }
   release(runId: string) {
+    this.store.resultLedgers.release(runId);
     for (const [id, value] of this.reservations)
       if (value.runId === runId) this.reservations.delete(id);
   }
@@ -137,14 +168,7 @@ export class TypedResults {
       nodeId,
       nodeInstance,
       type,
-      label:
-        typeof node.name === 'string' && node.name.trim()
-          ? node.name
-          : node.type === 'effect'
-            ? effectOperations[node.operation]
-            : node.type === 'context'
-              ? contextOperations[node.operation]
-              : node.id,
+      label: resultLabel(node),
       bytes,
       sha256,
     };
