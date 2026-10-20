@@ -254,7 +254,13 @@ export class TypedResults {
     const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
     if (!node || node.type !== 'browser' || ![4, 5, 6, 7, 8, 9].includes(node.version))
       throw Error('网页只读结果不属于固定节点');
-    if (node.version === 5 || node.version === 6 || node.version === 7 || node.version === 9) {
+    if (
+      node.version === 5 ||
+      node.version === 6 ||
+      node.version === 7 ||
+      node.version === 9 ||
+      node.version === 10
+    ) {
       const saved = this.store.get<{ node: ResolvedBrowserFieldsNode; sha256: string }>(
         'browser-fields-input',
         digest({ runId, nodeId, nodeInstance }),

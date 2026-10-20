@@ -2,6 +2,7 @@ import type {
   BrowserRenderedFieldsResult,
   BrowserScopedRenderedFieldsResult,
   BrowserSelectionTextFieldsResult,
+  BrowserEmptyLeafTextFieldsResult,
 } from '../shared/contracts.generated';
 import type { ResolvedBrowserFieldsNode } from '../shared/browser-fields';
 import type {
@@ -20,7 +21,8 @@ type Input = {
   renderPolicy?:
     | 'bounded-rendered-text-v1'
     | 'bounded-rendered-text-v2'
-    | 'bounded-selection-text-v1';
+    | 'bounded-selection-text-v1'
+    | 'bounded-selection-text-v2';
 };
 type DiagnosticInput = Omit<Input, 'diagnosticsOnly'> & {
   diagnosticsOnly: true;
@@ -34,7 +36,8 @@ export function readBrowserRenderedFields(
 ):
   | BrowserRenderedFieldsResult
   | BrowserScopedRenderedFieldsResult
-  | BrowserSelectionTextFieldsResult;
+  | BrowserSelectionTextFieldsResult
+  | BrowserEmptyLeafTextFieldsResult;
 /** Serialized into one document. Synchronous, closure-free, read-only and fail-closed. */
 export function readBrowserRenderedFields(
   input: Input | DiagnosticInput,
@@ -42,6 +45,7 @@ export function readBrowserRenderedFields(
   | BrowserRenderedFieldsResult
   | BrowserScopedRenderedFieldsResult
   | BrowserSelectionTextFieldsResult
+  | BrowserEmptyLeafTextFieldsResult
   | RenderingDiagnosticData {
   const encoder = new TextEncoder();
   const check = (value: string, limit: number) => {
@@ -52,7 +56,8 @@ export function readBrowserRenderedFields(
   };
   let elements = 0,
     nodes = 0;
-  const selection = input.renderPolicy === 'bounded-selection-text-v1';
+  const emptyLeaf = input.renderPolicy === 'bounded-selection-text-v2';
+  const selection = input.renderPolicy === 'bounded-selection-text-v1' || emptyLeaf;
   const scoped = input.renderPolicy === 'bounded-rendered-text-v2' || selection;
   const deadline = selection ? performance.now() + 15000 : Infinity;
   const explainSpace =
@@ -62,6 +67,7 @@ export function readBrowserRenderedFields(
     input.diagnosticDetails === 'ancestor-space-checks-v1';
   let ignoredAncestorSpaces = 0;
   let excludedAncestorDecorations = 0;
+  let excludedHiddenEmptyLeaves = 0;
   const nonPaintingSpace = (
     style: CSSStyleDeclaration,
     failed?: (failure: AncestorSpaceFailure) => void,
@@ -285,6 +291,35 @@ export function readBrowserRenderedFields(
           visibilityProperty: true,
         });
       if (hidden) {
+        // Opt-in v10 only. No text reads or DOM/style mutation; counts consume the original scan.
+        let emptySuppressedLeaf = false;
+        if (emptyLeaf && descendant && element !== target) {
+          try {
+            const opacity = style.opacity.trim();
+            emptySuppressedLeaf =
+              element.namespaceURI === 'http://www.w3.org/1999/xhtml' &&
+              !element.localName.includes('-') &&
+              !/^(iframe|canvas|img|picture|video|audio|object|embed|input|textarea|select|button|meter|progress)$/.test(
+                element.localName,
+              ) &&
+              element.childNodes.length === 0 &&
+              element.shadowRoot === null &&
+              (style.display === 'none' || (opacity !== '' && Number(opacity) === 0)) &&
+              ['::before', '::after'].every((pseudo) =>
+                ['none', 'normal', '""', "''"].includes(
+                  win.getComputedStyle(element, pseudo).content,
+                ),
+              ) &&
+              !element.getAnimations().some((a) => a.playState === 'running' || a.pending);
+          } catch {
+            emptySuppressedLeaf = false;
+          }
+        }
+        if (emptySuppressedLeaf) {
+          excludedHiddenEmptyLeaves++;
+          if (excludedHiddenEmptyLeaves > 2000) throw Error('隐藏空叶子排除预算超限');
+          return false;
+        }
         report(descendant ? 'hidden-descendant' : 'hidden-target', element);
         return false;
       }
@@ -411,17 +446,20 @@ export function readBrowserRenderedFields(
       throw Error('诊断目标不唯一或已被替换，请重新检查');
     const issues = inspect(matches[0]);
     return {
-      policy: selection
-        ? 'bounded-selection-text-v1'
-        : scoped
-          ? 'bounded-rendered-text-v2'
-          : 'bounded-rendered-text-v1',
+      policy: emptyLeaf
+        ? 'bounded-selection-text-v2'
+        : selection
+          ? 'bounded-selection-text-v1'
+          : scoped
+            ? 'bounded-rendered-text-v2'
+            : 'bounded-rendered-text-v1',
       issues,
       locations,
       truncated,
       scannedElements: elements,
       scannedNodes: nodes,
       ...(scoped ? { ignoredAncestorSpaces } : {}),
+      ...(emptyLeaf ? { excludedHiddenEmptyLeaves } : {}),
       ...(selection ? { excludedAncestorDecorations, externalAppearanceVerified: false } : {}),
       ...(explainSpace ? { details: 'ancestor-space-checks-v1' as const } : {}),
     } as RenderingDiagnosticData;
@@ -429,6 +467,7 @@ export function readBrowserRenderedFields(
   const fields = input.fields.map((f) => {
     const priorIgnored = ignoredAncestorSpaces;
     const priorExcluded = excludedAncestorDecorations;
+    const priorEmptyLeaves = excludedHiddenEmptyLeaves;
     const matches = roots[0].querySelectorAll(f.selector),
       count = matches.length;
     const isTextCandidate = f.operation === 'rendered-text' || f.operation === 'selection-text';
@@ -468,19 +507,24 @@ export function readBrowserRenderedFields(
       status,
       value,
       ...(scoped ? { ignoredAncestorSpaces: ignoredAncestorSpaces - priorIgnored } : {}),
+      ...(emptyLeaf
+        ? { excludedHiddenEmptyLeaves: excludedHiddenEmptyLeaves - priorEmptyLeaves }
+        : {}),
       ...(selection
         ? { excludedAncestorDecorations: excludedAncestorDecorations - priorExcluded }
         : {}),
     };
   });
   const result = {
-    version: selection ? 4 : scoped ? 3 : 2,
+    version: emptyLeaf ? 5 : selection ? 4 : scoped ? 3 : 2,
     operation: 'collect',
-    renderPolicy: selection
-      ? 'bounded-selection-text-v1'
-      : scoped
-        ? 'bounded-rendered-text-v2'
-        : 'bounded-rendered-text-v1',
+    renderPolicy: emptyLeaf
+      ? 'bounded-selection-text-v2'
+      : selection
+        ? 'bounded-selection-text-v1'
+        : scoped
+          ? 'bounded-rendered-text-v2'
+          : 'bounded-rendered-text-v1',
     ...(selection ? { externalAppearanceVerified: false } : {}),
     url: input.url,
     documentUrl: location.href,
@@ -495,7 +539,8 @@ export function readBrowserRenderedFields(
   } as
     | BrowserRenderedFieldsResult
     | BrowserScopedRenderedFieldsResult
-    | BrowserSelectionTextFieldsResult;
+    | BrowserSelectionTextFieldsResult
+    | BrowserEmptyLeafTextFieldsResult;
   check(result.url, 16384);
   check(result.documentUrl, 16384);
   check(JSON.stringify(result), 131072);

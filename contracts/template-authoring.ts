@@ -1,3 +1,4 @@
+import { assertBrowserEmptyLeafTextCapabilities } from './browser-empty-leaf-text';
 import { assertAIGenerationCapabilities } from './ai-generation';
 import { assertBrowserSelectionTextCapabilities } from './browser-selection-text';
 import { assertBrowserTargetCapabilities } from './browser-target-input';
@@ -131,6 +132,7 @@ export function validateAuthorDefinition(value: unknown): any {
       assertBrowserFieldsCapabilities(node, entry.flow.requiredCapabilities, d, { resources: entry.resourceIds });
       assertBrowserTargetCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds, actions: entry.actionIds });
       assertBrowserSelectionTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
+      assertBrowserEmptyLeafTextCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertAIOutcomeCapabilities(node, entry.flow.requiredCapabilities);
       assertAIGenerationCapabilities(node, entry.flow.requiredCapabilities, d, { capabilities: [...entry.flow.requiredCapabilities, ...entry.capabilities], resources: entry.resourceIds });
       assertContinuousConversationCapabilities(node, entry.flow.requiredCapabilities);

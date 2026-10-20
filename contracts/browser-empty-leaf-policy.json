@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "renderPolicy": "bounded-selection-text-v2",
+  "nodeVersion": 10,
+  "resultVersion": 5,
+  "capability": "browser-empty-leaf-text-v1",
+  "inherits": "bounded-selection-text-v1",
+  "exclusion": {
+    "scope": "descendant-only",
+    "namespace": "http://www.w3.org/1999/xhtml",
+    "childNodesExactly": 0,
+    "openShadowRoot": "absent",
+    "customElementName": "reject-hyphen",
+    "replacementElements": "reject-as-existing-inspector",
+    "mustBeHidden": true,
+    "suppressionAnyOf": [
+      {
+        "computedDisplay": "none"
+      },
+      {
+        "computedOpacityNumeric": 0
+      }
+    ],
+    "beforeAndAfterContentAllowed": [
+      "none",
+      "normal",
+      "\"\"",
+      "''"
+    ],
+    "activeOrPendingAnimations": "reject",
+    "styleOrPseudoUnavailable": "reject"
+  },
+  "counts": {
+    "field": "excludedHiddenEmptyLeaves",
+    "maximumPerField": 2000,
+    "maximumAcrossFields": 2000,
+    "rawOrNonUniqueField": 0,
+    "includedInOriginalScanBudgets": true
+  },
+  "nonExclusions": [
+    "target",
+    "ancestors",
+    "hidden nonempty DOM nodes",
+    "hidden whitespace or comment child nodes",
+    "visibility-hidden-only",
+    "content-visibility-hidden-only",
+    "generated pseudo content including whitespace",
+    "open shadow root",
+    "custom or replacement elements",
+    "unknown styles or active animation"
+  ],
+  "diagnostics": {
+    "method": "browser.embedded.fields.rendering.inspect",
+    "requestVersion": 1,
+    "policy": "bounded-selection-text-v2",
+    "additionalRequiredResponseField": "excludedHiddenEmptyLeaves",
+    "bodyRead": false,
+    "sourceRevisionRequired": true,
+    "oldPoliciesUnchanged": true
+  },
+  "invariants": {
+    "externalAppearanceVerified": false,
+    "modifiesDOMOrStyles": false,
+    "grantsActionOrModelPermission": false,
+    "oldPoliciesAndRunSnapshotsUnchanged": true
+  }
+}

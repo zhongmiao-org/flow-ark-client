@@ -65,7 +65,7 @@ export function taskStepTitle(step: Step): string {
   const title = (
     step.name?.trim() ||
     (step.type === 'browser'
-      ? step.version === 9
+      ? step.version === 9 || step.version === 10
         ? '读取关联字段与选区文字候选'
         : step.version === 6 || step.version === 7
           ? '关联字段与正文'

@@ -136,7 +136,7 @@ const FlowNode = memo(function FlowNode({ data, selected }: NodeProps<DiagramNod
                   ? {
                       url: '读取当前网址',
                       collect:
-                        step.version === 9
+                        step.version === 9 || step.version === 10
                           ? '关联字段与选区文字候选'
                           : step.version >= 6
                             ? '关联字段与正文'

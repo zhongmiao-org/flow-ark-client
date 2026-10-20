@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (9241750ba4abebade6a94c959d96ab873124be40dd4099799d57d7798a100367). Do not edit. */
+/* Generated from contracts/p1.schema.json (bdc7bcbd4ebf4c6500396c01eab1819ca3ef752229d08dc8140df47524612ac9). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -38,6 +38,7 @@ export const node_run_result_1: ValidateFunction;
 export const node_browser_7: ValidateFunction;
 export const node_browser_8: ValidateFunction;
 export const node_browser_9: ValidateFunction;
+export const node_browser_10: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -100,6 +101,8 @@ export const browser_rendered_fields_result_v2: ValidateFunction;
 export const browser_scoped_rendered_fields_result_v3: ValidateFunction;
 export const browser_selection_text_result_v4: ValidateFunction;
 export const browser_selection_text_invocation_v1: ValidateFunction;
+export const browser_empty_leaf_text_result_v5: ValidateFunction;
+export const browser_empty_leaf_text_invocation_v1: ValidateFunction;
 export const ai_outcome_v1: ValidateFunction;
 export const ai_receipt_v1: ValidateFunction;
 export const skill_versionref_v1: ValidateFunction;

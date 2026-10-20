@@ -12,7 +12,9 @@ export function framePathOf(command: {
       (s) =>
         typeof s !== 'string' ||
         !s.trim() ||
-        (command.version === 8 || command.version === 9 ? [...s].length : s.length) > 2000,
+        (command.version === 8 || command.version === 9 || command.version === 10
+          ? [...s].length
+          : s.length) > 2000,
     )
   )
     throw new Error('框架路径需为最多 8 层的非空 CSS 选择器数组');

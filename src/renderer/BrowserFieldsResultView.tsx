@@ -140,6 +140,12 @@ export default function BrowserFieldsResultView({ value }: { value: BrowserColle
                 处（可能绘制）。外部覆盖未核验，候选仍须完整阅读核对。
               </p>
             )}
+            {'excludedHiddenEmptyLeaves' in f && (
+              <p>
+                本次跳过隐藏空叶子 {f.excludedHiddenEmptyLeaves}{' '}
+                处；隐藏非空正文仍拒绝，外部覆盖未核验。
+              </p>
+            )}
             <strong>
               {f.operation === 'selection-text'
                 ? '选区文字候选 · 外部覆盖未核验'
