@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.49.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.50.0/p1.schema.json",
   "title": "FlowArk P1 0.48.0",
   "$defs": {
     "Json": {
@@ -3107,6 +3107,9 @@
                   "pattern": "^[a-z][a-z0-9-]{0,99}$"
                 },
                 "maxItems": 100
+              },
+              "batching": {
+                "$ref": "#/$defs/BatchDeclaration"
               }
             },
             "required": [
@@ -5399,6 +5402,9 @@
           },
           "minItems": 0,
           "maxItems": 1000
+        },
+        "batching": {
+          "$ref": "#/$defs/BatchDeclaration"
         }
       },
       "required": [
@@ -16488,6 +16494,1247 @@
         "atEnd"
       ],
       "additionalProperties": false
+    },
+    "BatchFieldPath": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100,
+        "not": {
+          "enum": [
+            "__proto__",
+            "prototype",
+            "constructor"
+          ]
+        },
+        "pattern": "^(?!\\s*$)[^\\uD800-\\uDFFF]*$"
+      }
+    },
+    "BatchDeclaration": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "decisionPath": {
+          "$ref": "#/$defs/BatchFieldPath"
+        },
+        "progressPath": {
+          "$ref": "#/$defs/BatchFieldPath"
+        },
+        "reasonPath": {
+          "$ref": "#/$defs/BatchFieldPath"
+        }
+      },
+      "required": [
+        "version",
+        "decisionPath",
+        "progressPath",
+        "reasonPath"
+      ],
+      "additionalProperties": false
+    },
+    "BatchDecision": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "decision": {
+          "enum": [
+            "continue",
+            "complete",
+            "review"
+          ]
+        },
+        "progress": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^(?!\\s*$)[^\\uD800-\\uDFFF]*$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^(?!\\s*$)[^\\uD800-\\uDFFF]*$"
+        }
+      },
+      "required": [
+        "version",
+        "decision",
+        "progress",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "BatchLimits": {
+      "type": "object",
+      "properties": {
+        "maxBatches": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maxDurationMs": {
+          "type": "integer",
+          "minimum": 60000,
+          "maximum": 86400000
+        },
+        "delayMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 300000
+        }
+      },
+      "required": [
+        "maxBatches",
+        "maxDurationMs",
+        "delayMs"
+      ],
+      "additionalProperties": false
+    },
+    "BatchOwner": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "template-instance",
+            "author-checkout"
+          ]
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "entryId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "kind",
+        "ownerId",
+        "entryId",
+        "sourceSha256"
+      ],
+      "additionalProperties": false
+    },
+    "BatchScope": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "policy": {
+          "const": "stable-scope-v1"
+        },
+        "owner": {
+          "$ref": "#/$defs/BatchOwner"
+        },
+        "flowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "flowSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "preparedSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bindingsSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "configurationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "declarationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "stableAuthorizationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "processSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "policy",
+        "owner",
+        "flowId",
+        "flowSha256",
+        "preparedSha256",
+        "bindingsSha256",
+        "configurationSha256",
+        "declarationSha256",
+        "stableAuthorizationSha256",
+        "processSha256"
+      ],
+      "additionalProperties": false
+    },
+    "BatchRunReference": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "scopeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "sessionId",
+        "ordinal",
+        "scopeSha256"
+      ],
+      "additionalProperties": false
+    },
+    "BatchRunLink": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "scopeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        }
+      },
+      "required": [
+        "sessionId",
+        "ordinal",
+        "runId",
+        "scopeSha256",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "BatchHistoryRow": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "scopeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "runName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "runState": {
+          "$ref": "#/$defs/RunState"
+        }
+      },
+      "required": [
+        "sessionId",
+        "ordinal",
+        "runId",
+        "scopeSha256",
+        "createdAt",
+        "runName",
+        "runState"
+      ],
+      "additionalProperties": false
+    },
+    "BatchAdmissionProof": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "run": {
+          "$ref": "#/$defs/BatchRunLink"
+        },
+        "processSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "authorizationSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "previousRunId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "version",
+        "run",
+        "processSha256",
+        "authorizationSha256",
+        "observedAt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "run": {
+                "properties": {
+                  "ordinal": {
+                    "minimum": 2
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "previousRunId"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "previousRunId"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "BatchDecisionProof": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "run": {
+          "$ref": "#/$defs/BatchRunLink"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "valueSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "decision": {
+          "enum": [
+            "continue",
+            "complete",
+            "review"
+          ]
+        },
+        "progressSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "privacy": {
+          "const": "host-redacted-v1"
+        }
+      },
+      "required": [
+        "version",
+        "run",
+        "sourceSha256",
+        "valueSha256",
+        "decision",
+        "progressSha256",
+        "reason",
+        "privacy"
+      ],
+      "additionalProperties": false
+    },
+    "BatchStopReason": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "user-stop",
+            "target-complete",
+            "review-required",
+            "no-progress",
+            "batch-limit",
+            "duration-limit",
+            "clock-change",
+            "source-changed",
+            "authorization-changed",
+            "credential-changed",
+            "result-unavailable",
+            "result-invalid",
+            "operation-unresolved",
+            "run-failed",
+            "run-cancelled",
+            "run-interrupted",
+            "preflight-failed",
+            "application-exit",
+            "system-suspend",
+            "application-restart",
+            "storage-fault",
+            "admission-unknown"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "BatchReviewInput": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "batches": {
+          "$ref": "#/$defs/BatchLimits"
+        },
+        "debug": {
+          "const": false
+        }
+      },
+      "required": [
+        "id",
+        "batches"
+      ],
+      "additionalProperties": false
+    },
+    "BatchReviewConfirmation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "batches": {
+          "$ref": "#/$defs/BatchLimits"
+        },
+        "debug": {
+          "const": false
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requestId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+        },
+        "reviewed": {
+          "const": true
+        }
+      },
+      "required": [
+        "id",
+        "batches",
+        "token",
+        "requestId",
+        "reviewed"
+      ],
+      "additionalProperties": false
+    },
+    "BatchPreviewDetails": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "supported": {
+              "const": true
+            },
+            "limits": {
+              "$ref": "#/$defs/BatchLimits"
+            },
+            "scope": {
+              "$ref": "#/$defs/BatchScope"
+            },
+            "scopeSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "declaration": {
+              "$ref": "#/$defs/BatchDeclaration"
+            },
+            "policy": {
+              "const": "stable-scope-v1"
+            }
+          },
+          "required": [
+            "supported",
+            "limits",
+            "scope",
+            "scopeSha256",
+            "declaration",
+            "policy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "supported": {
+              "const": false
+            },
+            "limits": {
+              "$ref": "#/$defs/BatchLimits"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "pattern": "^[^\\uD800-\\uDFFF]*$"
+            }
+          },
+          "required": [
+            "supported",
+            "limits",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "BatchSessionView": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "flowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "entryName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "ownerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\uD800-\\uDFFF]*$"
+        },
+        "scope": {
+          "$ref": "#/$defs/BatchScope"
+        },
+        "scopeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "limits": {
+          "$ref": "#/$defs/BatchLimits"
+        },
+        "phase": {
+          "enum": [
+            "running",
+            "waiting",
+            "stopping",
+            "stopped",
+            "completed",
+            "interrupted"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "startedBatches": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "finishedBatches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "dispatchDeadline": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "checkingNext": {
+          "type": "boolean"
+        },
+        "current": {
+          "$ref": "#/$defs/BatchRunLink"
+        },
+        "previous": {
+          "$ref": "#/$defs/BatchRunLink"
+        },
+        "lastDecision": {
+          "$ref": "#/$defs/BatchDecisionProof"
+        },
+        "nextAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "stopReason": {
+          "$ref": "#/$defs/BatchStopReason"
+        },
+        "live": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "version",
+        "sessionId",
+        "flowId",
+        "name",
+        "entryName",
+        "ownerName",
+        "scope",
+        "scopeSha256",
+        "limits",
+        "phase",
+        "revision",
+        "generation",
+        "startedBatches",
+        "finishedBatches",
+        "createdAt",
+        "updatedAt",
+        "dispatchDeadline",
+        "checkingNext",
+        "live"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "phase": {
+                "enum": [
+                  "running",
+                  "stopping"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "current"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "phase": {
+                "const": "waiting"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "previous",
+              "lastDecision",
+              "nextAt"
+            ],
+            "properties": {
+              "lastDecision": {
+                "properties": {
+                  "decision": {
+                    "const": "continue"
+                  }
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "current"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "phase": {
+                "const": "completed"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "previous",
+              "lastDecision",
+              "stopReason"
+            ],
+            "properties": {
+              "lastDecision": {
+                "properties": {
+                  "decision": {
+                    "const": "complete"
+                  }
+                }
+              },
+              "stopReason": {
+                "properties": {
+                  "code": {
+                    "const": "target-complete"
+                  }
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "current"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "phase": {
+                "enum": [
+                  "stopped",
+                  "interrupted"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "stopReason"
+            ],
+            "properties": {
+              "stopReason": {
+                "properties": {
+                  "code": {
+                    "not": {
+                      "const": "target-complete"
+                    }
+                  }
+                }
+              }
+            },
+            "not": {
+              "required": [
+                "current"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "phase": {
+                "enum": [
+                  "running",
+                  "waiting"
+                ]
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "stopReason"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "checkingNext": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "phase": {
+                "const": "waiting"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BatchGetRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "BatchListCursor": {
+      "type": "object",
+      "properties": {
+        "flowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ceiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "before": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "flowId",
+        "ceiling",
+        "before"
+      ],
+      "additionalProperties": false
+    },
+    "BatchHistoryCursor": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ceiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "before": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "sessionId",
+        "ceiling",
+        "before"
+      ],
+      "additionalProperties": false
+    },
+    "BatchListRequest": {
+      "type": "object",
+      "properties": {
+        "flowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "cursor": {
+          "$ref": "#/$defs/BatchListCursor"
+        }
+      },
+      "required": [
+        "flowId"
+      ],
+      "additionalProperties": false
+    },
+    "BatchHistoryRequest": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "cursor": {
+          "$ref": "#/$defs/BatchHistoryCursor"
+        }
+      },
+      "required": [
+        "sessionId"
+      ],
+      "additionalProperties": false
+    },
+    "BatchSessionPageItem": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "session": {
+          "$ref": "#/$defs/BatchSessionView"
+        }
+      },
+      "required": [
+        "position",
+        "session"
+      ],
+      "additionalProperties": false
+    },
+    "BatchHistoryPageItem": {
+      "type": "object",
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "row": {
+          "$ref": "#/$defs/BatchHistoryRow"
+        }
+      },
+      "required": [
+        "position",
+        "row"
+      ],
+      "additionalProperties": false
+    },
+    "BatchSessionPage": {
+      "type": "object",
+      "properties": {
+        "flowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ceiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "scannedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BatchSessionPageItem"
+          },
+          "maxItems": 20
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BatchListCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "flowId",
+        "ceiling",
+        "scannedCount",
+        "items",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "BatchHistoryPage": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "ceiling": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740990
+        },
+        "scannedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BatchHistoryPageItem"
+          },
+          "maxItems": 20
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BatchHistoryCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scopeSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "sessionId",
+        "ceiling",
+        "scannedCount",
+        "items",
+        "nextCursor",
+        "scopeSha256"
+      ],
+      "additionalProperties": false
+    },
+    "BatchStopRequest": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "mode": {
+          "enum": [
+            "after-batch",
+            "cancel-current"
+          ]
+        }
+      },
+      "required": [
+        "requestId",
+        "sessionId",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "BatchStopReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$"
+        },
+        "sessionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "mode": {
+          "enum": [
+            "after-batch",
+            "cancel-current"
+          ]
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "enum": [
+            "applied",
+            "already-terminal"
+          ]
+        },
+        "nextBatchesStopped": {
+          "const": true
+        },
+        "sessionRevision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740990
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "targetRunId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        },
+        "currentCancellation": {
+          "enum": [
+            "not-requested",
+            "requested",
+            "already-terminal",
+            "not-running",
+            "needs-check"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "sessionId",
+        "mode",
+        "fingerprint",
+        "status",
+        "nextBatchesStopped",
+        "sessionRevision",
+        "requestedAt",
+        "currentCancellation"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "after-batch"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "currentCancellation": {
+                "const": "not-requested"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "currentCancellation": {
+                "not": {
+                  "const": "not-requested"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "currentCancellation": {
+                "enum": [
+                  "requested",
+                  "needs-check"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "targetRunId"
+            ]
+          }
+        }
+      ]
     }
   }
 }

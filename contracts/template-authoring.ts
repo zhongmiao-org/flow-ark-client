@@ -1,3 +1,4 @@
+import { assertEntryBatching } from './entry-batches';
 import { assertBrowserScrollCapabilities } from './browser-scroll';
 import { assertBrowserVisibleTextCapabilities } from './browser-visible-text';
 import { assertBrowserEmptyLeafTextCapabilities } from './browser-empty-leaf-text';
@@ -122,6 +123,7 @@ export function validateAuthorDefinition(value: unknown): any {
     validateConfigurationSchema(entry.inputSchema);
     localSchema(entry.inputSchema);
     localSchema(entry.resultSchema);
+    assertEntryBatching(entry, entry.resultSchema);
     for (const id of entry.resourceIds)
       if (!d.resources.some((r: any) => r.id === id)) throw Error('入口引用未知资源：' + id);
     for (const id of entry.actionIds)

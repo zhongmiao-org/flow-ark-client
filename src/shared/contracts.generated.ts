@@ -1336,6 +1336,60 @@ export type RunResultOwner =
       kind: 'author-draft';
       id: RunResultId;
     };
+/**
+ * @minItems 1
+ * @maxItems 16
+ */
+export type BatchFieldPath =
+  | [string]
+  | [string, string]
+  | [string, string, string]
+  | [string, string, string, string]
+  | [string, string, string, string, string]
+  | [string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string, string, string, string, string]
+  | [string, string, string, string, string, string, string, string, string, string, string, string, string, string]
+  | [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string
+    ]
+  | [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string
+    ];
 export type AIPlanningResult = {
   formatVersion: '1.0';
   kind: 'plan' | 'clarify' | 'unsupported';
@@ -3213,6 +3267,67 @@ export type BrowserVisibleTextFieldResult = {
   excludedAncestorDecorations: number;
   excludedHiddenTextLeaves: number;
 };
+export type BatchAdmissionProof = {
+  version: 1;
+  run: BatchRunLink;
+  processSha256: string;
+  authorizationSha256: string;
+  observedAt: string;
+  previousRunId?: string;
+};
+export type BatchPreviewDetails =
+  | {
+      supported: true;
+      limits: BatchLimits;
+      scope: BatchScope;
+      scopeSha256: string;
+      declaration: BatchDeclaration;
+      policy: 'stable-scope-v1';
+    }
+  | {
+      supported: false;
+      limits: BatchLimits;
+      reason: string;
+    };
+export type BatchSessionView = {
+  version: 1;
+  sessionId: string;
+  flowId: string;
+  name: string;
+  entryName: string;
+  ownerName: string;
+  scope: BatchScope;
+  scopeSha256: string;
+  limits: BatchLimits;
+  phase: 'running' | 'waiting' | 'stopping' | 'stopped' | 'completed' | 'interrupted';
+  revision: number;
+  generation: number;
+  startedBatches: number;
+  finishedBatches: number;
+  createdAt: string;
+  updatedAt: string;
+  dispatchDeadline: string;
+  checkingNext: boolean;
+  current?: BatchRunLink;
+  previous?: BatchRunLink;
+  lastDecision?: BatchDecisionProof;
+  nextAt?: string;
+  stopReason?: BatchStopReason;
+  live: boolean;
+};
+export type BatchStopReceipt = {
+  version: 1;
+  requestId: string;
+  sessionId: string;
+  mode: 'after-batch' | 'cancel-current';
+  fingerprint: string;
+  status: 'applied' | 'already-terminal';
+  nextBatchesStopped: true;
+  sessionRevision: number;
+  requestedAt: string;
+  targetRunId?: string;
+  currentCancellation: 'not-requested' | 'requested' | 'already-terminal' | 'not-running' | 'needs-check';
+};
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -3460,6 +3575,33 @@ export interface FlowArkP1 {
   BrowserScrollNode?: BrowserScrollNode;
   BrowserScrollInvocation?: BrowserScrollInvocation;
   BrowserScrollResult?: BrowserScrollResult;
+  BatchFieldPath?: BatchFieldPath;
+  BatchDeclaration?: BatchDeclaration;
+  BatchDecision?: BatchDecision;
+  BatchLimits?: BatchLimits;
+  BatchOwner?: BatchOwner;
+  BatchScope?: BatchScope;
+  BatchRunReference?: BatchRunReference;
+  BatchRunLink?: BatchRunLink;
+  BatchHistoryRow?: BatchHistoryRow;
+  BatchAdmissionProof?: BatchAdmissionProof;
+  BatchDecisionProof?: BatchDecisionProof;
+  BatchStopReason?: BatchStopReason;
+  BatchReviewInput?: BatchReviewInput;
+  BatchReviewConfirmation?: BatchReviewConfirmation;
+  BatchPreviewDetails?: BatchPreviewDetails;
+  BatchSessionView?: BatchSessionView;
+  BatchGetRequest?: BatchGetRequest;
+  BatchListCursor?: BatchListCursor;
+  BatchHistoryCursor?: BatchHistoryCursor;
+  BatchListRequest?: BatchListRequest;
+  BatchHistoryRequest?: BatchHistoryRequest;
+  BatchSessionPageItem?: BatchSessionPageItem;
+  BatchHistoryPageItem?: BatchHistoryPageItem;
+  BatchSessionPage?: BatchSessionPage;
+  BatchHistoryPage?: BatchHistoryPage;
+  BatchStopRequest?: BatchStopRequest;
+  BatchStopReceipt?: BatchStopReceipt;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -4501,6 +4643,7 @@ export interface TemplateArchiveManifest {
      * @maxItems 100
      */
     actions: string[];
+    batching?: BatchDeclaration;
   }[];
   /**
    * @maxItems 100
@@ -4551,6 +4694,12 @@ export interface TemplateArchiveManifest {
     license: string;
   }[];
   contentDigest: string;
+}
+export interface BatchDeclaration {
+  version: 1;
+  decisionPath: BatchFieldPath;
+  progressPath: BatchFieldPath;
+  reasonPath: BatchFieldPath;
 }
 export interface AIRequest {
   provider: 'openai-codex' | 'deepseek';
@@ -5079,6 +5228,7 @@ export interface TemplateAuthorEntry {
    * @maxItems 1000
    */
   promptBindings: TemplateAuthorPromptBinding[];
+  batching?: BatchDeclaration;
 }
 export interface TemplateAuthorAsset {
   path: string;
@@ -85911,4 +86061,622 @@ export interface BrowserScrollResult {
   moved: boolean;
   atStart: boolean;
   atEnd: boolean;
+}
+export interface BatchDecision {
+  version: 1;
+  decision: 'continue' | 'complete' | 'review';
+  progress: string;
+  reason: string;
+}
+export interface BatchLimits {
+  maxBatches: number;
+  maxDurationMs: number;
+  delayMs: number;
+}
+export interface BatchOwner {
+  kind: 'template-instance' | 'author-checkout';
+  ownerId: string;
+  entryId: string;
+  sourceSha256: string;
+}
+export interface BatchScope {
+  version: 1;
+  policy: 'stable-scope-v1';
+  owner: BatchOwner;
+  flowId: string;
+  flowSha256: string;
+  preparedSha256: string;
+  bindingsSha256: string;
+  configurationSha256: string;
+  declarationSha256: string;
+  stableAuthorizationSha256: string;
+  processSha256: string;
+}
+export interface BatchRunReference {
+  version: 1;
+  sessionId: string;
+  ordinal: number;
+  scopeSha256: string;
+}
+export interface BatchRunLink {
+  sessionId: string;
+  ordinal: number;
+  runId: string;
+  scopeSha256: string;
+  createdAt: string;
+}
+export interface BatchHistoryRow {
+  sessionId: string;
+  ordinal: number;
+  runId: string;
+  scopeSha256: string;
+  createdAt: string;
+  runName: string;
+  runState: RunState;
+}
+export interface BatchDecisionProof {
+  version: 1;
+  run: BatchRunLink;
+  sourceSha256: string;
+  valueSha256: string;
+  decision: 'continue' | 'complete' | 'review';
+  progressSha256: string;
+  reason: string;
+  privacy: 'host-redacted-v1';
+}
+export interface BatchStopReason {
+  code:
+    | 'user-stop'
+    | 'target-complete'
+    | 'review-required'
+    | 'no-progress'
+    | 'batch-limit'
+    | 'duration-limit'
+    | 'clock-change'
+    | 'source-changed'
+    | 'authorization-changed'
+    | 'credential-changed'
+    | 'result-unavailable'
+    | 'result-invalid'
+    | 'operation-unresolved'
+    | 'run-failed'
+    | 'run-cancelled'
+    | 'run-interrupted'
+    | 'preflight-failed'
+    | 'application-exit'
+    | 'system-suspend'
+    | 'application-restart'
+    | 'storage-fault'
+    | 'admission-unknown';
+  message: string;
+}
+export interface BatchReviewInput {
+  id: string;
+  batches: BatchLimits;
+  debug?: false;
+}
+export interface BatchReviewConfirmation {
+  id: string;
+  batches: BatchLimits;
+  debug?: false;
+  token: string;
+  requestId: string;
+  reviewed: true;
+}
+export interface BatchGetRequest {
+  sessionId: string;
+}
+export interface BatchListCursor {
+  flowId: string;
+  ceiling: number;
+  before: number;
+}
+export interface BatchHistoryCursor {
+  sessionId: string;
+  ceiling: number;
+  before: number;
+}
+export interface BatchListRequest {
+  flowId: string;
+  cursor?: BatchListCursor;
+}
+export interface BatchHistoryRequest {
+  sessionId: string;
+  cursor?: BatchHistoryCursor;
+}
+export interface BatchSessionPageItem {
+  position: number;
+  session: BatchSessionView;
+}
+export interface BatchHistoryPageItem {
+  position: number;
+  row: BatchHistoryRow;
+}
+export interface BatchSessionPage {
+  flowId: string;
+  ceiling: number;
+  scannedCount: number;
+  /**
+   * @maxItems 20
+   */
+  items:
+    | []
+    | [BatchSessionPageItem]
+    | [BatchSessionPageItem, BatchSessionPageItem]
+    | [BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem]
+    | [BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem]
+    | [BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem, BatchSessionPageItem]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ]
+    | [
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem,
+        BatchSessionPageItem
+      ];
+  nextCursor: BatchListCursor | null;
+}
+export interface BatchHistoryPage {
+  sessionId: string;
+  ceiling: number;
+  scannedCount: number;
+  /**
+   * @maxItems 20
+   */
+  items:
+    | []
+    | [BatchHistoryPageItem]
+    | [BatchHistoryPageItem, BatchHistoryPageItem]
+    | [BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem]
+    | [BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem]
+    | [BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem, BatchHistoryPageItem]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ]
+    | [
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem,
+        BatchHistoryPageItem
+      ];
+  nextCursor: BatchHistoryCursor | null;
+  scopeSha256: string;
+}
+export interface BatchStopRequest {
+  requestId: string;
+  sessionId: string;
+  mode: 'after-batch' | 'cancel-current';
 }

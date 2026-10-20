@@ -1,3 +1,4 @@
+import { assertEntryBatching } from './entry-batches';
 import { assertBrowserScrollCapabilities } from './browser-scroll';
 import { assertBrowserVisibleTextCapabilities } from './browser-visible-text';
 import { assertBrowserEmptyLeafTextCapabilities } from './browser-empty-leaf-text';
@@ -22,7 +23,7 @@ import schema from './p1.schema.json';
 import {validateConfigurationSchema} from './configuration-schema';
 import { validateAuthorMetadata } from './template-authoring';
 export const LIMITS = { archive: 20*1024*1024, total: 100*1024*1024, file: 10*1024*1024, files: 512 };
-export type Entry = { id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
+export type Entry = { batching?:import('./entry-batch-decision.mjs').BatchDeclaration; id:string; name:string; flow:string; inputSchema:string; resultSchema:string; schedulable:boolean; capabilities:string[]; resources:string[]; actions:string[] };
 export type Manifest = { packageFormat:'2.0'; id:string; name:string; description:string; version:string; author:string; source:string; minimumClientVersion:string; sdkVersion:'1.0'; configurationSchema:string; stateSchema:string; entries:Entry[]; resources:{id:string;name:string;kind:'file'|'directory'|'browser'|'ai'|'skill'|'conversation-source'|'run-result';sourceEntries?:string[];access:'read'|'write'|'readwrite'|'use';required:boolean;defaultDirectoryFrom?:string}[]; actions:{id:string;name:string;description:string;default:'deny'}[]; files:{path:string;size:number;sha256:string}[]; scripts:string[]; dependencies:{name:string;version:string;license:string}[];contentDigest:string };
 export type PackageData = { manifest:Manifest; files:Map<string,Buffer> };
 export function canonical(value:any):string {
@@ -69,6 +70,7 @@ export function validatePackage(files:Map<string,Buffer>):PackageData {
  for(const p of manifest.scripts){if(!p.startsWith('scripts/')||!p.endsWith('.js')||!files.has(p))throw new Error('脚本资源无效');}
  for(const r of manifest.resources){if(['skill','conversation-source','run-result'].includes(r.kind)&&r.access!=='read')throw new Error('Skill 与完整来源资源只允许 read');if(['browser','ai'].includes(r.kind)?r.access!=='use':r.access==='use')throw new Error('浏览器和 AI 资源需声明 use');}
  for(const entry of manifest.entries){
+  assertEntryBatching(entry,jsonFile(files,entry.resultSchema));
   unique(entry.resources,'入口资源');unique(entry.actions,'入口动作');unique(entry.capabilities,'入口能力');
   for(const id of entry.resources)if(!manifest.resources.some(r=>r.id===id))throw new Error('入口引用未知资源');
   for(const id of entry.actions)if(!manifest.actions.some(a=>a.id===id))throw new Error('入口引用未知动作');
