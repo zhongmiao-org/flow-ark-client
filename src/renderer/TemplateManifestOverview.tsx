@@ -13,6 +13,7 @@ export const capabilityLabel = (name: string) =>
       'browser-observe-v1': '网页只读核对',
       'browser-fields-v1': '网页关联字段采集',
       'browser-rendered-fields-v2': '网页关联字段与选区正文检查',
+      'browser-empty-leaf-text-v1': '网页文字候选 · 跳过隐藏空叶子',
       'browser-selection-text-v1': '网页选区文字候选',
       'browser-rendered-fields-v1': '网页关联字段与已排版正文',
       file: '文件操作',

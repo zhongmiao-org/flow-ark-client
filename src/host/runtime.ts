@@ -92,6 +92,7 @@ import { assertBrowserOperations } from '../adapters/browser-scope';
 import {
   assertBrowserFieldsInvocation,
   assertBrowserSelectionTextInvocation,
+  assertBrowserEmptyLeafTextInvocation,
   assertBrowserSelectionTextCapabilities,
   assertBrowserFieldsResult,
   browserFieldsCapabilityFor,
@@ -2137,7 +2138,13 @@ export class Runtime {
         runSignal.throwIfAborted();
       }
       let fieldsInput: ResolvedBrowserFieldsNode | undefined;
-      if (args.version === 5 || args.version === 6 || args.version === 7 || args.version === 9) {
+      if (
+        args.version === 5 ||
+        args.version === 6 ||
+        args.version === 7 ||
+        args.version === 9 ||
+        args.version === 10
+      ) {
         const { nodeInstance, ...nodeInput } = args;
         const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
         if (
@@ -2153,12 +2160,14 @@ export class Runtime {
         )
           throw Error('关联字段节点不在当前固定运行中');
         fieldsInput =
-          args.version === 9
-            ? assertBrowserSelectionTextInvocation(source, args)
-            : assertBrowserFieldsInvocation(source, nodeInput);
+          args.version === 10
+            ? assertBrowserEmptyLeafTextInvocation(source, args)
+            : args.version === 9
+              ? assertBrowserSelectionTextInvocation(source, args)
+              : assertBrowserFieldsInvocation(source, nodeInput);
         if (snapshot.bindings.template) {
           const { entry, pkg } = await this.templates.context(snapshot);
-          if (args.version === 9)
+          if (args.version === 9 || args.version === 10)
             assertBrowserSelectionTextCapabilities(
               source,
               snapshot.flow.requiredCapabilities,
@@ -2213,7 +2222,8 @@ export class Runtime {
           ? {
               version: fieldsInput.version,
               fields: fieldsInput.fields,
-              ...(fieldsInput.version === 9 && 'renderPolicy' in fieldsInput
+              ...((fieldsInput.version === 9 || fieldsInput.version === 10) &&
+              'renderPolicy' in fieldsInput
                 ? { renderPolicy: fieldsInput.renderPolicy }
                 : {}),
             }

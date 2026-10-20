@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.46.0/p1.schema.json",
-  "title": "FlowArk P1 0.46.0",
+  "$id": "https://flowark.local/contracts/0.47.0/p1.schema.json",
+  "title": "FlowArk P1 0.47.0",
   "$defs": {
     "Json": {
       "anyOf": [
@@ -2499,6 +2499,9 @@
             "renderPolicy"
           ],
           "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/BrowserEmptyLeafTextFieldsNode"
         }
       ]
     },
@@ -15228,6 +15231,455 @@
       "required": [
         "thinking",
         "maxOutputTokens"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserEmptyLeafTextFieldsNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "browser"
+        },
+        "version": {
+          "const": 10
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "const": "collect"
+        },
+        "selector": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "\\S"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "$ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "framePath": {
+          "$ref": "#/$defs/FramePath"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/BrowserSelectionTextField"
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "selection-text"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        },
+        "renderPolicy": {
+          "const": "bounded-selection-text-v2"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "selector",
+        "framePath",
+        "fields",
+        "renderPolicy"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserEmptyLeafTextFieldsInvocation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "type": {
+          "const": "browser"
+        },
+        "version": {
+          "const": 10
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "operation": {
+          "const": "collect"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "framePath": {
+          "$ref": "#/$defs/FramePath"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+              },
+              "selector": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "pattern": "\\S"
+              },
+              "operation": {
+                "enum": [
+                  "text",
+                  "attribute",
+                  "selection-text"
+                ]
+              },
+              "attribute": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "key",
+              "selector",
+              "operation",
+              "attribute",
+              "required"
+            ],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "operation": {
+                      "enum": [
+                        "text",
+                        "selection-text"
+                      ]
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "attribute": {
+                      "type": "null"
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "operation": {
+                      "const": "attribute"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "attribute": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "contains": {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "const": "selection-text"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          }
+        },
+        "renderPolicy": {
+          "const": "bounded-selection-text-v2"
+        },
+        "nodeInstance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "operation",
+        "selector",
+        "framePath",
+        "fields",
+        "renderPolicy",
+        "nodeInstance"
+      ],
+      "additionalProperties": false
+    },
+    "BrowserEmptyLeafTextFieldResult": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "operation": {
+          "enum": [
+            "text",
+            "attribute",
+            "selection-text"
+          ]
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z_:][A-Za-z0-9_.:-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "missing",
+            "ambiguous",
+            "missing-attribute",
+            "empty",
+            "hidden",
+            "clipped",
+            "unsupported"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 65536
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "hidden-target",
+              "hidden-descendant",
+              "line-clamp",
+              "overflow-clip",
+              "unsupported-layout",
+              "embedded-content",
+              "generated-content"
+            ]
+          }
+        },
+        "ignoredAncestorSpaces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "excludedAncestorDecorations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "excludedHiddenEmptyLeaves": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "key",
+        "selector",
+        "operation",
+        "attribute",
+        "required",
+        "count",
+        "status",
+        "value",
+        "issues",
+        "ignoredAncestorSpaces",
+        "excludedAncestorDecorations",
+        "excludedHiddenEmptyLeaves"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "operation": {
+                    "not": {
+                      "const": "selection-text"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "count": {
+                    "not": {
+                      "const": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "ignoredAncestorSpaces": {
+                "const": 0
+              },
+              "excludedAncestorDecorations": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BrowserEmptyLeafTextFieldsResult": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 5
+        },
+        "operation": {
+          "const": "collect"
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "documentUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "selector": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "pattern": "\\S"
+        },
+        "framePath": {
+          "$ref": "#/$defs/FramePath"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/BrowserEmptyLeafTextFieldResult"
+          }
+        },
+        "renderPolicy": {
+          "const": "bounded-selection-text-v2"
+        },
+        "externalAppearanceVerified": {
+          "const": false
+        }
+      },
+      "required": [
+        "version",
+        "operation",
+        "url",
+        "documentUrl",
+        "selector",
+        "framePath",
+        "complete",
+        "fields",
+        "renderPolicy",
+        "externalAppearanceVerified"
       ],
       "additionalProperties": false
     }

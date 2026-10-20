@@ -114,6 +114,7 @@ const renderingDataBaseSchema = z
       'bounded-rendered-text-v1',
       'bounded-rendered-text-v2',
       'bounded-selection-text-v1',
+      'bounded-selection-text-v2',
     ]),
     details: z.literal('ancestor-space-checks-v1').optional(),
     issues: z.array(issue).max(7),
@@ -164,10 +165,26 @@ const renderingDataSelectionSchema = renderingDataBaseSchema
     if (v.ignoredAncestorSpaces + v.excludedAncestorDecorations > 128)
       ctx.addIssue({ code: 'custom', message: '选区文字祖先伪元素计数超限' });
   });
+const renderingDataEmptyLeafSchema = renderingDataBaseSchema
+  .safeExtend({
+    policy: z.literal('bounded-selection-text-v2'),
+    ignoredAncestorSpaces: z.number().int().min(0).max(128),
+    excludedAncestorDecorations: z.number().int().min(0).max(128),
+    externalAppearanceVerified: z.literal(false),
+    excludedHiddenEmptyLeaves: z.number().int().min(0).max(2000),
+  })
+  .superRefine((v, ctx) => {
+    if (
+      v.excludedHiddenEmptyLeaves > v.scannedElements ||
+      v.ignoredAncestorSpaces + v.excludedAncestorDecorations > 128
+    )
+      ctx.addIssue({ code: 'custom', message: '空叶子排除计数超出本次扫描' });
+  });
 export const renderingDiagnosticDataSchema = z.discriminatedUnion('policy', [
   renderingDataV1Schema,
   renderingDataV2Schema,
   renderingDataSelectionSchema,
+  renderingDataEmptyLeafSchema,
 ]);
 export const renderingInspectionRequestSchema = z
   .object({
@@ -176,7 +193,12 @@ export const renderingInspectionRequestSchema = z
     root: fieldsPickRootSchema,
     selector: fieldsPickRootSchema.shape.selector,
     policy: z
-      .enum(['bounded-rendered-text-v1', 'bounded-rendered-text-v2', 'bounded-selection-text-v1'])
+      .enum([
+        'bounded-rendered-text-v1',
+        'bounded-rendered-text-v2',
+        'bounded-selection-text-v1',
+        'bounded-selection-text-v2',
+      ])
       .optional(),
     details: z.literal('ancestor-space-checks-v1').optional(),
   })
@@ -203,6 +225,7 @@ export const renderingInspectionSchema = z.discriminatedUnion('policy', [
   renderingDataV1Schema.safeExtend(inspectionMetadata),
   renderingDataV2Schema.safeExtend(inspectionMetadata),
   renderingDataSelectionSchema.safeExtend(inspectionMetadata),
+  renderingDataEmptyLeafSchema.safeExtend(inspectionMetadata),
 ]);
 export type RenderingDiagnosticData = z.infer<typeof renderingDiagnosticDataSchema>;
 export type RenderingLocation = RenderingDiagnosticData['locations'][number];

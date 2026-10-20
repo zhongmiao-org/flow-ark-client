@@ -3,6 +3,9 @@ import {
   node_browser_6,
   node_browser_7,
   node_browser_9,
+  node_browser_10,
+  browser_empty_leaf_text_result_v5,
+  browser_empty_leaf_text_invocation_v1,
   browser_fields_result_v1,
   browser_rendered_fields_result_v2,
   browser_scoped_rendered_fields_result_v3,
@@ -15,11 +18,12 @@ import type {
   BrowserRenderedFieldsResult,
   BrowserScopedRenderedFieldsResult,
   BrowserSelectionTextFieldsResult,
+  BrowserEmptyLeafTextFieldsResult,
 } from './contracts.generated';
 
-export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 | 7 | 9 }>;
+export type BrowserFieldsNode = Extract<Step, { type: 'browser'; version: 5 | 6 | 7 | 9 | 10 }>;
 export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fields'> & {
-  renderPolicy?: 'bounded-selection-text-v1';
+  renderPolicy?: 'bounded-selection-text-v1' | 'bounded-selection-text-v2';
   selector: string;
   fields: (Omit<BrowserFieldsNode['fields'][number], 'selector' | 'attribute'> & {
     selector: string;
@@ -29,12 +33,14 @@ export type ResolvedBrowserFieldsNode = Omit<BrowserFieldsNode, 'selector' | 'fi
 export const browserFieldsCapability = 'browser-fields-v1';
 export const browserRenderedFieldsCapability = 'browser-rendered-fields-v1';
 export const browserScopedRenderedFieldsCapability = 'browser-rendered-fields-v2';
+export const browserEmptyLeafTextCapability = 'browser-empty-leaf-text-v1';
 export const browserSelectionTextCapability = 'browser-selection-text-v1';
 export type BrowserCollectedResult =
   | BrowserFieldsResult
   | BrowserRenderedFieldsResult
   | BrowserScopedRenderedFieldsResult
-  | BrowserSelectionTextFieldsResult;
+  | BrowserSelectionTextFieldsResult
+  | BrowserEmptyLeafTextFieldsResult;
 export const renderedIssueOrder = [
   'hidden-target',
   'hidden-descendant',
@@ -45,13 +51,15 @@ export const renderedIssueOrder = [
   'generated-content',
 ] as const;
 export function browserFieldsCapabilityFor(version: number) {
-  return version === 9
-    ? browserSelectionTextCapability
-    : version === 7
-      ? browserScopedRenderedFieldsCapability
-      : version === 6
-        ? browserRenderedFieldsCapability
-        : browserFieldsCapability;
+  return version === 10
+    ? browserEmptyLeafTextCapability
+    : version === 9
+      ? browserSelectionTextCapability
+      : version === 7
+        ? browserScopedRenderedFieldsCapability
+        : version === 6
+          ? browserRenderedFieldsCapability
+          : browserFieldsCapability;
 }
 const encoder = new TextEncoder();
 const forbidden = ['__proto__', 'prototype', 'constructor'];
@@ -87,11 +95,12 @@ export function assertBrowserFieldsNode(
     !node_browser_5(value) &&
     !node_browser_6(value) &&
     !node_browser_7(value) &&
-    !node_browser_9(value)
+    !node_browser_9(value) &&
+    !node_browser_10(value)
   )
     throw Error('关联字段配置无效，请核对根定位、字段名、相对定位和读取方式');
   const n = value as BrowserFieldsNode;
-  if (n.version === 9 && typeof n.name === 'string') unicode(n.name);
+  if ((n.version === 9 || n.version === 10) && typeof n.name === 'string') unicode(n.name);
   input(n.selector, resolved);
   n.framePath.forEach(unicode);
   const keys = new Set<string>();
@@ -112,7 +121,10 @@ export function assertBrowserFieldsInvocation(
 ): ResolvedBrowserFieldsNode {
   assertBrowserFieldsNode(source);
   const n = resolvedBrowserFields(value);
-  if (source.version === 9 && (!('renderPolicy' in n) || source.renderPolicy !== n.renderPolicy))
+  if (
+    (source.version === 9 || source.version === 10) &&
+    (!('renderPolicy' in n) || source.renderPolicy !== n.renderPolicy)
+  )
     throw Error('选区文字政策与固定节点不一致');
   for (const key of ['id', 'type', 'version', 'operation', 'name', 'timeoutMs'] as const)
     if (source[key] !== n[key]) throw Error('关联字段不属于当前固定节点');
@@ -146,15 +158,25 @@ export function assertBrowserSelectionTextInvocation(source: unknown, value: unk
     throw Error('选区文字调用身份与固定节点不符');
   return node;
 }
+export function assertBrowserEmptyLeafTextInvocation(source: unknown, value: unknown) {
+  if (!browser_empty_leaf_text_invocation_v1(value)) throw Error('空叶子文字调用未解析或格式无效');
+  const { nodeInstance, ...input } =
+    value as import('./contracts.generated').BrowserEmptyLeafTextFieldsInvocation;
+  unicode(nodeInstance);
+  const node = assertBrowserFieldsInvocation(source, input);
+  if (node.version !== 10 || nodeInstance.split('/').at(-1) !== node.id)
+    throw Error('空叶子文字调用身份与固定节点不符');
+  return node;
+}
 export function assertBrowserSelectionTextCapabilities(
   value: any,
   capabilities: string[],
   manifest?: any,
   entry?: any,
 ) {
-  if (value?.type !== 'browser' || value.version !== 9) return;
+  if (value?.type !== 'browser' || ![9, 10].includes(value.version)) return;
   assertBrowserFieldsNode(value);
-  const required = ['browser', browserSelectionTextCapability];
+  const required = ['browser', browserFieldsCapabilityFor(value.version)];
   if (!required.every((c) => capabilities.includes(c)))
     throw Error('选区文字节点缺少browser或独立能力');
   if (
@@ -173,13 +195,15 @@ export function assertBrowserFieldsResult(
 ): asserts value is BrowserCollectedResult {
   resolvedBrowserFields(node);
   if (
-    !(node.version === 9
-      ? browser_selection_text_result_v4(value)
-      : node.version === 7
-        ? browser_scoped_rendered_fields_result_v3(value)
-        : node.version === 6
-          ? browser_rendered_fields_result_v2(value)
-          : browser_fields_result_v1(value))
+    !(node.version === 10
+      ? browser_empty_leaf_text_result_v5(value)
+      : node.version === 9
+        ? browser_selection_text_result_v4(value)
+        : node.version === 7
+          ? browser_scoped_rendered_fields_result_v3(value)
+          : node.version === 6
+            ? browser_rendered_fields_result_v2(value)
+            : browser_fields_result_v1(value))
   )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
@@ -195,6 +219,7 @@ export function assertBrowserFieldsResult(
     if (encoder.encode(url).length > 16384) throw Error('关联字段网址超限');
   }
   let complete = true;
+  let excludedHiddenEmptyLeaves = 0;
   for (let i = 0; i < node.fields.length; i++) {
     const f = r.fields[i],
       configured = node.fields[i];
@@ -207,6 +232,11 @@ export function assertBrowserFieldsResult(
         (['rendered-text', 'selection-text'].includes(f.operation) ? 65536 : 8192)
       )
         throw Error('关联字段单项结果超限');
+    }
+    if ('excludedHiddenEmptyLeaves' in f) {
+      if ((f.operation !== 'selection-text' || f.count !== 1) && f.excludedHiddenEmptyLeaves !== 0)
+        throw Error('空叶子计数不属于唯一选区文字字段');
+      excludedHiddenEmptyLeaves += f.excludedHiddenEmptyLeaves;
     }
     const issues: readonly string[] = 'issues' in f ? f.issues : [];
     if (
@@ -259,6 +289,7 @@ export function assertBrowserFieldsResult(
     )
       complete = false;
   }
+  if (excludedHiddenEmptyLeaves > 2000) throw Error('隐藏空叶子排除总数超限');
   if (r.complete !== complete) throw Error('关联字段完整性不符');
   if (encoder.encode(JSON.stringify(r)).length > (node.version >= 6 ? 131072 : 65536))
     throw Error('关联字段总结果超限，未截断或采用');
@@ -269,15 +300,17 @@ export function assertBrowserFieldsValue(value: unknown): asserts value is Brows
     !browser_fields_result_v1(value) &&
     !browser_rendered_fields_result_v2(value) &&
     !browser_scoped_rendered_fields_result_v3(value) &&
-    !browser_selection_text_result_v4(value)
+    !browser_selection_text_result_v4(value) &&
+    !browser_empty_leaf_text_result_v5(value)
   )
     throw Error('关联字段结果格式无效');
   const r = value as BrowserCollectedResult;
   const n = resolvedBrowserFields({
     id: 'result',
     type: 'browser',
-    version: r.version === 4 ? 9 : r.version === 3 ? 7 : r.version === 2 ? 6 : 5,
-    ...(r.version === 4 ? { renderPolicy: r.renderPolicy } : {}),
+    version:
+      r.version === 5 ? 10 : r.version === 4 ? 9 : r.version === 3 ? 7 : r.version === 2 ? 6 : 5,
+    ...(r.version >= 4 && 'renderPolicy' in r ? { renderPolicy: r.renderPolicy } : {}),
     operation: 'collect',
     selector: r.selector,
     framePath: r.framePath,

@@ -283,7 +283,9 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
                   'url',
                   'documentUrl',
                   'fields',
-                  ...(node.version === 9 ? ['renderPolicy', 'externalAppearanceVerified'] : []),
+                  ...(node.version === 9 || node.version === 10
+                    ? ['renderPolicy', 'externalAppearanceVerified']
+                    : []),
                 ],
               } as Record<string, string[]>
             )[node.operation] ?? [])
@@ -291,7 +293,11 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
     for (const key of known) add(path + '.' + key, label + ' / ' + key, '前序步骤', '步骤输出字段');
     if (
       node.type === 'browser' &&
-      (node.version === 5 || node.version === 6 || node.version === 7 || node.version === 9)
+      (node.version === 5 ||
+        node.version === 6 ||
+        node.version === 7 ||
+        node.version === 9 ||
+        node.version === 10)
     )
       node.fields.forEach((field, i) => {
         for (const key of [
@@ -299,8 +305,11 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
           'count',
           'status',
           ...(node.version >= 6 ? ['issues'] : []),
-          ...(node.version === 7 || node.version === 9 ? ['ignoredAncestorSpaces'] : []),
-          ...(node.version === 9 ? ['excludedAncestorDecorations'] : []),
+          ...(node.version === 10 ? ['excludedHiddenEmptyLeaves'] : []),
+          ...(node.version === 7 || node.version === 9 || node.version === 10
+            ? ['ignoredAncestorSpaces']
+            : []),
+          ...(node.version === 9 || node.version === 10 ? ['excludedAncestorDecorations'] : []),
         ])
           add(
             path + '.fields.' + i + '.' + key,
