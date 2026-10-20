@@ -10,9 +10,16 @@ export const browserActions: Record<
     detail: string;
     keywords: string;
     value: Json;
-    version: 2 | 3 | 4 | 5 | 6 | 7;
+    version: 2 | 3 | 4 | 5 | 6 | 7 | 12;
   }
 > = {
+  scroll: {
+    label: '滚动网页区域',
+    detail: '在目标最近的纵向滚动区域移动有限距离，到边界不滚动父区域；加载结果另行核对',
+    keywords: 'scroll 滚动 列表 区域 加载',
+    value: null,
+    version: 12,
+  },
   collect: {
     label: '读取关联字段与正文',
     detail: '在唯一根元素内同步采集指定字段，分别保留缺失、空值和不唯一状态',
@@ -139,6 +146,16 @@ export function changeBrowserOperation(
     ...(node.name !== undefined ? { name: node.name } : {}),
     ...(node.timeoutMs !== undefined ? { timeoutMs: node.timeoutMs } : {}),
   };
+  if (operation === 'scroll')
+    return {
+      ...base,
+      version: 12,
+      operation,
+      selector: node.selector,
+      framePath: 'framePath' in node ? node.framePath : [],
+      direction: node.version === 12 ? node.direction : 'down',
+      distance: node.version === 12 ? node.distance : 600,
+    };
   if (node.version === 8 && ['click', 'read', 'wait'].includes(operation))
     return { ...node, operation, value: null } as BrowserNode;
   if (operation === 'collect' && node.operation === 'collect') return node;
@@ -185,6 +202,17 @@ export function useBrowserTargetInput(node: BrowserNode): BrowserNode {
 
 export function newBrowserStep(operation: BrowserOperation): BrowserNode {
   const preset = browserActions[operation];
+  if (operation === 'scroll')
+    return {
+      id: 'n_' + crypto.randomUUID().slice(0, 8),
+      type: 'browser',
+      version: 12,
+      operation,
+      selector: '',
+      framePath: [],
+      direction: 'down',
+      distance: 600,
+    };
   if (operation === 'collect')
     return {
       id: 'n_' + crypto.randomUUID().slice(0, 8),

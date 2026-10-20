@@ -1,0 +1,46 @@
+{
+  "node": {
+    "id": "scroll_list",
+    "type": "browser",
+    "version": 12,
+    "name": "滚动列表区域",
+    "operation": "scroll",
+    "selector": "#items",
+    "framePath": [],
+    "direction": "down",
+    "distance": 600
+  },
+  "invocation": {
+    "id": "scroll_list",
+    "type": "browser",
+    "version": 12,
+    "name": "滚动列表区域",
+    "operation": "scroll",
+    "selector": "#items",
+    "framePath": [],
+    "direction": "down",
+    "distance": 600,
+    "nodeInstance": "loop/0/scroll_list"
+  },
+  "result": {
+    "version": 1,
+    "operation": "scroll",
+    "url": "https://example.com/list",
+    "documentUrl": "https://example.com/list",
+    "selector": "#items",
+    "framePath": [],
+    "direction": "down",
+    "distance": 600,
+    "region": "ancestor",
+    "ancestorDepth": 1,
+    "offsetBefore": 0,
+    "offsetAfter": 600,
+    "heightBefore": 2400,
+    "heightAfter": 2400,
+    "viewportBefore": 600,
+    "viewportAfter": 600,
+    "moved": true,
+    "atStart": false,
+    "atEnd": false
+  }
+}

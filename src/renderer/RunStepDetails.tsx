@@ -98,6 +98,14 @@ function fields(node: Step): [string, string][] {
     case 'browser':
       return [
         ['网页动作', browserActions[node.operation]?.label ?? node.operation],
+        ...(node.operation === 'scroll'
+          ? [
+              [
+                '滚动范围',
+                `${node.direction === 'down' ? '向下' : '向上'} ${node.distance}像素；到边界不滚动父区域`,
+              ],
+            ]
+          : []),
         ...(node.operation === 'navigate'
           ? [['网页地址', configured(node.value)]]
           : node.operation === 'screenshot'

@@ -1,3 +1,5 @@
+import { assertBrowserScrollResult } from '../shared/browser-scroll';
+import BrowserScrollResultView from './BrowserScrollResultView';
 import TechnicalDetails from './TechnicalDetails';
 import type { Flow } from '../shared/types';
 import { runInstancePresenter } from './run-instance-presentation';
@@ -70,7 +72,8 @@ export default function TypedRunResults({
           if (v.value?.formatVersion === '2.0') assertThreadOutput(v.value);
           else assertConversationOutput(v.value);
         } else if (v.type === 'browser') {
-          if (v.operation === 'collect') assertBrowserFieldsValue(v.value);
+          if (v.operation === 'scroll') assertBrowserScrollResult(v.value, v.value);
+          else if (v.operation === 'collect') assertBrowserFieldsValue(v.value);
           else if (['read', 'click', 'wait'].includes(v.operation))
             assertBrowserTargetResult(v.operation, v.value);
           else assertBrowserInspectionResult(v.operation, v.value);
@@ -158,44 +161,49 @@ export default function TypedRunResults({
       {value?.type === 'browser' && value.operation === 'collect' && (
         <BrowserFieldsResultView key={id} value={value.value} />
       )}
-      {value?.type === 'browser' && value.operation !== 'collect' && (
-        <section
-          aria-label={
-            ['read', 'click', 'wait'].includes(value.operation)
-              ? '完整网页目标结果'
-              : '完整网页只读结果'
-          }
-        >
-          <p>
-            {value.operation === 'read'
-              ? '本次绑定唯一可见目标的完整文字'
-              : value.operation === 'click'
-                ? '已调用点击；业务结果仍未核对，不会自动再次点击'
-                : value.operation === 'wait'
-                  ? '本次绑定目标已可见'
-                  : value.operation === 'url'
-                    ? '当前顶层页面实际地址'
-                    : value.operation === 'count'
-                      ? '匹配数量；0表示当前范围没有匹配'
-                      : value.value === null
-                        ? '该元素没有此属性（null）'
-                        : value.value === ''
-                          ? '属性存在，值为空文本（""）'
-                          : '唯一元素的原始DOM属性'}
-          </p>
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              overflowWrap: 'anywhere',
-              maxHeight: 320,
-              overflow: 'auto',
-            }}
-          >
-            {JSON.stringify(value.value, null, 2)}
-          </pre>
-          <p>本次独立观察不代表账号、职位或外部动作已核对。</p>
-        </section>
+      {value?.type === 'browser' && value.operation === 'scroll' && (
+        <BrowserScrollResultView value={value.value} />
       )}
+      {value?.type === 'browser' &&
+        value.operation !== 'collect' &&
+        value.operation !== 'scroll' && (
+          <section
+            aria-label={
+              ['read', 'click', 'wait'].includes(value.operation)
+                ? '完整网页目标结果'
+                : '完整网页只读结果'
+            }
+          >
+            <p>
+              {value.operation === 'read'
+                ? '本次绑定唯一可见目标的完整文字'
+                : value.operation === 'click'
+                  ? '已调用点击；业务结果仍未核对，不会自动再次点击'
+                  : value.operation === 'wait'
+                    ? '本次绑定目标已可见'
+                    : value.operation === 'url'
+                      ? '当前顶层页面实际地址'
+                      : value.operation === 'count'
+                        ? '匹配数量；0表示当前范围没有匹配'
+                        : value.value === null
+                          ? '该元素没有此属性（null）'
+                          : value.value === ''
+                            ? '属性存在，值为空文本（""）'
+                            : '唯一元素的原始DOM属性'}
+            </p>
+            <pre
+              style={{
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+                maxHeight: 320,
+                overflow: 'auto',
+              }}
+            >
+              {JSON.stringify(value.value, null, 2)}
+            </pre>
+            <p>本次独立观察不代表账号、职位或外部动作已核对。</p>
+          </section>
+        )}
     </section>
   );
 }

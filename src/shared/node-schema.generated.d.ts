@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (5ccf97d321a8081a4599863b0317fda21f09f641bc75f0ef70264ebd903a2571). Do not edit. */
+/* Generated from contracts/p1.schema.json (1d776f894c4688e8fd1d0cdc070eaff58d6776b123a9e331a479d9a395c93de4). Do not edit. */
 import type { ValidateFunction } from 'ajv';
 export const node_value_1: ValidateFunction;
 export const node_assert_1: ValidateFunction;
@@ -40,6 +40,7 @@ export const node_browser_8: ValidateFunction;
 export const node_browser_9: ValidateFunction;
 export const node_browser_10: ValidateFunction;
 export const node_browser_11: ValidateFunction;
+export const node_browser_12: ValidateFunction;
 export const handoff_preview_v1: ValidateFunction;
 export const handoff_receipt_v1: ValidateFunction;
 export const template_human_review_v1: ValidateFunction;
@@ -97,6 +98,8 @@ export const browser_target_invocation_v1: ValidateFunction;
 export const browser_target_click_result_v1: ValidateFunction;
 export const browser_target_wait_result_v1: ValidateFunction;
 export const browser_target_read_result_v1: ValidateFunction;
+export const browser_scroll_invocation_v1: ValidateFunction;
+export const browser_scroll_result_v1: ValidateFunction;
 export const browser_fields_result_v1: ValidateFunction;
 export const browser_rendered_fields_result_v2: ValidateFunction;
 export const browser_scoped_rendered_fields_result_v3: ValidateFunction;

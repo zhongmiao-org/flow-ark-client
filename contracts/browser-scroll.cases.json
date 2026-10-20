@@ -1,0 +1,568 @@
+[
+  {
+    "name": "固定区域向下",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    },
+    "valid": true
+  },
+  {
+    "name": "引用前序目标",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": {
+        "$ref": "steps.find.target"
+      },
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    },
+    "valid": true
+  },
+  {
+    "name": "距离为零",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 0
+    },
+    "valid": false
+  },
+  {
+    "name": "距离超限",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 2001
+    },
+    "valid": false
+  },
+  {
+    "name": "距离非整数",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 1.5
+    },
+    "valid": false
+  },
+  {
+    "name": "无效方向",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "left",
+      "distance": 600
+    },
+    "valid": false
+  },
+  {
+    "name": "空目标",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": " ",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    },
+    "valid": false
+  },
+  {
+    "name": "保留路径",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": {
+        "$ref": "steps.__proto__.target"
+      },
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    },
+    "valid": false
+  },
+  {
+    "name": "新增任意脚本",
+    "kind": "node",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "code": "document.body.click()"
+    },
+    "valid": false
+  },
+  {
+    "name": "固定调用",
+    "kind": "invocation",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    },
+    "valid": true,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    }
+  },
+  {
+    "name": "改变固定距离",
+    "kind": "invocation",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 200,
+      "nodeInstance": "loop/0/scroll_list"
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    }
+  },
+  {
+    "name": "改变固定目标",
+    "kind": "invocation",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#other",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    }
+  },
+  {
+    "name": "错误节点实例",
+    "kind": "invocation",
+    "value": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/other"
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600
+    }
+  },
+  {
+    "name": "实际位移",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": false
+    },
+    "valid": true,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "边界仍是有限回执",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 1800,
+      "offsetAfter": 1800,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": false,
+      "atStart": false,
+      "atEnd": true
+    },
+    "valid": true,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "伪造已滚动",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": false,
+      "atStart": false,
+      "atEnd": false
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "伪造到底",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": true
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "超出单次距离",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 1600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": false
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "反向位移",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 700,
+      "offsetAfter": 100,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": false
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "回执目标变化",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#other",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": false
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  },
+  {
+    "name": "伪造内容完成",
+    "kind": "result",
+    "value": {
+      "version": 1,
+      "operation": "scroll",
+      "url": "https://example.com/list",
+      "documentUrl": "https://example.com/list",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "region": "ancestor",
+      "ancestorDepth": 1,
+      "offsetBefore": 0,
+      "offsetAfter": 600,
+      "heightBefore": 2400,
+      "heightAfter": 2400,
+      "viewportBefore": 600,
+      "viewportAfter": 600,
+      "moved": true,
+      "atStart": false,
+      "atEnd": false,
+      "contentLoaded": true
+    },
+    "valid": false,
+    "source": {
+      "id": "scroll_list",
+      "type": "browser",
+      "version": 12,
+      "name": "滚动列表区域",
+      "operation": "scroll",
+      "selector": "#items",
+      "framePath": [],
+      "direction": "down",
+      "distance": 600,
+      "nodeInstance": "loop/0/scroll_list"
+    }
+  }
+]

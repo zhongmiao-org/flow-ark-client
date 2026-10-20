@@ -275,6 +275,25 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
         : node.type === 'browser'
           ? ((
               {
+                scroll: [
+                  'moved',
+                  'atStart',
+                  'atEnd',
+                  'offsetBefore',
+                  'offsetAfter',
+                  'heightBefore',
+                  'heightAfter',
+                  'viewportBefore',
+                  'viewportAfter',
+                  'region',
+                  'ancestorDepth',
+                  'direction',
+                  'distance',
+                  'url',
+                  'documentUrl',
+                  'selector',
+                  'framePath',
+                ],
                 navigate: ['url', 'title'],
                 click: ['clicked', 'verified'],
                 check: ['checked'],
@@ -290,7 +309,31 @@ export function referenceChoices(flow: Flow, selected: string): ReferenceChoice[
               } as Record<string, string[]>
             )[node.operation] ?? [])
           : [];
-    for (const key of known) add(path + '.' + key, label + ' / ' + key, '前序步骤', '步骤输出字段');
+    for (const key of known) {
+      const names: Record<string, string> =
+        node.type === 'browser' && node.operation === 'scroll'
+          ? {
+              moved: '实际发生位移',
+              atStart: '已到区域顶部',
+              atEnd: '已到区域底部',
+              offsetBefore: '滚动前位置',
+              offsetAfter: '滚动后位置',
+              heightBefore: '滚动前内容高度',
+              heightAfter: '滚动后内容高度',
+              viewportBefore: '滚动前可见高度',
+              viewportAfter: '滚动后可见高度',
+              region: '区域来源',
+              ancestorDepth: '区域祖先层数',
+              direction: '方向',
+              distance: '配置距离',
+              url: '顶层页面地址',
+              documentUrl: '目标文档地址',
+              selector: '目标选择器',
+              framePath: '框架路径',
+            }
+          : {};
+      add(path + '.' + key, label + ' / ' + (names[key] ?? key), '前序步骤', '步骤输出字段');
+    }
     if (
       node.type === 'browser' &&
       (node.version === 5 ||

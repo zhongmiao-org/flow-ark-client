@@ -1,5 +1,5 @@
 import { readableReference } from './value-references';
-import { Button, Select, Input, Collapse, Space } from 'antd';
+import { Button, Select, Input, InputNumber, Collapse, Space } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { FramePath } from '../shared/contracts.generated';
@@ -146,13 +146,23 @@ export default function BrowserNodeConfiguration({
           setTarget(picked);
           change({
             ...node,
-            version: node.version === 8 ? 8 : node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
+            version:
+              node.version === 12
+                ? 12
+                : node.version === 8
+                  ? 8
+                  : node.version === 4
+                    ? 4
+                    : node.version === 3
+                      ? 3
+                      : 2,
             selector: picked.selector,
             framePath: picked.framePath,
             ...(!node.name
               ? {
                   name:
                     ({
+                      scroll: '滚动',
                       navigate: '打开',
                       screenshot: '截图',
                       fill: '填写',
@@ -206,7 +216,7 @@ export default function BrowserNodeConfiguration({
           forceRender: true,
           children: (
             <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-              {node.version !== 4 && node.version !== 8 && (
+              {node.version !== 4 && node.version !== 8 && node.version !== 12 && (
                 <>
                   <label htmlFor={fieldId + 'browser-selector'}>目标元素选择器</label>
                   <Input
@@ -234,7 +244,15 @@ export default function BrowserNodeConfiguration({
                   change({
                     ...node,
                     version:
-                      node.version === 8 ? 8 : node.version === 4 ? 4 : node.version === 3 ? 3 : 2,
+                      node.version === 12
+                        ? 12
+                        : node.version === 8
+                          ? 8
+                          : node.version === 4
+                            ? 4
+                            : node.version === 3
+                              ? 3
+                              : 2,
                     framePath: parseFrames(e.target.value) as FramePath,
                   } as BrowserNode);
                 }}
@@ -294,7 +312,9 @@ export default function BrowserNodeConfiguration({
           <p className="note">采用后可从参数、前序步骤或循环项选择目标；既有动作权限仍单独核对。</p>
         </div>
       )}
-      {(node.version === 8 || (node.version === 4 && node.operation !== 'url')) && (
+      {(node.version === 12 ||
+        node.version === 8 ||
+        (node.version === 4 && node.operation !== 'url')) && (
         <ValueField
           label="目标选择器"
           value={node.selector}
@@ -309,13 +329,39 @@ export default function BrowserNodeConfiguration({
               <Input
                 id={fieldId + 'inspection-selector'}
                 value={node.selector}
-                maxLength={node.version === 8 ? undefined : 2000}
+                maxLength={node.version === 8 || node.version === 12 ? undefined : 2000}
                 placeholder="例如 a.result-link"
                 onChange={(e) => change({ ...node, selector: e.target.value })}
               />
             </>
           ) : undefined}
         </ValueField>
+      )}
+      {node.version === 12 && (
+        <>
+          <label htmlFor={fieldId + 'scroll-direction'}>滚动方向</label>
+          <Select
+            id={fieldId + 'scroll-direction'}
+            value={node.direction}
+            options={[
+              { value: 'down', label: '向下' },
+              { value: 'up', label: '向上' },
+            ]}
+            onChange={(direction) => change({ ...node, direction })}
+          />
+          <label htmlFor={fieldId + 'scroll-distance'}>滚动距离（CSS 像素）</label>
+          <InputNumber
+            id={fieldId + 'scroll-distance'}
+            min={1}
+            max={2000}
+            precision={0}
+            value={node.distance}
+            onChange={(distance) => change({ ...node, distance: distance ?? 0 })}
+          />
+          <p className="note">
+            每次移动1–2000像素。固定唯一可见目标和最近纵向滚动区域；没有对应区域才滚动当前文档。到边界不滚动父区域，也不代表加载完成。取消后不撤销已发生位移。
+          </p>
+        </>
       )}
       {node.version === 8 && (
         <p className="note">

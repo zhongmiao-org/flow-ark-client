@@ -9,6 +9,7 @@ export const capabilityLabel = (name: string) =>
       browser: '网页操作',
       'browser-frames-v1': '网页框架',
       'browser-forms-v1': '网页表单',
+      'browser-scroll-v1': '有限距离网页区域滚动',
       'browser-target-input-v1': '网页变量目标',
       'browser-observe-v1': '网页只读核对',
       'browser-fields-v1': '网页关联字段采集',

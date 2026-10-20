@@ -1,3 +1,5 @@
+import { browserScrollDOM } from './browser-scroll-dom';
+import { resolvedBrowserScroll, assertBrowserScrollResult } from '../shared/browser-scroll';
 import {
   chromium,
   type BrowserContext,
@@ -75,7 +77,7 @@ export class PlaywrightDriver implements BrowserDriver {
         : c.timeoutMs,
     );
     const page = this.page;
-    if (c.version === 8) return this.target(c, page, path, remaining);
+    if (c.version === 8 || c.version === 12) return this.target(c, page, path, remaining);
     if (c.operation === 'collect') return this.collect(c, page, path, remaining);
     let frame: Frame = page.mainFrame();
     for (const selector of path) {
@@ -196,13 +198,20 @@ export class PlaywrightDriver implements BrowserDriver {
     }
   }
   private async target(c: BrowserCommand, page: Page, path: string[], remaining: () => number) {
-    const command = resolvedBrowserTarget(c),
-      epoch = this.documentEpoch;
+    const command = c.version === 12 ? resolvedBrowserScroll(c) : resolvedBrowserTarget(c),
+      epoch = this.documentEpoch,
+      scrollUrl = page.url();
+    if (c.version === 12) {
+      const u = new URL(scrollUrl);
+      if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password)
+        throw Error('滚动页面地址无效');
+    }
     const handles: JSHandle[] = [];
     const chain: { frame: Frame; selector: string; element: ElementHandle<Element> }[] = [];
     const verify = () => {
       remaining();
       if (
+        (c.version === 12 && page.url() !== scrollUrl) ||
         this.documentEpoch !== epoch ||
         this.page !== page ||
         page.isClosed() ||
@@ -261,6 +270,35 @@ export class PlaywrightDriver implements BrowserDriver {
       const item = await bind(frame, command.selector);
       await visible(item);
       let result: unknown;
+      if (command.version === 12) {
+        for (const ancestor of chain)
+          if (!(await state(ancestor)).visible) throw Error('滚动框架不再可见');
+        verify();
+        const observation = await frame.evaluate(browserScrollDOM, {
+          selector: command.selector,
+          expected: item.element,
+          direction: command.direction,
+          distance: command.distance,
+        });
+        verify();
+        for (const ancestor of chain)
+          if (!(await state(ancestor)).visible) throw Error('滚动期间框架不再可见');
+        if (!(await state(item)).visible) throw Error('滚动后固定目标不再可见');
+        verify();
+        if (page.url() !== scrollUrl) throw Error('滚动期间顶层网址发生变化');
+        result = {
+          version: 1,
+          operation: 'scroll',
+          url: scrollUrl,
+          selector: command.selector,
+          framePath: path,
+          direction: command.direction,
+          distance: command.distance,
+          ...observation,
+        };
+        assertBrowserScrollResult(command, result);
+        return result;
+      }
       if (command.operation === 'click') {
         // ElementHandle keeps this exact element; never use a re-resolving Locator here.
         for (const ancestor of chain)

@@ -15,7 +15,8 @@ export function framePathOf(command: {
         (command.version === 8 ||
         command.version === 9 ||
         command.version === 10 ||
-        command.version === 11
+        command.version === 11 ||
+        command.version === 12
           ? [...s].length
           : s.length) > 2000,
     )
@@ -28,6 +29,7 @@ export function framePathOf(command: {
       'count',
       'attribute',
       'collect',
+      'scroll',
       'click',
       'fill',
       'wait',

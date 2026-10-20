@@ -1,3 +1,5 @@
+import { browserScrollDOM } from './browser-scroll-dom';
+import { resolvedBrowserScroll, assertBrowserScrollResult } from '../shared/browser-scroll';
 import type { MouseInputEvent, WebContents } from 'electron';
 import { writeFile } from 'node:fs/promises';
 import type { BrowserCommand } from '../shared/types';
@@ -399,7 +401,8 @@ export class EmbeddedPage {
           : command.timeoutMs,
       );
     this.abort.signal.throwIfAborted();
-    if (command.version === 8) return this.target(command, path, remaining);
+    if (command.version === 8 || command.version === 12)
+      return this.target(command, path, remaining);
     if (command.operation === 'collect') return this.collect(command, path, remaining);
     if (command.operation === 'navigate') {
       const url = new URL(String(command.value));
@@ -561,7 +564,16 @@ export class EmbeddedPage {
     }
   }
   private async target(command: BrowserCommand, path: string[], remaining: () => number) {
-    const input = resolvedBrowserTarget(command);
+    const input =
+      command.version === 12 ? resolvedBrowserScroll(command) : resolvedBrowserTarget(command);
+    const scrollUrl = this.contents.getURL();
+    if (command.version === 12 && this.contents.isLoadingMainFrame())
+      throw Error('网页正在导航，未滚动');
+    if (command.version === 12) {
+      const u = new URL(scrollUrl);
+      if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password)
+        throw Error('滚动页面地址无效');
+    }
     // Observe from command entry, including changes before a child world is created.
     // Only the root document and the frames used by this fixed path can invalidate it.
     const changedFrames = new Set<string>(),
@@ -578,6 +590,8 @@ export class EmbeddedPage {
       remaining();
       this.abort.signal.throwIfAborted();
       if (
+        (command.version === 12 &&
+          (this.contents.getURL() !== scrollUrl || this.contents.isLoadingMainFrame())) ||
         this.contents.isDestroyed() ||
         rootChanged ||
         [...usedFrames].some((id) => changedFrames.has(id))
@@ -651,6 +665,36 @@ export class EmbeddedPage {
       const item = await bind(scope, input.selector);
       await visible(item);
       let result: unknown;
+      if (input.version === 12) {
+        await checkChain();
+        verify();
+        const observation = await this.call(
+          scope,
+          item.objectId,
+          `function(selector,direction,distance){return (${browserScrollDOM.toString()})({selector,expected:this,direction,distance});}`,
+          input.selector,
+          input.direction,
+          input.distance,
+        );
+        verify();
+        await checkChain();
+        if (!(await state(item)).visible) throw Error('滚动后固定目标不再可见');
+        verify();
+        if (this.contents.getURL() !== scrollUrl || this.contents.isLoadingMainFrame())
+          throw Error('滚动期间顶层网页发生变化');
+        result = {
+          version: 1,
+          operation: 'scroll',
+          url: scrollUrl,
+          selector: input.selector,
+          framePath: path,
+          direction: input.direction,
+          distance: input.distance,
+          ...observation,
+        };
+        assertBrowserScrollResult(input, result);
+        return result;
+      }
       if (input.operation === 'click') {
         await this.click(
           scope,
