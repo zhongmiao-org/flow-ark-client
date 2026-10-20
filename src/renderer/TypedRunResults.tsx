@@ -29,7 +29,6 @@ import { verifySourceResult } from '../shared/conversation-source';
 import SourceResultView from './SourceResultView';
 import EffectResultView from './EffectResultView';
 import { assertEffectResult } from '../shared/effect-node';
-import ResultCapacity from './ResultCapacity';
 export default function TypedRunResults({
   runId,
   entries,
@@ -91,7 +90,6 @@ export default function TypedRunResults({
   if (!entries.length) return null;
   return (
     <section aria-label="本次完整结构化结果">
-      <ResultCapacity key={runId} entries={entries} />
       {entries.length > 1 && (
         <Select
           aria-label="选择结构化步骤结果"

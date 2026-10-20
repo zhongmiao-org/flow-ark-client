@@ -3144,6 +3144,7 @@ export class Runtime {
         const rerun = this.reruns.details(id);
         const artifactCleanup = this.artifactCleanup.status(id);
         const run = this.store.get<Run>('run', id);
+        const results = this.typedResults.summary(id);
         return {
           run,
           desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
@@ -3166,13 +3167,12 @@ export class Runtime {
           events: this.store.events(id),
           artifacts,
           output: redact(this.store.get('output', id)),
-          typedResults: this.typedResults
-            .list(id)
-            .filter(
-              (r) =>
-                run?.state === 'SUCCEEDED' ||
-                ['context', 'source-reduce', 'effect'].includes(r.type),
-            ),
+          resultCapacity: results.capacity,
+          savedTypedResults: results.entries,
+          typedResults: results.entries.filter(
+            (r) =>
+              run?.state === 'SUCCEEDED' || ['context', 'source-reduce', 'effect'].includes(r.type),
+          ),
           snapshot: snapshot?.flow,
           scriptBundles: snapshot?.scriptBundles ?? [],
           authorSdk: snapshot?.authorSdk,
