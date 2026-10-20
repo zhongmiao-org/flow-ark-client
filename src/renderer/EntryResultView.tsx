@@ -2,7 +2,7 @@ import { Alert, Button, Collapse, Spin } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import type { Run } from '../shared/types';
 import type { EntryResultResponse as Result } from '../shared/contracts.generated';
-import ReadonlyValue from './ReadonlyValue';
+import CompleteValue from './CompleteValue';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import './entry-result-view.css';
 
@@ -145,10 +145,11 @@ export default function EntryResultView({ run }: { run: Run }) {
             {saved.labels.find((item) => item.path === '')?.description && (
               <p>{saved.labels.find((item) => item.path === '')!.description}</p>
             )}
-            <ReadonlyValue
+            <CompleteValue
               value={saved.value}
               labels={saved.labels}
               ariaLabel="已脱敏的入口整体结果"
+              description="逐层阅读本Run已保存的脱敏显示值；每页最多200项，长文本可继续阅读。展开不会恢复被裁剪的来源，也不改变保存值；字段说明来自模板，不是事实认证。"
             />
             {!saved.labelsComplete && <p>部分字段注解无法明确解释，已按保存的字段名展示。</p>}
             <p>内容已经宿主脱敏。模板声明不代替实际业务回执。</p>

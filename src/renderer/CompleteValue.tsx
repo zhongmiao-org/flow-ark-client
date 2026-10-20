@@ -109,16 +109,16 @@ export default function CompleteValue({
   value,
   labels = [],
   ariaLabel = '完整可复用数据',
+  description = '逐层展开对象和列表，每页最多200项；展开范围仅影响显示，完整已核验数据保持不变。字段说明来自模板，不是事实认证。',
 }: {
   value: unknown;
   labels?: Annotation[];
   ariaLabel?: string;
+  description?: string;
 }) {
   return (
     <section className="readonly-value" aria-label={ariaLabel}>
-      <p className="readonly-value-muted">
-        逐层展开对象和列表，每页最多200项；展开范围仅影响显示，完整已核验数据保持不变。字段说明来自模板，不是事实认证。
-      </p>
+      <p className="readonly-value-muted">{description}</p>
       <Branch value={value} path="" labels={new Map(labels.map((a) => [a.path, a]))} root />
     </section>
   );

@@ -153,7 +153,7 @@ export default function TypedRunResults({
       {value?.type === 'source' && (
         <SourceResultView runId={runId} nodeId={value.nodeId} value={value.value} />
       )}
-      {value?.type === 'context' && <ContextResultView value={value.value} />}
+      {value?.type === 'context' && <ContextResultView key={id} value={value.value} />}
       {value?.type === 'effect' && (
         <EffectResultView key={id} value={value.value} openRun={openRun} />
       )}
