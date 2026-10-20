@@ -277,6 +277,20 @@ export class TemplateData {
       createdAt: registered.createdAt,
     };
   }
+  /** Fresh configuration identity even when this entry has no context node. State is excluded. */
+  async batchConfiguration(record: FlowRecord) {
+    this.deps.available();
+    if (!record.bindings.template) return structuredClone(this.debug(record.id).context);
+    const context = await this.formalContext(record);
+    const instance = this.store.get<any>('template-instance', record.bindings.template.instanceId);
+    if (
+      !instance ||
+      (instance.configurationRevision ?? 1) !== context.configurationRevision ||
+      canonical(instance.configuration) !== canonical(context.configuration)
+    )
+      throw Error('当前实例配置已变化，请重新保存入口后核对');
+    return context;
+  }
   async prepare(
     record: FlowRecord & { templateData?: DataContext },
   ): Promise<DataContext | undefined> {

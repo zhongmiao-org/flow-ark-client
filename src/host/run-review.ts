@@ -26,6 +26,7 @@ import type { TaskMcpState } from '../shared/task-mcp-targets';
 import type { DesktopRuns } from './desktop-runs';
 import type { DesktopBinding } from '../shared/desktop-run';
 import { planningFlowHash } from './planning-scope';
+import type { EntryBatches, BatchPlan } from './entry-batches';
 
 export type ReviewTemplate = {
   resources: {
@@ -64,6 +65,7 @@ type Authorization = {
 type Snapshot = FlowRecord & Partial<PreparedScripts> & { runReviewAuthorization?: Authorization };
 type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
+  batches?: EntryBatches;
   desktop?: DesktopRuns;
   tools?: (record: FlowRecord) => TaskMcpState[];
   learnedTrial?: (run: Run) => void;
@@ -97,6 +99,14 @@ export class RunReview {
     const record = this.store.get<FlowRecord>('flow', args.id);
     if (!record || record.flow.id !== args.id) throw new Error('已保存流程不存在或标识不一致');
     validateFlow(record.flow);
+    if (
+      args.batches &&
+      (args.debug ||
+        args.task ||
+        args.rerun ||
+        walk(record.flow.steps).some((node) => node.type === 'desktop' || node.type === 'mcp'))
+    )
+      throw Error('此单次目标、逐步调试或任务重跑不支持连续批次，请按原单次路径核对');
     if (
       record.flow.steps.some((step) => step.type === 'desktop') &&
       (!args.task || args.task.id !== record.desktopTarget?.taskId)
@@ -148,6 +158,7 @@ export class RunReview {
         epoch: this.deps.epoch(),
         session: this.session,
         debug: !!args.debug,
+        batches: args.batches,
       }),
     };
   }
@@ -458,28 +469,48 @@ export class RunReview {
     };
   }
 
-  private async prepare(args: RunReviewInput) {
+  private async prepare(args: RunReviewInput, fixed?: PreparedScripts) {
     const captured = this.capture(args);
     const before = await this.environment(captured.record, captured.target);
     if (this.capture(args).signature !== captured.signature)
       throw new Error('检查期间流程或任务已改变，请重新检查');
-    const prepared = await this.deps.preflight(captured.record);
+    const prepared = await this.deps.preflight(
+      fixed ? { ...captured.record, ...fixed } : captured.record,
+    );
     const after = await this.environment(captured.record, captured.target);
     if (
       this.capture(args).signature !== captured.signature ||
       digest(before.authorization) !== digest(after.authorization)
     )
       throw new Error('检查期间流程、授权或资源已改变，请重新检查');
+    let batchPlan: BatchPlan | undefined;
+    if (args.batches) {
+      if (!this.deps.batches) throw Error('当前宿主尚未提供连续批次监督能力');
+      batchPlan = await this.deps.batches.plan(
+        { record: captured.record, prepared, authorization: after.authorization },
+        args.batches,
+      );
+      const final = await this.environment(captured.record, captured.target);
+      if (
+        this.capture(args).signature !== captured.signature ||
+        digest(final.authorization) !== digest(after.authorization)
+      )
+        throw Error('连续批次检查期间来源、资源或网页已变化，请重新检查');
+    }
     return {
       ...captured,
       ...after,
       prepared,
+      batchPlan,
       token: digest({
         signature: captured.signature,
         authorization: after.authorization,
         bundles: prepared.scriptBundles,
         ...(prepared.templateData ? { templateData: prepared.templateData } : {}),
         ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
+        ...(batchPlan
+          ? { batches: batchPlan.limits, batchScopeSha256: batchPlan.scopeSha256 }
+          : {}),
       }),
     };
   }
@@ -516,6 +547,15 @@ export class RunReview {
       result.flow.versionId = executionVersion(prepared.record, prepared.prepared);
       result.flow.scriptBundles = prepared.prepared.scriptBundles;
       result.resources = prepared.resources;
+      if (prepared.batchPlan)
+        result.batches = {
+          supported: true,
+          limits: prepared.batchPlan.limits,
+          scope: prepared.batchPlan.scope,
+          scopeSha256: prepared.batchPlan.scopeSha256,
+          declaration: prepared.batchPlan.declaration,
+          policy: 'stable-scope-v1',
+        };
       if (prepared.prepared.authorSdk) {
         const sdk = prepared.prepared.authorSdk;
         result.resources.push({
@@ -560,6 +600,12 @@ export class RunReview {
         detail: '已核对保存内容、当前授权、资源身份和所需能力；确认时再次检查。',
       });
     } catch (error) {
+      if (args.batches)
+        result.batches = {
+          supported: false,
+          limits: args.batches,
+          reason: '本入口连续批次检查未通过；请查看检查原因或使用单次运行',
+        };
       result.checks.push({
         name: '尚不能开始试运行',
         passed: false,
@@ -605,6 +651,7 @@ export class RunReview {
       debug: args.debug,
       task: args.task,
       rerun: args.rerun,
+      batches: args.batches,
     };
     const captured = await this.prepare(selection);
     assertAdmission();
@@ -615,6 +662,7 @@ export class RunReview {
     const hasTools = walk(captured.record.flow.steps).some((node) => node.type === 'mcp');
     if (hasTools && !args.toolsReviewed) throw new Error('请明确确认本次工具、参数来源与外部影响');
     let claimed = false;
+    let batchStart: ReturnType<EntryBatches['initial']> | undefined;
     try {
       if (hasDesktop) {
         claimed = true;
@@ -649,14 +697,26 @@ export class RunReview {
             : {}),
           business: '已核对后开始试运行；执行结果与外部业务核对分别记录',
         };
+        if (captured.batchPlan) {
+          batchStart = this.deps.batches!.initial(captured.batchPlan, next);
+          next.batch = {
+            version: 1,
+            sessionId: batchStart.view.sessionId,
+            ordinal: 1,
+            scopeSha256: batchStart.view.scopeSha256,
+          };
+        }
         this.store.put('snapshot', next.id, {
           ...captured.record,
           ...captured.prepared,
           versionId,
           runReviewAuthorization: captured.authorization,
+          ...(batchStart ? { batchAdmissionProof: batchStart.proof } : {}),
         });
         this.store.put('run', next.id, next);
         this.store.event(next.id, 'state', '', { state: 'QUEUED' });
+        if (batchStart)
+          this.deps.batches!.register(captured.batchPlan!, batchStart.view, batchStart.proof);
         this.store.put('flow-run-request', args.requestId, {
           requestId: args.requestId,
           fingerprint,
@@ -666,6 +726,8 @@ export class RunReview {
         return next;
       });
       if (claimed && run.id !== nextId) await this.deps.desktop!.release(captured.record, nextId);
+      if (batchStart && run.id === nextId)
+        this.deps.batches!.activate(captured.batchPlan!, batchStart.view);
       this.deps.dispatch();
       return run;
     } catch (error) {
@@ -673,6 +735,19 @@ export class RunReview {
         await this.deps.desktop!.release(captured.record, nextId);
       throw error;
     }
+  }
+
+  /** Fresh full preflight using the original fixed bundles, never the first batch's page observation. */
+  async prepareNextBatch(plan: BatchPlan) {
+    const captured = await this.prepare(
+      { id: plan.record.id, batches: plan.limits },
+      plan.prepared,
+    );
+    return {
+      record: captured.record,
+      prepared: captured.prepared,
+      authorization: captured.authorization,
+    };
   }
 
   async checkExecution(run: Run, snapshot: Snapshot) {

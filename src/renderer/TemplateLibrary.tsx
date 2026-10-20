@@ -47,6 +47,7 @@ export default function TemplateLibrary({
   settings,
   navigation,
   showRun,
+  review,
   schedule,
   exportTemplate,
   homeRequest,
@@ -56,6 +57,7 @@ export default function TemplateLibrary({
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
+  review: (origin: TemplateEntryOrigin, debug: boolean) => void;
   schedule: (origin: TemplateEntryOrigin) => void;
   exportTemplate: (pkg: InstalledPackage, returnLabel?: string) => void;
   data: Bootstrap;
@@ -375,6 +377,7 @@ export default function TemplateLibrary({
         action={action}
         navigation={navigation}
         showRun={showRun}
+        review={review}
         schedule={schedule}
         settings={settings}
         returnLabel={externalOrigin?.returnLabel ?? title}

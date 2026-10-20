@@ -1,4 +1,5 @@
 import type { Run } from '../shared/types';
+import type { BatchLimits } from '../shared/entry-batches';
 import type {
   RunReviewConfirmation,
   RunReviewInput,
@@ -110,14 +111,17 @@ export class RunReviewSession {
     )
       this.publish({ reviewed });
   }
-  async refresh(debug = !!this.state.selection?.debug) {
+  async configureBatches(batches?: BatchLimits) {
+    return this.refresh(false, { batches });
+  }
+  async refresh(debug = !!this.state.selection?.debug, override?: { batches?: BatchLimits }) {
     if (
       !this.state.active ||
       !this.state.selection ||
       ['pending', 'unknown'].includes(this.state.attempt?.phase ?? '')
     )
       return;
-    const selection = { ...this.state.selection, debug };
+    const selection = { ...this.state.selection, debug, ...override };
     this.attempts.delete(context(selection));
     const generation = ++this.generation;
     this.publish({

@@ -1,0 +1,54 @@
+.batch-settings-card {
+  margin-block: 16px;
+}
+.batch-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.batch-form {
+  display: grid;
+  gap: 16px;
+  margin-block: 16px;
+}
+.batch-form > label {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.batch-form .ant-input-number {
+  width: 100%;
+}
+.batch-form p,
+.batch-session p {
+  overflow-wrap: anywhere;
+}
+.batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 16px;
+}
+.batch-history {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+.batch-history li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .batch-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .batch-form > label {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

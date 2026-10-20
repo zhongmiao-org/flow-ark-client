@@ -11,6 +11,10 @@ import {
 import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
 import { EntryResults } from './entry-results';
+import { EntryBatches, type BatchDefinition } from './entry-batches';
+import { batchMethods } from '../shared/entry-batches';
+import { jsonFile } from '../../contracts/package-format';
+import { assertEntryBatching } from '../../contracts/entry-batches';
 import { assertEffectNodeCapabilities } from '../../contracts/effect-node';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
 import { SourceReductions } from './source-reductions';
@@ -209,6 +213,7 @@ export class Runtime {
   private skills: Skills;
   private typedResults: TypedResults;
   private entryResults: EntryResults;
+  private batches: EntryBatches;
   private resultSources: RunResultSources;
   private author: TemplateAuthor;
   private templateData: TemplateData;
@@ -551,6 +556,7 @@ export class Runtime {
           (this.pendingCapabilities.get(capture.run.id) ?? 0) > 0
         )
           return;
+        this.batches.capture(capture);
         this.resultSources.capture(capture);
       },
     );
@@ -566,7 +572,48 @@ export class Runtime {
       this.authorSdk,
     );
     this.sessions = new Sessions(dir, executable, dataPath, system);
+    this.batches = new EntryBatches(this.store, {
+      available: () => {
+        this.assertAdmitting();
+        this.assertNoHandoff();
+      },
+      idle: () =>
+        !this.active &&
+        !this.handoffId &&
+        !this.store.list<Run>('run').some((r) => r.state === 'QUEUED'),
+      serialize: <T>(fn: () => Promise<T>) => {
+        const pending = this.admissions.then(async () => {
+          await this.ready;
+          this.assertAdmitting();
+          this.assertNoHandoff();
+          return fn();
+        });
+        this.admissions = pending.then(
+          () => {},
+          () => {},
+        );
+        return pending;
+      },
+      definition: (record, prepared) => this.batchDefinition(record, prepared),
+      guard: (prepared) => {
+        const check = this.credentialChecks.get(prepared);
+        if (!check) throw Error('连续运行缺少原凭据和结果来源的进程守卫');
+        return check;
+      },
+      prepareNext: (plan) => this.runReview.prepareNextBatch(plan),
+      dispatch: () => this.dispatch(),
+      cancel: (id) => this.control(id, 'cancel'),
+      unresolved: (id) =>
+        (this.pendingCapabilities.get(id) ?? 0) > 0 ||
+        this.store
+          .list<any>('template-effect')
+          .some((r) => r.runId === id && !['confirmed', 'failed'].includes(r.state)) ||
+        this.store
+          .list<any>('template-data-operation')
+          .some((r) => r.runId === id && ['prepared', 'unknown'].includes(r.receipt?.status)),
+    });
     this.runReview = new RunReview(this.store, {
+      batches: this.batches,
       desktop: this.desktopRuns,
       tools: (record) => this.toolTargets.reviewStates(record),
       learnedTrial: (run) => this.learning.trial(run),
@@ -704,6 +751,7 @@ export class Runtime {
         this.lastTick = Date.now();
         this.templateData.recover();
         this.handoffs.recover();
+        this.batches.recover();
         this.recovering = false;
         if (!this.stopping)
           this.timer = setInterval(
@@ -718,6 +766,58 @@ export class Runtime {
       this.recovering = false;
       this.store.fault ??= '脚本资源恢复核对失败：' + this.redactError(error);
     });
+  }
+  private async batchDefinition(
+    record: FlowRecord,
+    prepared: PreparedScripts,
+  ): Promise<BatchDefinition> {
+    const configuration = await this.templateData.batchConfiguration(record);
+    if (record.bindings.template) {
+      const { ref, pkg, entry } = await this.templates.context(record);
+      const schema = jsonFile(pkg.files, entry.resultSchema);
+      assertEntryBatching(entry, schema);
+      if (!entry.batching) throw Error('此入口未声明连续批次结果映射');
+      return {
+        owner: {
+          kind: 'template-instance',
+          ownerId: ref.instanceId,
+          entryId: ref.entryId,
+          sourceSha256: digest({ ref, entry, schema }),
+        },
+        entryName: entry.name,
+        ownerName: '模板实例',
+        declaration: validateObject<BatchDefinition['declaration']>(
+          'BatchDeclaration',
+          entry.batching,
+        ),
+        schema,
+        configuration,
+      };
+    }
+    const origin = this.author.origin(record.id);
+    const entry = origin?.draft.definition.entries.find((e) => e.id === origin.checkout.entryId);
+    if (
+      !origin ||
+      !entry ||
+      !prepared.authorSdk ||
+      origin.checkout.baseRevision !== origin.draft.revision
+    )
+      throw Error('此入口没有准确的可复用制作来源，请带回保存后重新创建编排副本');
+    assertEntryBatching(entry, entry.resultSchema);
+    if (!entry.batching) throw Error('此制作入口未声明连续批次结果映射');
+    return {
+      owner: {
+        kind: 'author-checkout',
+        ownerId: origin.checkout.id,
+        entryId: entry.id,
+        sourceSha256: digest({ context: prepared.authorSdk, entry }),
+      },
+      entryName: entry.name,
+      ownerName: '模板制作副本',
+      declaration: entry.batching,
+      schema: entry.resultSchema,
+      configuration,
+    };
   }
   private aiNodes = new AINodes({
     outcomeReceipt: (runId, instance, receipt) => {
@@ -1573,6 +1673,11 @@ export class Runtime {
     const queue = this.store.list<Run>('run').filter((r) => r.state === 'QUEUED');
     const run = queue.find((r) => r.id === this.handoffNextRun) ?? queue[0];
     if (!run) return;
+    if (this.batches.queueStopped(run)) {
+      await this.cancelQueued(run);
+      this.dispatch();
+      return;
+    }
     const proc = child(join(this.dir, 'worker.cjs'), this.executable);
     const rpc = new Rpc(
       (m) => proc.send(m),
@@ -1611,12 +1716,15 @@ export class Runtime {
       try {
         this.store.state(run.id, 'RUNNING');
         const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
+        await this.waitActive(active, this.batches.checkExecution(run));
         this.reruns.checkExecution(run, s);
         await this.waitActive(active, this.reductionReviews.checkQueuedRun(run.id));
         await this.waitActive(active, this.runReview.checkExecution(run, s));
         const prepared = await this.waitActive(active, this.preflight(s, run.id)); // Never recompile a fixed bundle.
         this.checkActive(active);
         this.reruns.checkExecution(run, s);
+        await this.waitActive(active, this.batches.checkExecution(run));
+        this.checkActive(active);
         await this.waitActive(active, this.runReview.checkExecution(run, s));
         this.checkActive(active);
         outputs = await rpc.call(
@@ -1702,14 +1810,18 @@ export class Runtime {
       rpc.close();
       await this.entryResults.finalize(run.id, () => this.secrets);
       this.secrets = [];
-      if (this.active === active) this.active = undefined;
       this.aiNodes.release(run.id);
       this.templateData.release(run.id);
       this.effectNodes.release(run.id);
       await this.documents.release(run.id);
       this.scripts.finishRun(run.id);
-      settled();
-      if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
+      try {
+        await this.batches.finished(run.id);
+      } finally {
+        if (this.active === active) this.active = undefined;
+        settled();
+        if (!this.stopping && !this.store.fault && !this.executionBlock()) this.dispatch();
+      }
     }
   }
   private async workerRequest(id: string, method: string, args: any): Promise<any> {
@@ -2390,6 +2502,7 @@ export class Runtime {
           );
         }
       }
+      await this.batches.finished(run.id);
     }
   }
   async control(id: string, action: 'pause' | 'resume' | 'step' | 'cancel') {
@@ -2496,6 +2609,7 @@ export class Runtime {
               });
             }
         }
+      await this.batches.tick();
     } finally {
       this.ticking = false;
     }
@@ -2504,6 +2618,7 @@ export class Runtime {
     if (this.suspended) return this.suspension ?? Promise.resolve(true);
     this.suspended = true;
     this.admissionEpoch++;
+    this.batches.invalidate('system-suspend');
     // Capture the actual owner before any historical read or diagnostic write.
     this.suspension = this.finishSuspend(this.active);
     return this.suspension;
@@ -2588,6 +2703,16 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method.startsWith('run.batch.')) {
+      await this.ready;
+      const rule = batchMethods[method as keyof typeof batchMethods];
+      if (!rule) throw Error('连续批次方法未授权');
+      const value = rule.parse(args) as any;
+      if (method === 'run.batch.get') return this.batches.records.get(value.sessionId);
+      if (method === 'run.batch.list') return this.batches.records.list(value);
+      if (method === 'run.batch.history') return this.batches.records.history(value);
+      return this.batches.stop(value);
+    }
     if (method.startsWith('template.handoff.')) {
       await this.ready;
       const rule = handoffMethods[method as keyof typeof handoffMethods];
@@ -3302,6 +3427,7 @@ export class Runtime {
   }
   async shutdown() {
     this.stopping = true;
+    this.batches.invalidate('application-exit');
     const toolErrors: unknown[] = [];
     const aiCleanup = this.aiSettings.cancelAll().catch((error) => {
       toolErrors.push(error);

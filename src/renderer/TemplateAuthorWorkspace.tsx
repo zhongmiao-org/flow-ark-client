@@ -14,6 +14,8 @@ import type { Bootstrap, FlowRecord } from '../shared/types';
 import type { TemplateNavigation } from './TemplateInstancePage';
 import { flatten } from './flow-editing';
 import AuthorSchemaEditor from './AuthorSchemaEditor';
+import AuthorBatchEditor from './AuthorBatchEditor';
+import './entry-batches.css';
 import EditorLeaveDialog from './EditorLeaveDialog';
 import TemplateManifestOverview from './TemplateManifestOverview';
 import MarkdownBody from './MarkdownBody';
@@ -998,6 +1000,39 @@ export default function TemplateAuthorWorkspace({
                     />
                   ) : (
                     <p>请先添加入口。</p>
+                  )}
+                  {schemaScope === 'result' && entry && (
+                    <AuthorBatchEditor
+                      key={entry.id}
+                      schema={entry.resultSchema}
+                      value={entry.batching}
+                      changeSchema={(schema) =>
+                        edit((d) => {
+                          d.entries[entryIndex].resultSchema = schema;
+                        })
+                      }
+                      disabled={busy || !active || pendingInput}
+                      change={(batching) =>
+                        edit((d) => {
+                          const current = d.entries[entryIndex];
+                          if (batching) {
+                            current.batching = batching;
+                            current.capabilities = [
+                              ...new Set([...current.capabilities, 'entry-batches-v1']),
+                            ];
+                          } else {
+                            delete current.batching;
+                            current.capabilities = current.capabilities.filter(
+                              (c) => c !== 'entry-batches-v1',
+                            );
+                            current.flow.requiredCapabilities =
+                              current.flow.requiredCapabilities.filter(
+                                (c) => c !== 'entry-batches-v1',
+                              );
+                          }
+                        })
+                      }
+                    />
                   )}
                 </>
               )}
