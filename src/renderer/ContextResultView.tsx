@@ -2,7 +2,7 @@ import TechnicalDetails from './TechnicalDetails';
 import { Card, Collapse, Descriptions } from 'antd';
 import type { DataOutput } from '../shared/template-data';
 import { contextOperations } from '../shared/template-data';
-import ReadonlyValue from './ReadonlyValue';
+import CompleteValue from './CompleteValue';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 export default function ContextResultView({ value }: { value: DataOutput }) {
   return (
@@ -33,7 +33,7 @@ export default function ContextResultView({ value }: { value: DataOutput }) {
           },
         ]}
       />
-      <ReadonlyValue value={value.value} />
+      <CompleteValue value={value.value} ariaLabel="配置与状态值" />
       <Collapse
         key={`${value.contextId}:${value.operation}:${value.revision}`}
         items={[
