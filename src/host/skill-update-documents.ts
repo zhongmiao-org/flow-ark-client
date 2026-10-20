@@ -13,6 +13,7 @@ import type { Store } from './store';
 import type { FlowRecord } from '../shared/types';
 import { assertDocumentResult, documentName, DOCUMENT_BYTES } from '../shared/document';
 import { digest } from '../shared/utils';
+import { storedTypedResult } from './result-ledger';
 
 /** Verifies actual registered parse results; current sources additionally retain the same bound file bytes. */
 export function verifySkillDocument(store: Store, raw: unknown, current: boolean, runId?: string) {
@@ -22,7 +23,7 @@ export function verifySkillDocument(store: Store, raw: unknown, current: boolean
     id: string,
     expectedRoot?: { path: string; dev: string; ino: string },
   ): boolean => {
-    const row = store.get<any>('typed-run-result', id);
+    const row = storedTypedResult(store, id);
     if (!row || row.meta?.type !== 'document' || (runId && row.runId !== runId)) return false;
     const index = store.get<any>('typed-run-index', row.runId);
     if (

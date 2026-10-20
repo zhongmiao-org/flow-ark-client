@@ -30,6 +30,7 @@ import type { ReductionTarget } from '../shared/source-reduction';
 import { assertEffectResult, effectOperations } from '../shared/effect-node';
 import { sha256 as effectId } from '../../contracts/package-format';
 import { resultBytes, savedResultBudget, TYPED_RESULT_LIMITS } from '../shared/typed-result-budget';
+import { storedTypedResult } from './result-ledger';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
@@ -62,6 +63,7 @@ export class TypedResults {
       if (old.sha256 !== sha256) throw Error('同一步骤结果身份已使用');
       return old;
     }
+    if (this.store.resultLedgers.owned(runId)) return;
     const own = this.reservations.get(id);
     if (own && (own.runId !== runId || own.sha256 !== sha256 || own.bytes !== bytes))
       throw Error('结构化结果与已预留的完整值不一致');
@@ -81,6 +83,8 @@ export class TypedResults {
   }
   /** Exact upcoming state output only. This is neither a future-region permit nor a disk guarantee. */
   reserveState(runId: string, nodeId: string, nodeInstance: string, value: unknown) {
+    if (this.store.resultLedgers.owned(runId))
+      throw Error('完整结果政策的状态提交预留尚未接通；未创建状态操作');
     if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
       throw Error('结构化结果步骤身份无效');
     const snapshot = this.store.get<FlowRecord>('snapshot', runId);
@@ -144,9 +148,12 @@ export class TypedResults {
       bytes,
       sha256,
     };
-    this.store.tx(() => {
+    this.store.atomic(() => {
+      const owned = this.store.resultLedgers.owned(runId);
+      if (owned) this.store.resultLedgers.stageResult(runId, meta, value);
       if (browserInput?.version === 12) {
         this.store.put('browser-scroll-input', digest({ runId, nodeId, nodeInstance }), {
+          ...(owned ? { runId } : {}),
           node: browserInput,
           sha256,
         });
@@ -158,11 +165,16 @@ export class TypedResults {
         )
           throw Error('关联字段配置只能登记到对应节点');
         this.store.put('browser-fields-input', digest({ runId, nodeId, nodeInstance }), {
+          ...(owned ? { runId } : {}),
           node: browserInput,
           sha256,
         });
       }
-      this.store.put('typed-run-result', id, { runId, meta, value });
+      this.store.put(
+        'typed-run-result',
+        id,
+        owned ? { runId, meta, retention: 'run-owned-results-v1' } : { runId, meta, value },
+      );
       if (type === 'document') {
         const source = (value as import('../shared/document').DocumentResult).source;
         if (node.type !== 'document' || source.binding !== node.binding)
@@ -171,7 +183,10 @@ export class TypedResults {
           stat = statSync(root, { bigint: true });
         if (!stat.isDirectory()) throw Error('资料目录不可用');
         const pointer = { id, root: { path: root, dev: String(stat.dev), ino: String(stat.ino) } };
-        this.store.put('document-source-proof', digest({ runId, source }), pointer);
+        this.store.put('document-source-proof', digest({ runId, source }), {
+          ...pointer,
+          ...(owned ? { runId } : {}),
+        });
         this.store.put('document-source-proof', digest({ source }), pointer);
       }
       this.store.put('typed-run-index', runId, { entries: [...entries, meta] });
@@ -213,14 +228,14 @@ export class TypedResults {
     // Prepared receipts are immutable historical facts; the ledger may since have become terminal.
   }
   list(runId: string): TypedResultMeta[] {
+    if (this.store.resultLedgers.owned(runId)) return this.store.resultLedgers.list(runId);
     return this.store.get<{ entries: TypedResultMeta[] }>('typed-run-index', runId)?.entries ?? [];
   }
   read(runId: string, id: string) {
     const run = this.store.get<Run>('run', runId),
-      r = this.store.get<{ runId: string; meta: TypedResultMeta; value: unknown }>(
-        'typed-run-result',
-        id,
-      );
+      r = storedTypedResult(this.store, id) as
+        | { runId: string; meta: TypedResultMeta; value: unknown }
+        | undefined;
     if (
       !run ||
       (!['context', 'source-reduce', 'effect'].includes(r?.meta.type ?? '') &&

@@ -1089,6 +1089,10 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
+      if (Object.hasOwn(record, 'resultRetention')) {
+        validateObject('ResultRetentionPolicy', record.resultRetention);
+        prepared.resultRetention = structuredClone(record.resultRetention);
+      }
       const check = () => {
         checkCredentials();
         if (prepared.resultSources) this.resultSources.assertPrepared(prepared.resultSources);
