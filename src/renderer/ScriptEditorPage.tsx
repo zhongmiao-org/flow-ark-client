@@ -71,6 +71,8 @@ export default function ScriptEditorPage({
     [saving, setSaving] = useState(false);
   const [timeoutError, setTimeoutError] = useState('');
   const [location, setLocation] = useState<CodeLocation>();
+  const [plainText, setPlainText] = useState(false);
+  const plainEditor = useRef<HTMLTextAreaElement>(null);
   const [focusRequest, setFocusRequest] = useState<{ selector: string }>();
   const [expandedSettings, setExpandedSettings] = useState<string[]>([]);
   const expandSetting = (key: string, open: boolean) =>
@@ -137,6 +139,18 @@ export default function ScriptEditorPage({
     setSyntax({});
     setLocation(undefined);
   }, [node.code, node.language]);
+  useEffect(() => {
+    const editor = plainEditor.current;
+    if (!plainText || !location || !editor || saving) return;
+    const lines = node.code.split(/(?<=\n)/);
+    const line = Math.max(0, Math.min(location.lineNumber - 1, lines.length - 1));
+    const offset =
+      lines.slice(0, line).join('').length +
+      Math.min(Math.max(0, location.column - 1), lines[line].replace(/\r?\n$/, '').length);
+    editor.focus();
+    editor.setSelectionRange(offset, offset);
+    editor.scrollTop = Math.max(0, (line - 3) * 22);
+  }, [plainText, location, saving]);
   useLayoutEffect(() => {
     navigation.current = (next, destination = returnLabel) => {
       if (persisting.current || pendingLeave) return;
@@ -379,18 +393,57 @@ export default function ScriptEditorPage({
                   预览输入输出
                 </ActionButton>
               </div>
-              <Suspense fallback={<p>加载代码编辑器…</p>}>
-                <CodeEditor
+              <div className="script-editor-mode" role="group" aria-label="脚本编辑方式">
+                <Button
+                  type={plainText ? 'default' : 'primary'}
+                  aria-pressed={!plainText}
+                  onClick={() => setPlainText(false)}
+                >
+                  代码编辑
+                </Button>
+                <Button
+                  type={plainText ? 'primary' : 'default'}
+                  aria-pressed={plainText}
+                  onClick={() => {
+                    setPlainText(true);
+                    setFocusRequest({ selector: '[data-plain-script]' });
+                  }}
+                >
+                  纯文本编辑
+                </Button>
+              </div>
+              {plainText ? (
+                <textarea
+                  ref={plainEditor}
+                  data-plain-script
+                  className="script-editor-plain"
+                  aria-label="脚本代码（纯文本）"
                   value={node.code}
-                  language={node.language === 'ts' ? 'typescript' : 'javascript'}
-                  label="脚本代码"
-                  theme="vs-dark"
                   readOnly={saving}
-                  height="390px"
-                  location={location}
-                  onChange={(code) => change({ ...node, code })}
+                  spellCheck={false}
+                  autoCapitalize="off"
+                  autoComplete="off"
+                  wrap="off"
+                  onChange={(event) => change({ ...node, code: event.target.value })}
                 />
-              </Suspense>
+              ) : (
+                <Suspense fallback={<p>加载代码编辑器…</p>}>
+                  <CodeEditor
+                    value={node.code}
+                    language={node.language === 'ts' ? 'typescript' : 'javascript'}
+                    label="脚本代码"
+                    theme="vs-dark"
+                    readOnly={saving}
+                    height="390px"
+                    location={location}
+                    onChange={(code) => change({ ...node, code })}
+                  />
+                </Suspense>
+              )}
+              <p className="note">
+                当前脚本 {node.code.length} 个字符 · 切换编辑方式保留同一份内容。
+                纯文本支持标准选择、粘贴和辅助技术；检查、预览及保存保持一致。
+              </p>
               <div className="script-syntax" role="status" aria-live="polite">
                 {syntax.error && <p className="field-error">检查未完成：{syntax.error}</p>}
                 {syntax.issues &&

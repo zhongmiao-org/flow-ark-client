@@ -53,6 +53,37 @@
   border-radius: 8px;
   overflow: hidden;
 }
+.script-editor-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.script-editor-mode > button {
+  min-width: min(144px, 100%);
+}
+.script-editor-plain {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 390px;
+  min-height: 160px;
+  padding: 20px;
+  resize: vertical;
+  overflow: auto;
+  border: 1px solid var(--fa-border-default);
+  border-radius: 8px;
+  background: var(--fa-bg-surface);
+  color: var(--fa-text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 22px;
+}
+.script-editor-plain:focus-visible {
+  outline: 2px solid var(--fa-action-primary);
+  outline-offset: 2px;
+}
 .script-editor-settings > .script-editor-card > .ant-card-body {
   display: flex;
   flex-direction: column;
