@@ -278,14 +278,20 @@ export class EmbeddedPage {
       {
         objectId,
         functionDeclaration: `function() {
-        const target=this, state={hovered:false,pressed:false,blocked:false};
+        const target=this, state={hovered:false,pressed:false,blocked:false,blockedEvent:null,blockedReason:null};
         const listen=e=>{
           if(!e.isTrusted) return;
-          let unique=true;
-          ${selector ? `try { unique=(${browserTargetDOM.toString()})({selector:${JSON.stringify(selector)},expected:target,mode:'check'}).visible; } catch { unique=false; }` : ''}
+          let unique=true, reason=null;
+          ${selector ? `try { unique=(${browserTargetDOM.toString()})({selector:${JSON.stringify(selector)},expected:target,mode:'check'}).visible; if(!unique) reason='not-visible'; } catch { unique=false; reason='target-identity'; }` : ''}
+          if(!target.isConnected) reason='disconnected';
+          else if(target.matches(':disabled')) reason='disabled';
+          else if(!reason && !e.composedPath().includes(target)) reason='off-target';
           const hit=unique && target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
           if(e.type==='mousemove') { state.hovered=hit; return; }
-          if(!hit) { state.blocked=true; e.preventDefault(); e.stopImmediatePropagation(); }
+          if(!hit) {
+            if(!state.blocked) { state.blockedEvent=e.type; state.blockedReason=reason; }
+            state.blocked=true; e.preventDefault(); e.stopImmediatePropagation();
+          }
           else if(e.type==='mousedown') state.pressed=true;
         };
         const types=['mousemove','mousedown','mouseup','click'];
@@ -383,8 +389,26 @@ export class EmbeddedPage {
       } catch (error) {
         if (!navigated) throw error;
       }
-      if (state && (state.blocked || !state.pressed))
-        throw new Error('点击期间目标发生变化，未确认点击结果');
+      if (state && (state.blocked || !state.pressed)) {
+        const phases: Record<string, string> = {
+          mousedown: '按下鼠标时',
+          mouseup: '释放鼠标时',
+          click: '点击事件时',
+        };
+        const reasons: Record<string, string> = {
+          'target-identity': '目标不再唯一或原目标已被替换',
+          'not-visible': '原目标不再可见',
+          disconnected: '原目标已离开页面',
+          disabled: '原目标已禁用',
+          'off-target': '鼠标事件未命中原目标',
+        };
+        const phase = phases[state.blockedEvent] ?? '派发后核对时';
+        const reason = reasons[state.blockedReason] ?? '未取得完整的可信点击回执';
+        const press = state.pressed ? '已取得原目标按下回执' : '未取得原目标按下回执';
+        throw new Error(
+          `点击期间目标发生变化，未确认点击结果（${phase}：${reason}；${press}）。请核对网页实际结果，不会自动重试。`,
+        );
+      }
     } finally {
       this.contents.removeListener('did-start-navigation', navigation);
       await this.call(scope, guard, 'function(){this.dispose();}').catch(() => {});
