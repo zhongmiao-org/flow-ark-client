@@ -98,7 +98,8 @@ export default function BrowserNodeConfiguration({
     node.version === 6 ||
     node.version === 7 ||
     node.version === 9 ||
-    node.version === 10
+    node.version === 10 ||
+    node.version === 11
   )
     return (
       <section className="node-configuration">

@@ -259,7 +259,8 @@ export class TypedResults {
       node.version === 6 ||
       node.version === 7 ||
       node.version === 9 ||
-      node.version === 10
+      node.version === 10 ||
+      node.version === 11
     ) {
       const saved = this.store.get<{ node: ResolvedBrowserFieldsNode; sha256: string }>(
         'browser-fields-input',

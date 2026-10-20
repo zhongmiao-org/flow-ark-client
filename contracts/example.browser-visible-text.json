@@ -1,0 +1,94 @@
+{
+  "node": {
+    "id": "description",
+    "type": "browser",
+    "version": 11,
+    "operation": "collect",
+    "renderPolicy": "bounded-visible-text-v1",
+    "selector": "main",
+    "framePath": [],
+    "fields": [
+      {
+        "key": "body",
+        "selector": "article",
+        "operation": "selection-text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true
+      }
+    ]
+  },
+  "resolvedInvocation": {
+    "id": "description",
+    "type": "browser",
+    "version": 11,
+    "operation": "collect",
+    "renderPolicy": "bounded-visible-text-v1",
+    "selector": "main",
+    "framePath": [],
+    "fields": [
+      {
+        "key": "body",
+        "selector": "article",
+        "operation": "selection-text",
+        "attribute": null,
+        "required": true
+      },
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true
+      }
+    ],
+    "nodeInstance": "description"
+  },
+  "result": {
+    "version": 6,
+    "operation": "collect",
+    "url": "https://example.org/jobs/1",
+    "documentUrl": "https://example.org/jobs/1",
+    "selector": "main",
+    "framePath": [],
+    "complete": true,
+    "renderPolicy": "bounded-visible-text-v1",
+    "externalAppearanceVerified": false,
+    "fields": [
+      {
+        "key": "body",
+        "selector": "article",
+        "operation": "selection-text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "Example body",
+        "issues": [],
+        "ignoredAncestorSpaces": 0,
+        "excludedAncestorDecorations": 1,
+        "excludedHiddenTextLeaves": 2
+      },
+      {
+        "key": "title",
+        "selector": "h1",
+        "operation": "text",
+        "attribute": null,
+        "required": true,
+        "count": 1,
+        "status": "ok",
+        "value": "Example title",
+        "issues": [],
+        "ignoredAncestorSpaces": 0,
+        "excludedAncestorDecorations": 0,
+        "excludedHiddenTextLeaves": 0
+      }
+    ]
+  }
+}

@@ -111,6 +111,8 @@ validators.browser_selection_text_result_v4 = `${schema.$id}#/$defs/BrowserSelec
 validators.browser_selection_text_invocation_v1 = `${schema.$id}#/$defs/BrowserSelectionTextFieldsInvocation`;
 validators.browser_empty_leaf_text_result_v5 = `${schema.$id}#/$defs/BrowserEmptyLeafTextFieldsResult`;
 validators.browser_empty_leaf_text_invocation_v1 = `${schema.$id}#/$defs/BrowserEmptyLeafTextFieldsInvocation`;
+validators.browser_visible_text_result_v6 = `${schema.$id}#/$defs/BrowserVisibleTextFieldsResult`;
+validators.browser_visible_text_invocation_v1 = `${schema.$id}#/$defs/BrowserVisibleTextFieldsInvocation`;
 validators.ai_outcome_v1 = `${schema.$id}#/$defs/AIOutcome`;
 validators.ai_receipt_v1 = `${schema.$id}#/$defs/AINodeReceipt`;
 for (const name of [

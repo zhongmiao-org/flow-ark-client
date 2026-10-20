@@ -93,6 +93,7 @@ import {
   assertBrowserFieldsInvocation,
   assertBrowserSelectionTextInvocation,
   assertBrowserEmptyLeafTextInvocation,
+  assertBrowserVisibleTextInvocation,
   assertBrowserSelectionTextCapabilities,
   assertBrowserFieldsResult,
   browserFieldsCapabilityFor,
@@ -2143,7 +2144,8 @@ export class Runtime {
         args.version === 6 ||
         args.version === 7 ||
         args.version === 9 ||
-        args.version === 10
+        args.version === 10 ||
+        args.version === 11
       ) {
         const { nodeInstance, ...nodeInput } = args;
         const source = walk(snapshot.flow.steps).find((n) => n.id === args.id);
@@ -2160,14 +2162,16 @@ export class Runtime {
         )
           throw Error('关联字段节点不在当前固定运行中');
         fieldsInput =
-          args.version === 10
-            ? assertBrowserEmptyLeafTextInvocation(source, args)
-            : args.version === 9
-              ? assertBrowserSelectionTextInvocation(source, args)
-              : assertBrowserFieldsInvocation(source, nodeInput);
+          args.version === 11
+            ? assertBrowserVisibleTextInvocation(source, args)
+            : args.version === 10
+              ? assertBrowserEmptyLeafTextInvocation(source, args)
+              : args.version === 9
+                ? assertBrowserSelectionTextInvocation(source, args)
+                : assertBrowserFieldsInvocation(source, nodeInput);
         if (snapshot.bindings.template) {
           const { entry, pkg } = await this.templates.context(snapshot);
-          if (args.version === 9 || args.version === 10)
+          if (args.version === 9 || args.version === 10 || args.version === 11)
             assertBrowserSelectionTextCapabilities(
               source,
               snapshot.flow.requiredCapabilities,
@@ -2222,7 +2226,9 @@ export class Runtime {
           ? {
               version: fieldsInput.version,
               fields: fieldsInput.fields,
-              ...((fieldsInput.version === 9 || fieldsInput.version === 10) &&
+              ...((fieldsInput.version === 9 ||
+                fieldsInput.version === 10 ||
+                fieldsInput.version === 11) &&
               'renderPolicy' in fieldsInput
                 ? { renderPolicy: fieldsInput.renderPolicy }
                 : {}),
