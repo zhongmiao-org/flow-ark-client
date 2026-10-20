@@ -321,7 +321,7 @@ export class RunResultLedgerStore {
   }
   stageResult(runId: string, meta: ResultMeta, value: unknown) {
     const held = this.stateHolds.get(meta.id);
-    if (held && (held.runId !== runId || !equal(held.meta, meta)))
+    if (held && (held.runId !== runId || !equal(held.meta, meta) || !equal(held.value, value)))
       fail('状态结果与已预留的完整值不一致');
     if (
       meta.type === 'context' &&
@@ -344,7 +344,7 @@ export class RunResultLedgerStore {
   /** Exact result plus the largest complete receipt stage; includes every outstanding hold. */
   reserveState(runId: string, meta: ResultMeta, value: unknown, stages: StateReceiptStages) {
     if (this.stateHolds.has(meta.id)) fail('此状态结果已有未消费预留');
-    const hold = { runId, meta, value, stages };
+    const hold = structuredClone({ runId, meta, value, stages });
     const all = [...this.stateHolds.values()].filter((h) => h.runId === runId).concat(hold);
     this.store.atomic(() => {
       const { owner, ledger, refs } = this.verified(runId);
@@ -424,6 +424,7 @@ export class RunResultLedgerStore {
       !held ||
       held.runId !== runId ||
       held.meta.sha256 !== digest(value) ||
+      !equal(held.value, value) ||
       held.stages.key !== (value as { operationId?: unknown })?.operationId
     )
       fail('状态提交没有匹配的完整空间预留');
