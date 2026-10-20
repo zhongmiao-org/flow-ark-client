@@ -1,4 +1,5 @@
 import type { Store } from './store';
+import type { StateReceiptStages } from './result-ledger';
 import type { Bindings, FlowRecord, Run } from '../shared/types';
 import type { AuthorCheckout, AuthorDraft } from '../shared/template-author';
 import type {
@@ -28,6 +29,11 @@ import { walk } from '../core/validate';
 
 type Meta = { revision: number; updatedAt: string };
 const maxRevision = Number.MAX_SAFE_INTEGER - 1;
+const stateErrors = {
+  unknown: '状态提交未确认，请核对原操作；不会自动重写',
+  inspect: '原操作没有事务提交记录，未重写；需要时基于最新状态另起运行',
+  conflict: '状态修订已变化；保留原输入并读取最新状态',
+} as const;
 /** Called in the same transaction as the actual state mutation. No second authority for values. */
 function nextMeta(store: Store, kind: string, key: string): Meta {
   const old = store.get<Meta>(kind, key) ?? { revision: 0, updatedAt: now() };
@@ -375,7 +381,8 @@ export class TemplateData {
     resolved: any,
     signal: AbortSignal,
     active: () => void,
-    beforeWrite: (result: DataOutput) => void = () => {},
+    beforeWrite?: (result: DataOutput, stages?: StateReceiptStages) => void,
+    afterWritten?: (result: DataOutput) => void,
   ): Promise<DataOutput> {
     const context = record.templateData;
     if (!context) throw Error('运行没有固定配置与状态上下文');
@@ -471,9 +478,44 @@ export class TemplateData {
           committedAt: at,
         };
       validateTemplateDataOutput(result);
+      const owned = this.store.resultLedgers.owned(runId);
+      let stages: StateReceiptStages | undefined;
+      if (owned) {
+        if (!beforeWrite || !afterWritten)
+          throw Error('状态提交未连接完整结果存储，未创建状态操作');
+        const envelope = (value: DataReceipt) => {
+          validateTemplateDataReceipt(value, request);
+          return { runId, nodeInstance, receipt: value };
+        };
+        const unknownError = stateErrors.unknown;
+        const inspectError = stateErrors.inspect;
+        const cancelledError =
+          Buffer.byteLength(unknownError) >= Buffer.byteLength(inspectError)
+            ? unknownError
+            : inspectError;
+        stages = {
+          key: operationId,
+          rows: [
+            envelope(receipt),
+            envelope({ ...receipt, status: 'written', updatedAt: at, result }),
+            envelope({ ...receipt, status: 'unknown', updatedAt: at, error: unknownError }),
+            envelope({ ...receipt, status: 'cancelled', updatedAt: at, error: cancelledError }),
+            envelope({
+              ...receipt,
+              status: 'conflict',
+              updatedAt: at,
+              currentRevision: Number.MAX_SAFE_INTEGER - 1,
+              error: stateErrors.conflict,
+            }),
+          ],
+        };
+      }
       // No await between this exact quota reservation and the original CAS transaction.
       // Preserve the original conflict receipt when the expected revision is already stale.
-      if (this.readState(context).revision === request.expectedRevision) beforeWrite(result);
+      if (owned || this.readState(context).revision === request.expectedRevision)
+        beforeWrite?.(result, stages);
+      if (owned)
+        this.store.resultLedgers.assertStateReservation(runId, node.id, nodeInstance, result);
       persist(receipt);
       try {
         receipt = this.store.tx(() => {
@@ -486,7 +528,7 @@ export class TemplateData {
               status: 'conflict' as const,
               currentRevision: current.revision,
               updatedAt: now(),
-              error: '状态修订已变化；保留原输入并读取最新状态',
+              error: stateErrors.conflict,
             };
             persist(conflict);
             return conflict;
@@ -496,6 +538,7 @@ export class TemplateData {
           this.store.put(target.meta, target.id, { revision: result.revision, updatedAt: at });
           const written = { ...receipt, status: 'written' as const, updatedAt: at, result };
           persist(written);
+          if (owned) afterWritten!(result);
           return written;
         });
       } catch (e) {
@@ -509,7 +552,7 @@ export class TemplateData {
                 ? 'cancelled'
                 : 'unknown',
             updatedAt: now(),
-            error: '状态提交未确认，请核对原操作；不会自动重写',
+            error: stateErrors.unknown,
           };
           persist(receipt);
         }
@@ -571,7 +614,7 @@ export class TemplateData {
       ...latest.receipt,
       status: 'cancelled',
       updatedAt: now(),
-      error: '原操作没有事务提交记录，未重写；需要时基于最新状态另起运行',
+      error: stateErrors.inspect,
     };
     this.store.put('template-data-operation', operationId, latest);
     return latest.receipt;
