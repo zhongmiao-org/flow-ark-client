@@ -29,6 +29,7 @@ import type { SourceNode } from '../shared/conversation-source';
 import type { ReductionTarget } from '../shared/source-reduction';
 import { assertEffectResult, effectOperations } from '../shared/effect-node';
 import { sha256 as effectId } from '../../contracts/package-format';
+import { resultBytes, savedResultBudget, TYPED_RESULT_LIMITS } from '../shared/typed-result-budget';
 export type TypedResultMeta = {
   id: string;
   nodeId: string;
@@ -48,11 +49,57 @@ export type TypedResultMeta = {
   sha256: string;
 };
 export class TypedResults {
+  private reservations = new Map<string, { runId: string; sha256: string; bytes: number }>();
   constructor(
     private store: Store,
     private sourceResult?: (record: FlowRecord, node: SourceNode, value: unknown) => void,
     private reductionResult?: (target: ReductionTarget, value: unknown) => void,
   ) {}
+  private capacity(runId: string, id: string, sha256: string, bytes: number) {
+    const entries = this.list(runId);
+    const old = entries.find((entry) => entry.id === id);
+    if (old) {
+      if (old.sha256 !== sha256) throw Error('同一步骤结果身份已使用');
+      return old;
+    }
+    const own = this.reservations.get(id);
+    if (own && (own.runId !== runId || own.sha256 !== sha256 || own.bytes !== bytes))
+      throw Error('结构化结果与已预留的完整值不一致');
+    const held = [...this.reservations.entries()].filter(
+      ([key, r]) => key !== id && r.runId === runId,
+    );
+    const budget = savedResultBudget(entries);
+    if (budget.count + held.length >= TYPED_RESULT_LIMITS.count)
+      throw Error('本次结构化结果已保存或预留1000项，达到项数上限；当前结果未截断采用');
+    if (
+      budget.bytes + held.reduce((sum, [, r]) => sum + r.bytes, 0) + bytes >
+      TYPED_RESULT_LIMITS.bytes
+    )
+      throw Error(
+        `本次已保存${resultBytes(budget.bytes)}，当前结果${resultBytes(bytes)}无法纳入8 MiB预算；未截断采用。可在结果页查看容量明细`,
+      );
+  }
+  /** Exact upcoming state output only. This is neither a future-region permit nor a disk guarantee. */
+  reserveState(runId: string, nodeId: string, nodeInstance: string, value: unknown) {
+    if (typeof nodeInstance !== 'string' || !nodeInstance || nodeInstance.length > 4000)
+      throw Error('结构化结果步骤身份无效');
+    const snapshot = this.store.get<FlowRecord>('snapshot', runId);
+    const node = snapshot && walk(snapshot.flow.steps).find((n) => n.id === nodeId);
+    if (node?.type !== 'context' || node.operation !== 'state.write')
+      throw Error('状态结果空间不属于当前固定节点');
+    const id = digest({ runId, nodeId, nodeInstance, type: 'context' });
+    if (this.reservations.has(id)) throw Error('此状态结果已有未消费预留');
+    const item = { runId, sha256: digest(value), bytes: skillBytes(value) };
+    if (this.capacity(runId, id, item.sha256, item.bytes)) return () => {};
+    this.reservations.set(id, item);
+    return () => {
+      if (this.reservations.get(id) === item) this.reservations.delete(id);
+    };
+  }
+  release(runId: string) {
+    for (const [id, value] of this.reservations)
+      if (value.runId === runId) this.reservations.delete(id);
+  }
   save(
     runId: string,
     nodeId: string,
@@ -79,17 +126,8 @@ export class TypedResults {
     const id = digest({ runId, nodeId, nodeInstance, type }),
       sha256 = digest(value),
       bytes = skillBytes(value);
-    const entries = this.list(runId),
-      old = entries.find((e) => e.id === id);
-    if (old) {
-      if (old.sha256 !== sha256) throw Error('同一步骤结果身份已使用');
-      return;
-    }
-    if (
-      entries.length >= 1000 ||
-      entries.reduce((sum, e) => sum + e.bytes, 0) + bytes > 8 * 1048576
-    )
-      throw Error('本次结构化结果超过1000项或8MiB，未截断采用');
+    const entries = this.list(runId);
+    if (this.capacity(runId, id, sha256, bytes)) return;
     const meta: TypedResultMeta = {
       id,
       nodeId,
@@ -138,6 +176,7 @@ export class TypedResults {
       }
       this.store.put('typed-run-index', runId, { entries: [...entries, meta] });
     });
+    this.reservations.delete(id);
   }
   private effectResult(runId: string, nodeId: string, value: unknown) {
     assertEffectResult(value);

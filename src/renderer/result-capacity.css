@@ -1,0 +1,36 @@
+.result-capacity {
+  margin-block: var(--fa-space-16);
+}
+
+.result-capacity .ant-card-body {
+  display: grid;
+  gap: var(--fa-space-16);
+}
+
+.result-capacity-group {
+  display: grid;
+  gap: var(--fa-space-8);
+  min-width: 0;
+}
+
+.result-capacity-group[hidden] {
+  display: none;
+}
+
+.result-capacity-group p,
+.result-capacity .result-capacity-note {
+  margin: 0;
+}
+
+.result-capacity-group .ant-btn {
+  justify-self: start;
+}
+
+.result-capacity-breakdown {
+  display: grid;
+  gap: var(--fa-space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+}
