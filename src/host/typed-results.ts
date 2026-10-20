@@ -30,8 +30,9 @@ import type { ReductionTarget } from '../shared/source-reduction';
 import { assertEffectResult, effectOperations } from '../shared/effect-node';
 import { sha256 as effectId } from '../../contracts/package-format';
 import { resultBytes, savedResultBudget, TYPED_RESULT_LIMITS } from '../shared/typed-result-budget';
-import { storedTypedResult } from './result-ledger';
+import { ResultRetentionError, storedTypedResult } from './result-ledger';
 import type { StateReceiptStages } from './result-ledger';
+import { checkedResultCapacity, type RunResultCapacity } from '../shared/result-capacity';
 const resultLabel = (node: Step) =>
   typeof node.name === 'string' && node.name.trim()
     ? node.name
@@ -254,6 +255,96 @@ export class TypedResults {
   list(runId: string): TypedResultMeta[] {
     if (this.store.resultLedgers.owned(runId)) return this.store.resultLedgers.list(runId);
     return this.store.get<{ entries: TypedResultMeta[] }>('typed-run-index', runId)?.entries ?? [];
+  }
+  /** One stable read view; ordinary capacity includes entries not yet eligible for reading. */
+  summary(runId: string): { entries: TypedResultMeta[]; capacity: RunResultCapacity } {
+    let policy: RunResultCapacity['policy'] = 'run-owned-results-v1';
+    try {
+      return this.store.atomic(() => {
+        if (this.store.fault) throw new ResultRetentionError('本地存储不可读', 'storage');
+        const run = this.store.get<Run>('run', runId);
+        const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', runId);
+        if (!run || !snapshot) throw new ResultRetentionError('原运行或固定方案缺失', 'missing');
+        if (!Object.hasOwn(snapshot, 'resultRetention')) policy = 'legacy-full-values-v1';
+        if (run.id !== runId || snapshot.id !== run.flowId)
+          throw new ResultRetentionError('原运行与固定方案不一致', 'owner-mismatch');
+        let entries: TypedResultMeta[], capacity: RunResultCapacity;
+        if (this.store.resultLedgers.owned(runId)) {
+          ({ entries, capacity } = this.store.resultLedgers.summary(runId));
+        } else {
+          const index = this.store.get<{ entries: TypedResultMeta[] }>('typed-run-index', runId);
+          if (index !== undefined && (!index || !Array.isArray(index.entries)))
+            throw new ResultRetentionError('原目录缺少完整元数据');
+          entries = index?.entries ?? [];
+          if (!Array.isArray(entries)) throw new ResultRetentionError('原目录格式无效');
+          if (entries.length > TYPED_RESULT_LIMITS.count)
+            throw new ResultRetentionError('原运行超过保存项数限额', 'limit');
+          const ids = new Set<string>();
+          for (const meta of entries) {
+            if (
+              !meta ||
+              typeof meta.nodeId !== 'string' ||
+              typeof meta.nodeInstance !== 'string' ||
+              typeof meta.label !== 'string' ||
+              ![
+                'document',
+                'skill',
+                'context',
+                'conversation',
+                'browser',
+                'run-result',
+                'source',
+                'source-reduce',
+                'effect',
+              ].includes(meta.type) ||
+              meta.id !==
+                digest({
+                  runId,
+                  nodeId: meta.nodeId,
+                  nodeInstance: meta.nodeInstance,
+                  type: meta.type,
+                }) ||
+              !/^[a-f0-9]{64}$/.test(meta.sha256) ||
+              ids.has(meta.id) ||
+              !Number.isSafeInteger(meta.bytes) ||
+              meta.bytes < 1
+            )
+              throw new ResultRetentionError('原目录元数据无法核对');
+            ids.add(meta.id);
+          }
+          const budget = savedResultBudget(entries);
+          if (budget.count > TYPED_RESULT_LIMITS.count || budget.bytes > TYPED_RESULT_LIMITS.bytes)
+            throw new ResultRetentionError('原运行超过保存限额', 'limit');
+          capacity = {
+            version: 1,
+            runId,
+            policy: 'legacy-full-values-v1',
+            status: 'available',
+            limits: { count: 1000, retainedBytes: 8388608 },
+            count: budget.count,
+            logicalBytes: budget.bytes,
+            retainedBytes: budget.bytes,
+          };
+        }
+        checkedResultCapacity(capacity, runId, entries);
+        return { entries, capacity };
+      });
+    } catch (error) {
+      return {
+        entries: [],
+        capacity: {
+          version: 1,
+          runId,
+          policy,
+          status: 'unavailable',
+          reason: this.store.fault
+            ? 'storage'
+            : error instanceof ResultRetentionError
+              ? error.reason
+              : 'integrity',
+        },
+      };
+    }
   }
   read(runId: string, id: string) {
     const run = this.store.get<Run>('run', runId),

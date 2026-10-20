@@ -1,6 +1,7 @@
 import AuthorSdkInfo from './AuthorSdkInfo';
 import EntryResultView from './EntryResultView';
 import TypedRunResults from './TypedRunResults';
+import ResultCapacity from './ResultCapacity';
 import RunContextOperations from './RunContextOperations';
 import ActionButton from './ActionButton';
 import DocumentResults from './DocumentResults';
@@ -18,6 +19,7 @@ import RunResultReview from './RunResultReview';
 import RunFileRecovery from './RunFileRecovery';
 import './run-output-workspace.css';
 import { keepFocusedElementVisible } from './keepFocusedElementVisible';
+import { checkedResultCapacity } from '../shared/result-capacity';
 
 function fileSize(bytes: number) {
   if (!Number.isFinite(bytes) || bytes < 0) return '大小未记录';
@@ -144,6 +146,23 @@ export default function RunOutputWorkspace({
   openRun?: (detail: any) => void;
 }) {
   const view = presentRun(detail, Date.now());
+  let completeResultsAvailable = false;
+  try {
+    const capacity = checkedResultCapacity(
+      detail.resultCapacity,
+      detail.run.id,
+      detail.savedTypedResults ?? [],
+    );
+    const saved = new Set((detail.savedTypedResults ?? []).map((r: { id: string }) => r.id));
+    const readable = detail.typedResults ?? [];
+    completeResultsAvailable =
+      capacity.status === 'available' &&
+      Array.isArray(readable) &&
+      new Set(readable.map((r: { id: string }) => r.id)).size === readable.length &&
+      readable.every((r: { id: string }) => saved.has(r.id));
+  } catch {
+    // Keep the original Run and independent receipts visible, never adopt partial results.
+  }
   const lastSaved =
     !['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(detail.run.state) &&
     (Boolean(detail.fault) || (detail.run.state !== 'QUEUED' && view.activity !== 'active'));
@@ -176,7 +195,14 @@ export default function RunOutputWorkspace({
                 runId={detail.run.id}
               />
             )}
-            {detail.typedResults?.length ? (
+            <ResultCapacity
+              key={`capacity:${detail.run.id}`}
+              runId={detail.run.id}
+              capacity={detail.resultCapacity}
+              entries={detail.savedTypedResults ?? []}
+              readableCount={completeResultsAvailable ? (detail.typedResults?.length ?? 0) : -1}
+            />
+            {completeResultsAvailable && detail.typedResults?.length ? (
               <TypedRunResults
                 runId={detail.run.id}
                 entries={detail.typedResults}
@@ -185,7 +211,9 @@ export default function RunOutputWorkspace({
                 openRun={openRun}
               />
             ) : (
-              <DocumentResults snapshot={detail.snapshot} output={detail.output} />
+              completeResultsAvailable && (
+                <DocumentResults snapshot={detail.snapshot} output={detail.output} />
+              )
             )}
             <RunContextOperations
               key={`context:${detail.run.id}`}

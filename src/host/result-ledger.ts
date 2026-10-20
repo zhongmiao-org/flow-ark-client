@@ -17,6 +17,7 @@ import {
 } from '../../contracts/result-ledger.mjs';
 import { canonical, digest, encode, merge, read } from '../../contracts/result-retention.mjs';
 import { ledgerCapacity } from '../../contracts/result-capacity.mjs';
+import type { CapacityReason } from '../shared/result-capacity';
 import {
   result_retention_policy_v1,
   result_retention_result_ledger_v1,
@@ -54,8 +55,16 @@ const byBody: Record<string, RawFamily> = {
   'browser-scroll-input': 'browser-input-proof',
   'document-source-proof': 'document-source-proof',
 };
-function fail(reason: string): never {
-  throw Error('完整结果保留不可核验：' + reason);
+export class ResultRetentionError extends Error {
+  constructor(
+    message: string,
+    readonly reason: CapacityReason = 'integrity',
+  ) {
+    super('完整结果保留不可核验：' + message);
+  }
+}
+function fail(reason: string, code: CapacityReason = 'integrity'): never {
+  throw new ResultRetentionError(reason, code);
 }
 const equal = (a: unknown, b: unknown) => canonical(a) === canonical(b);
 const refKey = (r: Ref) => r.family + ':' + r.id;
@@ -95,8 +104,9 @@ export class RunResultLedgerStore {
   private owner(runId: string, supplied?: Run): LedgerOwner {
     const run = supplied ?? this.store.get<Run>('run', runId);
     const snapshot = this.store.get<any>('snapshot', runId);
-    if (!run || !snapshot || run.id !== runId || run.flowId !== snapshot.id || !this.owned(runId))
-      fail('原运行或固定方案缺失');
+    if (!run || !snapshot) fail('原运行或固定方案缺失', 'missing');
+    if (run.id !== runId || run.flowId !== snapshot.id || !this.owned(runId))
+      fail('原运行与固定方案不一致', 'owner-mismatch');
     return {
       runId,
       flowId: run.flowId,
@@ -128,7 +138,7 @@ export class RunResultLedgerStore {
       ref.kind === '@ai-event'
         ? this.store.eventAt(runId, Number(ref.key))
         : this.store.get(ref.kind, ref.key);
-    if (value === undefined) fail('原值副本缺失');
+    if (value === undefined) fail('原值副本缺失', 'missing');
     const expected = this.descriptor(runId, ref.kind, ref.key, value);
     if (!expected || !equal(ref, expected)) fail('原值副本来源不符');
     return { family: ref.family, id: ref.id, value };
@@ -227,7 +237,9 @@ export class RunResultLedgerStore {
   private verified(runId: string) {
     const owner = this.owner(runId);
     const ledger = this.store.get<ResultLedger>(LEDGER, runId);
-    if (!ledger || !result_retention_result_ledger_v1(ledger)) fail('目录缺失或无效');
+    if (!ledger) fail('目录缺失', 'missing');
+    if (!result_retention_result_ledger_v1(ledger)) fail('目录格式无效');
+    if (!equal(ledger.owner, owner)) fail('目录不属于固定运行', 'owner-mismatch');
     inspectLedger(ledger, owner);
     const index = this.index(this.store.get(SOURCES, runId), owner);
     verifyCopies(ledger, owner, [
@@ -503,10 +515,16 @@ export class RunResultLedgerStore {
     });
   }
   capacity(runId: string) {
+    return this.summary(runId).capacity;
+  }
+  summary(runId: string) {
     return this.store.atomic(() => {
       if (this.pending.has(runId)) fail('本次结果正在登记，请待保存完成后读取');
       const v = this.verified(runId);
-      return ledgerCapacity(v.ledger, v.owner);
+      return {
+        entries: structuredClone(v.ledger.results),
+        capacity: ledgerCapacity(v.ledger, v.owner),
+      };
     });
   }
 }
