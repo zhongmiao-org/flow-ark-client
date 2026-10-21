@@ -168,6 +168,12 @@ export class RunRerun {
             ...(snapshot!.templateData
               ? { templateData: structuredClone(snapshot!.templateData) }
               : {}),
+            ...(snapshot!.resultSources
+              ? { resultSources: structuredClone(snapshot!.resultSources) }
+              : {}),
+            ...(Object.hasOwn(snapshot!, 'resultRetention')
+              ? { resultRetention: structuredClone(snapshot!.resultRetention) }
+              : {}),
           }
         : {}),
     };
@@ -208,7 +214,11 @@ export class RunRerun {
     if (this.capture(args).signature !== captured.signature)
       throw new Error('重新运行预览已过期：流程、授权或来源已改变，请重新预览');
     const preview: RunRerunPreview = {
-      token: digest({ signature: captured.signature, scriptBundles: prepared.scriptBundles }),
+      token: digest({
+        signature: captured.signature,
+        executionVersionId: executionVersion(captured.record, prepared),
+        scriptBundles: prepared.scriptBundles,
+      }),
       mode: args.mode,
       debug: !!args.debug,
       source: summary(captured.source),

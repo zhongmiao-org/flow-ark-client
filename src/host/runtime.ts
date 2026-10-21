@@ -116,6 +116,7 @@ import { staticUploadFields, uploadSource, uploadText } from '../shared/upload-s
 import { Templates } from '../templates/service';
 import { version as clientVersion } from '../../package.json';
 import { normalizeBindings, validateConfiguration } from './configuration';
+import { resultRetentionPolicy } from '../../contracts/result-capacity.mjs';
 const example = {
   formatVersion: '1.0',
   id: 'empty',
@@ -1089,10 +1090,18 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
+      // A queued execution is fixed even when its older manual snapshot has no
+      // versionId. Fixed bundles/versions (reruns, plans, subsequent batches)
+      // likewise retain the original policy, including an absent legacy flag.
+      const fixedRetention =
+        typeof desktopRun === 'string' ||
+        record.versionId !== undefined ||
+        record.scriptBundles !== undefined;
       if (Object.hasOwn(record, 'resultRetention')) {
         validateObject('ResultRetentionPolicy', record.resultRetention);
         prepared.resultRetention = structuredClone(record.resultRetention);
-      }
+      } else if (!fixedRetention) prepared.resultRetention = { ...resultRetentionPolicy };
+      if (prepared.resultRetention) this.typedResults.assertRetainedFlow(record);
       const check = () => {
         checkCredentials();
         if (prepared.resultSources) this.resultSources.assertPrepared(prepared.resultSources);
@@ -1772,7 +1781,7 @@ export class Runtime {
       if (desktopSnapshot?.desktopTarget?.binding)
         results.push(await this.desktopRuns.release(desktopSnapshot, run.id));
       const blocked = this.executionBlock();
-      const state: RunState =
+      let state: RunState =
         blocked || active.interruption || results.some((r) => !r.confirmed)
           ? 'INTERRUPTED'
           : active.cancelling
@@ -1788,7 +1797,18 @@ export class Runtime {
       const old = this.store.get<Run>('run', run.id);
       if (old && !terminal.has(old.state)) {
         this.templates.finish(run.id);
-        if (state === 'SUCCEEDED') this.store.put('output', run.id, redact(outputs, this.secrets));
+        if (state === 'SUCCEEDED') {
+          try {
+            this.store.put('output', run.id, redact(outputs, this.secrets));
+          } catch (error) {
+            // A healthy rollback of an output admission rejection is a Run
+            // failure, not a database failure. Never publish partial output or
+            // leave the Run running; actual write/rollback faults remain blocked.
+            if (this.store.fault) throw error;
+            state = 'FAILED';
+            errors.push('整体输出未能完整保存；步骤与独立回执已保留：' + errorText(error));
+          }
+        }
         this.store.state(
           run.id,
           state,
