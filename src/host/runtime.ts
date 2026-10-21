@@ -1781,7 +1781,7 @@ export class Runtime {
       if (desktopSnapshot?.desktopTarget?.binding)
         results.push(await this.desktopRuns.release(desktopSnapshot, run.id));
       const blocked = this.executionBlock();
-      const state: RunState =
+      let state: RunState =
         blocked || active.interruption || results.some((r) => !r.confirmed)
           ? 'INTERRUPTED'
           : active.cancelling
@@ -1797,7 +1797,18 @@ export class Runtime {
       const old = this.store.get<Run>('run', run.id);
       if (old && !terminal.has(old.state)) {
         this.templates.finish(run.id);
-        if (state === 'SUCCEEDED') this.store.put('output', run.id, redact(outputs, this.secrets));
+        if (state === 'SUCCEEDED') {
+          try {
+            this.store.put('output', run.id, redact(outputs, this.secrets));
+          } catch (error) {
+            // A healthy rollback of an output admission rejection is a Run
+            // failure, not a database failure. Never publish partial output or
+            // leave the Run running; actual write/rollback faults remain blocked.
+            if (this.store.fault) throw error;
+            state = 'FAILED';
+            errors.push('整体输出未能完整保存；步骤与独立回执已保留：' + errorText(error));
+          }
+        }
         this.store.state(
           run.id,
           state,
