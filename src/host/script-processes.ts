@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Store } from './store';
 import { Rpc } from '../shared/rpc';
-import { uid, now, errorText } from '../shared/utils';
+import { uid, now, errorText, distinctErrorLines } from '../shared/utils';
 import {
   SCRIPT_READY_TIMEOUT_MS,
   SCRIPT_CLEANUP_TIMEOUT_MS,
@@ -375,7 +375,7 @@ export class ScriptProcesses {
     const cleanup = await this.close(record);
     if (!cleanup.confirmed)
       throw new ScriptProcessInterruptedError(
-        [errorText(failure ?? ''), cleanup.error].filter(Boolean).join('\n'),
+        distinctErrorLines([errorText(failure ?? ''), cleanup.error]).join('\n'),
       );
     if (record.interrupted) throw new ScriptProcessInterruptedError(record.interrupted);
     if (failure) throw failure;
@@ -464,6 +464,7 @@ export class ScriptProcesses {
   private async closeRecord(record: Invocation): Promise<ScriptCleanupResult> {
     const deadline = performance.now() + SCRIPT_CLEANUP_TIMEOUT_MS;
     let storageError: string | undefined;
+    let startupStopError: string | undefined;
     // Send before synchronous SQLite writes: a busy database must not postpone
     // the supervisor's independent cancellation timer or self-group stop.
     if (record.child?.connected) {
@@ -476,6 +477,27 @@ export class ScriptProcesses {
         });
       } catch {
         /* EOF also stops the controlled supervisor; confirm actual exit below. */
+      }
+    }
+    // Before execute is authorized the controlled supervisor cannot have
+    // created/imported user code. It may not yet be listening to IPC (or may be
+    // waiting for its group probe), so its own stop handler is insufficient.
+    // Signal only this still-owned ChildProcess, never a remembered PID/group.
+    // Even here, kill success is not cleanup proof: exit + ESRCH remain below.
+    const child = record.child;
+    if (
+      !record.authorized &&
+      child &&
+      !record.exited &&
+      child.exitCode === null &&
+      child.signalCode === null &&
+      Number.isSafeInteger(child.pid) &&
+      child.pid! > 1
+    ) {
+      try {
+        if (!child.kill('SIGKILL')) startupStopError = '未许可监护进程的停止请求未确认';
+      } catch (error) {
+        startupStopError = '未许可监护进程的停止请求失败：' + errorText(error);
       }
     }
     if (record.lease) {
@@ -535,7 +557,10 @@ export class ScriptProcesses {
         storageError ??= '脚本回收诊断无法保存：' + errorText(error);
       }
     }
-    return { confirmed: false, error: [cleanupError, storageError].filter(Boolean).join('\n') };
+    return {
+      confirmed: false,
+      error: distinctErrorLines([cleanupError, startupStopError, storageError]).join('\n'),
+    };
   }
 
   cancel(runId: string, invocationId: string, _reason?: string): Promise<ScriptCleanupResult> {
@@ -582,8 +607,7 @@ export class ScriptProcesses {
 
   private async closeAll(records: Invocation[]): Promise<ScriptCleanupResult> {
     const results = await Promise.all(records.map((record) => this.close(record)));
-    const errors = [...new Set(results.flatMap((result) => (result.error ? [result.error] : [])))];
-    if (this.block) errors.push(this.block);
+    const errors = distinctErrorLines([...results.map((result) => result.error), this.block]);
     return {
       confirmed: !this.block && results.every((result) => result.confirmed),
       ...(errors.length ? { error: errors.join('\n') } : {}),

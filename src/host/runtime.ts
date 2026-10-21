@@ -92,6 +92,7 @@ import {
   digest,
   canonical,
   errorText,
+  distinctErrorLines,
   redact,
   redactArtifactText,
   redactedErrorText,
@@ -1363,7 +1364,7 @@ export class Runtime {
   }
   private blockExecution(reason: string) {
     this.runtimeBlock ??= redact(
-      `资源回收未确认，执行已停止。请核对运行结果。${reason}`,
+      distinctErrorLines(['资源回收未确认，执行已停止。请核对运行结果。', reason]).join('\n'),
       this.secrets,
     );
     return this.runtimeBlock;
@@ -1520,7 +1521,7 @@ export class Runtime {
         this.blockExecution(error);
       }
       const scriptCleanup = await scripts;
-      const errors = [error, scriptCleanup.error].filter(Boolean);
+      const errors = distinctErrorLines([error, scriptCleanup.error]);
       return {
         confirmed: confirmed && scriptCleanup.confirmed,
         ...(errors.length ? { error: errors.join('\n') } : {}),
@@ -1789,11 +1790,12 @@ export class Runtime {
             : failure
               ? 'FAILED'
               : 'SUCCEEDED';
-      const errors = [
-        ...new Set(
-          [failure, active.interruption, ...results.map((r) => r.error), blocked].filter(Boolean),
-        ),
-      ];
+      const errors = distinctErrorLines([
+        failure,
+        active.interruption,
+        ...results.map((r) => r.error),
+        blocked,
+      ]);
       const old = this.store.get<Run>('run', run.id);
       if (old && !terminal.has(old.state)) {
         this.templates.finish(run.id);
