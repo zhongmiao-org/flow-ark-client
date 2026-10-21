@@ -17,6 +17,16 @@ export const digest = (v: any) => createHash('sha256').update(canonical(v)).dige
 export function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
+export function distinctErrorLines(messages: readonly (string | undefined)[]): string[] {
+  return [
+    ...new Set(
+      messages
+        .flatMap((message) => message?.split(/\r?\n/) ?? [])
+        .map((line) => line.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
 function maskText(value: string, secrets: string[]): string {
   let result = value
     .replace(/(Bearer\s+)[^\s]+/gi, '$1[REDACTED]')
