@@ -504,6 +504,7 @@ export class RunReview {
       batchPlan,
       token: digest({
         signature: captured.signature,
+        executionVersionId: executionVersion(captured.record, prepared),
         authorization: after.authorization,
         bundles: prepared.scriptBundles,
         ...(prepared.templateData ? { templateData: prepared.templateData } : {}),

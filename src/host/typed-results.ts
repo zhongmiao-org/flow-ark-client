@@ -29,7 +29,12 @@ import type { SourceNode } from '../shared/conversation-source';
 import type { ReductionTarget } from '../shared/source-reduction';
 import { assertEffectResult, effectOperations } from '../shared/effect-node';
 import { sha256 as effectId } from '../../contracts/package-format';
-import { resultBytes, savedResultBudget, TYPED_RESULT_LIMITS } from '../shared/typed-result-budget';
+import {
+  resultBytes,
+  savedResultBudget,
+  TYPED_RESULT_LIMITS,
+  typedResultNames,
+} from '../shared/typed-result-budget';
 import { ResultRetentionError, storedTypedResult } from './result-ledger';
 import type { StateReceiptStages } from './result-ledger';
 import { checkedResultCapacity, type RunResultCapacity } from '../shared/result-capacity';
@@ -66,6 +71,52 @@ export class TypedResults {
     private sourceResult?: (record: FlowRecord, node: SourceNode, value: unknown) => void,
     private reductionResult?: (target: ReductionTarget, value: unknown) => void,
   ) {}
+  /** Format admission only: no forecast result, ledger, state operation or permission. */
+  assertRetainedFlow(record: FlowRecord) {
+    try {
+      if (record.id !== record.flow.id) throw Error('固定流程身份不符');
+      validateObject('ResultRetentionLedgerOwner', {
+        runId: '00000000-0000-0000-0000-000000000000',
+        flowId: record.id,
+        versionId: '0'.repeat(64),
+        snapshotSha256: '0'.repeat(64),
+      });
+    } catch {
+      throw Error('流程身份无法用于完整结果保存，请保留草稿并核对流程来源');
+    }
+    let ordinal = 0;
+    const block = (steps: Step[], parent: string) => {
+      for (const node of steps) {
+        ordinal++;
+        const instance = parent + node.id;
+        if (Object.hasOwn(typedResultNames, node.type)) {
+          try {
+            validateObject('ResultRetentionLogicalResultMeta', {
+              id: '0'.repeat(64),
+              nodeId: node.id,
+              nodeInstance: instance,
+              type: node.type,
+              label: resultLabel(node),
+              bytes: 1,
+              sha256: '0'.repeat(64),
+            });
+          } catch {
+            throw Error(
+              `第${ordinal}步的完整名称或嵌套位置超出结果保存格式，请在步骤配置中核对；没有创建运行或截断内容`,
+            );
+          }
+        }
+        if (node.type === 'condition') {
+          block(node.then, instance + '/');
+          block(node.else, instance + '/');
+        } else if (node.type === 'loop') {
+          // The execution core accepts at most 1000 items, indexed 0..999.
+          block(node.body, instance + '[999]/');
+        }
+      }
+    };
+    block(record.flow.steps, '');
+  }
   private capacity(runId: string, id: string, sha256: string, bytes: number) {
     const entries = this.list(runId);
     const old = entries.find((entry) => entry.id === id);
