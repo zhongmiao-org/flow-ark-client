@@ -445,8 +445,37 @@ export class EmbeddedPage {
       await writeFile(String(command.value), image.toPNG(), { mode: 0o600 });
       return true;
     }
-    const scope = await this.scope(path, remaining),
-      selector = command.selector || 'body';
+    const selector = command.selector || 'body';
+    if (command.operation === 'wait') {
+      while (true) {
+        remaining();
+        this.abort.signal.throwIfAborted();
+        let scope: Scope | undefined;
+        let element: string | undefined;
+        try {
+          scope = await this.scope(path, remaining);
+          element = await this.element(scope, selector, remaining);
+          await this.visible(scope, element, remaining);
+          remaining();
+          this.abort.signal.throwIfAborted();
+          return true;
+        } catch (error) {
+          if (
+            !(error instanceof Error) ||
+            !error.message.includes('Cannot find context with specified id')
+          )
+            throw error;
+          this.abort.signal.throwIfAborted();
+          await new Promise((resolve) => setTimeout(resolve, Math.min(30, remaining())));
+        } finally {
+          if (scope && element)
+            await this.send('Runtime.releaseObject', { objectId: element }, scope.session).catch(
+              () => {},
+            );
+        }
+      }
+    }
+    const scope = await this.scope(path, remaining);
     if (command.operation === 'count')
       return this.evaluate(scope, `document.querySelectorAll(${JSON.stringify(selector)}).length`);
     const element = await this.element(scope, selector, remaining);
@@ -467,9 +496,6 @@ export class EmbeddedPage {
             element,
             `function(){ if (!['INPUT','TEXTAREA','SELECT'].includes(this.tagName)) throw new Error('目标没有输入值'); return this.value; }`,
           );
-        case 'wait':
-          await this.visible(scope, element, remaining);
-          return true;
         case 'click':
           await this.click(scope, element, remaining);
           return { clicked: true, verified: false };
