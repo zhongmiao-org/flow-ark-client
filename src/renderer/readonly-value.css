@@ -30,7 +30,8 @@
   min-width: 0;
 }
 .readonly-value dd,
-.readonly-value dd > div {
+.readonly-value dd > div,
+.readonly-value dt {
   min-width: 0;
 }
 .readonly-value dt,
@@ -48,6 +49,11 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  container-type: inline-size;
+}
+.readonly-value-field-composite {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 @container (max-width: 540px) {
   .readonly-value-field {

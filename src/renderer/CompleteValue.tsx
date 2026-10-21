@@ -77,9 +77,13 @@ function Branch({
           <dl>
             {entries.slice(start, start + count).map(([key, item]) => {
               const child = path + '/' + pointer(key),
-                annotation = labels.get(child);
+                annotation = labels.get(child),
+                composite = item !== null && typeof item === 'object';
               return (
-                <div className="readonly-value-field" key={key}>
+                <div
+                  className={`readonly-value-field${composite ? ' readonly-value-field-composite' : ''}`}
+                  key={key}
+                >
                   <dt>
                     {annotation?.label || (array ? `条目 ${Number(key) + 1}` : key || '空字段名')}
                   </dt>
