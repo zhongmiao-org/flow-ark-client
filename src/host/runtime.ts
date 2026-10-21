@@ -1761,14 +1761,27 @@ export class Runtime {
         failure = errorText(error);
       }
       const results: CleanupResult[] = [];
-      if (failure || active.cancelling || active.interruption || this.executionBlock()) {
+      if (active.cancelling || active.interruption || this.executionBlock()) {
         active.abort.abort(new Error('运行已停止'));
         results.push(
           ...(await Promise.all([this.releaseSession(active, true), this.stopWorker(active)])),
         );
       } else {
-        results.push(await this.stopWorker(active));
-        results.push(await this.releaseSession(active, false));
+        // A step can reject its business result after the website has changed.
+        // Revoke execution and stop its processes before retaining a healthy page
+        // for inspection. Cancellation, loss and unconfirmed cleanup still close it.
+        if (failure) active.abort.abort(new Error('运行已停止'));
+        const workerCleanup = await this.stopWorker(active);
+        results.push(workerCleanup);
+        results.push(
+          await this.releaseSession(
+            active,
+            !workerCleanup.confirmed ||
+              active.cancelling ||
+              Boolean(active.interruption) ||
+              Boolean(this.executionBlock()),
+          ),
+        );
       }
       // Cancel/lost may arrive while normal release or process cleanup is pending.
       // Sessions retains this Run's association until finishRun below.
