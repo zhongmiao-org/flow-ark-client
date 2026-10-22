@@ -456,8 +456,9 @@ export class Templates {
     runId: string,
     signal?: AbortSignal,
     active: () => void = () => {},
+    fixedPackage?: PackageData,
   ) {
-    await this.writeGuard(record, runId, signal, active);
+    await this.writeGuard(record, runId, signal, active, fixedPackage);
   }
   /** Keep the immutable execution inputs, but never treat them as current write authority. */
   async writeGuard(
@@ -465,6 +466,7 @@ export class Templates {
     runId: string,
     signal?: AbortSignal,
     active: () => void = () => {},
+    fixedPackage?: PackageData,
   ): Promise<() => void> {
     const available = () => {
       active();
@@ -473,7 +475,7 @@ export class Templates {
     };
     available();
     if (!record.bindings.template) return available;
-    const { entry, ref, pkg } = await this.context(record);
+    const { entry, ref, pkg } = await this.context(record, fixedPackage);
     if (!entry.actions.length) throw new Error('入口未声明写入动作');
     const fixed = structuredClone({
       flowId: record.id,
@@ -752,7 +754,7 @@ export class Templates {
       case 'state.set':
         need('state');
         validateData(jsonFile(pkg.files, pkg.manifest.stateSchema), args.value);
-        await this.canWrite(record, runId, signal, services.active);
+        await this.canWrite(record, runId, signal, services.active, pkg);
         signal.throwIfAborted();
         setInstanceState(this.store, ref.instanceId, args.value);
         return true;
@@ -778,7 +780,7 @@ export class Templates {
         )
           throw new Error('SDK 浏览器操作不支持');
         const guard = ['click', 'fill', 'select', 'check', 'press'].includes(op)
-          ? await this.writeGuard(record, runId, signal, services.active)
+          ? await this.writeGuard(record, runId, signal, services.active, pkg)
           : undefined;
         return services.browser(
           binding.browserId!,
@@ -821,7 +823,7 @@ export class Templates {
           if ((await stat(target)).size > 10 * 1024 * 1024) throw new Error('文件过大');
           return readFile(target, 'utf8');
         }
-        await this.canWrite(record, runId, signal, services.active);
+        await this.canWrite(record, runId, signal, services.active, pkg);
         if (
           typeof args.request.content !== 'string' ||
           Buffer.byteLength(args.request.content) > 10 * 1024 * 1024

@@ -58,7 +58,7 @@ export function setInstanceState(store: Store, instanceId: string, value: unknow
 type Formal = { ref: NonNullable<Bindings['template']>; pkg: PackageData; entry: Entry };
 type Deps = {
   available: () => void;
-  formal: (record: FlowRecord) => Promise<Formal>;
+  formal: (record: FlowRecord, runId?: string) => Promise<Formal>;
   authorize: (record: FlowRecord, runId: string, signal: AbortSignal) => Promise<void>;
 };
 type Job = { runId: string; controller: AbortController };
@@ -323,7 +323,7 @@ export class TemplateData {
     }
     return structuredClone(context);
   }
-  private async current(context: DataContext, record: FlowRecord) {
+  private async current(context: DataContext, record: FlowRecord, runId?: string) {
     if (context.owner.kind === 'author-checkout') {
       const { context: live } = this.debug(record.id);
       if (
@@ -333,7 +333,7 @@ export class TemplateData {
       )
         throw Error('调试上下文身份已变化');
     } else {
-      const { ref, pkg, entry } = await this.deps.formal(record),
+      const { ref, pkg, entry } = await this.deps.formal(record, runId),
         o = context.owner,
         row = this.store.get<any>('template-data-context', 'instance:' + ref.instanceId);
       if (
@@ -402,7 +402,7 @@ export class TemplateData {
     try {
       this.deps.available();
       active();
-      await this.current(context, record);
+      await this.current(context, record, runId);
       this.deps.available();
       active();
       validateTemplateDataContext(context, true);
@@ -442,10 +442,10 @@ export class TemplateData {
       check();
       let actions: string[] = [];
       if (record.bindings.template) {
-        const { entry } = await this.deps.formal(record);
+        const { entry } = await this.deps.formal(record, runId);
         actions = entry.actions;
         await this.deps.authorize(record, runId, controller.signal);
-        await this.current(context, record);
+        await this.current(context, record, runId);
       }
       check();
       this.assertGrants(record, actions, runId);
