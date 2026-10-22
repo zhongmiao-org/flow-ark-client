@@ -541,8 +541,21 @@ export class Runtime {
     this.effectNodes = new EffectNodes(this.store, this.templates);
     this.templateData = new TemplateData(this.store, {
       available: () => this.assertAdmitting(),
-      formal: (record) => this.templates.context(record),
-      authorize: (record, runId, signal) => this.templates.canWrite(record, runId, signal),
+      formal: async (record, runId) =>
+        this.templates.context(
+          record,
+          runId ? await this.fixedRunTemplatePackage(record, runId) : undefined,
+        ),
+      authorize: async (record, runId, signal) => {
+        const pkg = await this.fixedRunTemplatePackage(record, runId);
+        await this.templates.canWrite(
+          record,
+          runId,
+          signal,
+          () => this.assertActiveRun(runId),
+          pkg,
+        );
+      },
     });
     this.authorSdk = new AuthorSdk(
       this.store,
@@ -1408,6 +1421,21 @@ export class Runtime {
     if (active.interruption) throw new Error(active.interruption);
     if (active.workerClosing || !active.child.connected) throw new Error('执行进程已断开');
   }
+  private assertActiveRun(runId: string) {
+    this.assertAdmitting();
+    const active = this.active;
+    if (!active || active.id !== runId) throw new Error('运行已停止');
+    this.checkActive(active);
+  }
+  private async fixedRunTemplatePackage(record: FlowRecord, runId: string) {
+    this.assertActiveRun(runId);
+    const active = this.active!;
+    // Only immutable verified package bytes are shared; context/grants stay live.
+    active.templatePackage ??= this.templates.context(record).then(({ pkg }) => pkg);
+    const pkg = await active.templatePackage;
+    this.assertActiveRun(runId);
+    return pkg;
+  }
   private async scriptRequest(owner: ScriptOwner, method: string, args: any) {
     this.assertScriptOwner(owner);
     let result: unknown;
@@ -1430,10 +1458,7 @@ export class Runtime {
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)!;
       let fixedPackage: PackageData | undefined;
       if (!snapshot.authorSdk) {
-        const active = this.active!;
-        // Verified bytes belong to this immutable Run, never a global package cache.
-        active.templatePackage ??= this.templates.context(snapshot).then(({ pkg }) => pkg);
-        fixedPackage = await active.templatePackage;
+        fixedPackage = await this.fixedRunTemplatePackage(snapshot, owner.runId);
         this.assertScriptOwner(owner);
       }
       result = snapshot.authorSdk
