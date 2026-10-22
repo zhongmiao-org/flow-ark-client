@@ -13,7 +13,7 @@ import { EffectNodes } from './effect-nodes';
 import { EntryResults } from './entry-results';
 import { EntryBatches, type BatchDefinition } from './entry-batches';
 import { batchMethods } from '../shared/entry-batches';
-import { jsonFile } from '../../contracts/package-format';
+import { jsonFile, type PackageData } from '../../contracts/package-format';
 import { assertEntryBatching } from '../../contracts/entry-batches';
 import { assertEffectNodeCapabilities } from '../../contracts/effect-node';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
@@ -146,6 +146,7 @@ import { PlanningRepair } from './planning-repair';
 import { TaskWebTargets } from './task-web-target';
 const terminal = new Set(['SUCCEEDED', 'FAILED', 'INTERRUPTED', 'CANCELLED']);
 type Active = {
+  templatePackage?: Promise<PackageData>;
   nodeInstances?: Set<string>;
   id: string;
   child: ChildProcess;
@@ -1426,11 +1427,20 @@ export class Runtime {
       result = await this.workerRequest(owner.runId, 'credential', args);
     } else if (method === 'template') {
       const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)!;
+      let fixedPackage: PackageData | undefined;
+      if (!snapshot.authorSdk) {
+        const active = this.active!;
+        // Verified bytes belong to this immutable Run, never a global package cache.
+        active.templatePackage ??= this.templates.context(snapshot).then(({ pkg }) => pkg);
+        fixedPackage = await active.templatePackage;
+        this.assertScriptOwner(owner);
+      }
       result = snapshot.authorSdk
         ? this.authorSdk.call(snapshot, owner.runId, args, this.active!.abort.signal, () =>
             this.assertScriptOwner(owner),
           )
         : await this.templates.call(snapshot, owner.runId, args, this.active!.abort.signal, {
+            fixedPackage,
             active: () => this.assertScriptOwner(owner),
             browser: async (bindingId, command, beforeDispatch) => {
               const binding = this.store.get<BrowserBinding>('browser', bindingId);
