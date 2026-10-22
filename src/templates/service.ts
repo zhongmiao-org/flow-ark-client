@@ -392,7 +392,7 @@ export class Templates {
       return this.describe(pkg, this.snapshot(args.id));
     });
   }
-  async context(record: FlowRecord) {
+  async context(record: FlowRecord, fixedPackage?: PackageData) {
     const ref = record.bindings.template;
     if (!ref) throw new Error('此流程没有模板实例');
     const instance = this.store.get<TemplateInstance>('template-instance', ref.instanceId);
@@ -402,8 +402,12 @@ export class Templates {
       instance.entryFlows[ref.entryId] !== record.id
     )
       throw new Error('模板入口与实例不匹配');
-    const pkg = await this.library.load(ref.packageKey);
-    if (pkg.manifest.contentDigest !== ref.digest) throw new Error('固定模板摘要不匹配');
+    const pkg = fixedPackage ?? (await this.library.load(ref.packageKey));
+    if (
+      pkg.manifest.id + '@' + pkg.manifest.version !== ref.packageKey ||
+      pkg.manifest.contentDigest !== ref.digest
+    )
+      throw new Error('固定模板摘要不匹配');
     const entry = pkg.manifest.entries.find((e) => e.id === ref.entryId);
     if (!entry) throw new Error('入口不存在');
     return { ref, pkg, entry };
@@ -711,13 +715,14 @@ export class Templates {
     args: any,
     signal: AbortSignal,
     services: {
+      fixedPackage?: PackageData;
       browser: (bindingId: string, command: any, beforeDispatch?: () => void) => Promise<any>;
       credential: (id: string) => Promise<string>;
       artifact: (name: string, content: string) => Promise<any>;
       active?: () => void;
     },
   ) {
-    const { pkg, entry, ref } = await this.context(record);
+    const { pkg, entry, ref } = await this.context(record, services.fixedPackage);
     signal.throwIfAborted();
     if (!args || typeof args.operation !== 'string') throw new Error('模板 SDK 请求无效');
     const need = (cap: string) => {
