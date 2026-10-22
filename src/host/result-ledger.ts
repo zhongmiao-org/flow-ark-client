@@ -44,6 +44,7 @@ const byKey: Record<string, RawFamily> = {
   'run-result-reuse': 'entry-reuse',
   'typed-run-index': 'typed-result-index',
   output: 'run-output',
+  'run-output-packed': 'run-output',
 };
 const byBody: Record<string, RawFamily> = {
   'template-data-operation': 'state-operation',

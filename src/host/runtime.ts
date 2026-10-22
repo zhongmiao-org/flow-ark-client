@@ -14,6 +14,7 @@ import { EntryResults } from './entry-results';
 import { EntryBatches, type BatchDefinition } from './entry-batches';
 import { batchMethods } from '../shared/entry-batches';
 import { jsonFile, type PackageData } from '../../contracts/package-format';
+import { saveRunOutput, readRunOutput } from './run-output';
 import { assertEntryBatching } from '../../contracts/entry-batches';
 import { assertEffectNodeCapabilities } from '../../contracts/effect-node';
 import { assertSkillUpdateNode } from '../../contracts/skill-update-review';
@@ -1824,7 +1825,7 @@ export class Runtime {
         this.templates.finish(run.id);
         if (state === 'SUCCEEDED') {
           try {
-            this.store.put('output', run.id, redact(outputs, this.secrets));
+            saveRunOutput(this.store, run.id, redact(outputs, this.secrets));
           } catch (error) {
             // A healthy rollback of an output admission rejection is a Run
             // failure, not a database failure. Never publish partial output or
@@ -3211,7 +3212,7 @@ export class Runtime {
             : artifactCleanup,
           events: this.store.events(id),
           artifacts,
-          output: redact(this.store.get('output', id)),
+          output: redact(readRunOutput(this.store, id)),
           resultCapacity: results.capacity,
           savedTypedResults: results.entries,
           typedResults: results.entries.filter(
