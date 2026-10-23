@@ -18,6 +18,7 @@ import { validateObject } from '../core/validate';
 import { validateData } from '../../contracts/package-format';
 import {
   assertBatchDeclaration,
+  assertBatchInitialization,
   extractBatchDecision,
 } from '../../contracts/entry-batch-decision.mjs';
 import {
@@ -53,6 +54,7 @@ type Permit = {
   mono: number;
   nextMono?: number;
   invalid?: BatchStopReason;
+  initializationSource?: { runId: string; sha256: string };
 };
 type Private = { plan: BatchPlan; next?: { ordinal: number; runId: string } };
 type Deps = {
@@ -94,6 +96,7 @@ export class EntryBatches {
     batchLimitsSchema.parse(limits);
     const definition = await this.deps.definition(value.record, value.prepared);
     assertBatchDeclaration(definition.declaration, definition.schema);
+    assertBatchInitialization(definition.declaration, value.record.flow);
     const scope: BatchScope = {
       version: 1,
       policy: 'stable-scope-v1',
@@ -260,6 +263,73 @@ export class EntryBatches {
     if (fresh.scopeSha256 !== view.scopeSha256) throw Error('连续运行来源、配置或授权已变化');
     this.assertPermit(view, permit, false);
     // The deadline is for dispatch, not for killing an already-running batch.
+  }
+  /** Values only come from this live session's successful first Run, never UI output. */
+  initialization(run: Run) {
+    if (!run.batch) return;
+    const permit = this.permits.get(run.batch.sessionId),
+      view = this.records.get(run.batch.sessionId);
+    if (!permit || !view || view.current?.runId !== run.id) throw Error('连续初始化会话已失效');
+    this.assertPermit(view, permit, false);
+    const ids = permit.plan.declaration.initializationSteps;
+    if (!ids?.length) return;
+    if (run.batch.ordinal === 1) return { ids };
+    const ref = permit.initializationSource;
+    const snapshot = this.store.get<any>('snapshot', run.id);
+    if (!ref || digest(snapshot?.batchInitializationSource) !== digest(ref))
+      throw Error('本批缺少准确的首次初始化来源');
+    const original = this.store.get<Run>('run', ref.runId);
+    if (
+      original?.state !== 'SUCCEEDED' ||
+      original.batch?.sessionId !== run.batch.sessionId ||
+      original.batch.ordinal !== 1 ||
+      original.versionId !== run.versionId ||
+      original.batch.scopeSha256 !== run.batch.scopeSha256
+    )
+      throw Error('首次初始化原运行不可核验');
+    // Verifies every retained actual copy, including this entry-reuse row.
+    this.store.resultLedgers.summary(ref.runId);
+    const row = this.store.get<any>('batch-initialization', ref.runId);
+    if (
+      !row ||
+      row.version !== 1 ||
+      row.runId !== ref.runId ||
+      row.sessionId !== run.batch.sessionId ||
+      row.scopeSha256 !== view.scopeSha256 ||
+      digest(row) !== ref.sha256 ||
+      digest(row.ids) !== digest(ids) ||
+      digest(row.values) !== row.valuesSha256
+    )
+      throw Error('首次初始化完整结果与固定来源不一致');
+    return { ids, values: structuredClone(row.values) as Record<string, unknown> };
+  }
+  /** Called atomically with complete Run output admission; the row is ledger charged. */
+  saveInitialization(run: Run, values: Record<string, unknown>, known: string[]) {
+    if (!run.batch || run.batch.ordinal !== 1) return;
+    const permit = this.permits.get(run.batch.sessionId),
+      view = this.records.get(run.batch.sessionId);
+    const ids = permit?.plan.declaration.initializationSteps;
+    if (!ids?.length) return;
+    if (!permit || !view || view.current?.runId !== run.id) throw Error('初始化会话来源已失效');
+    this.assertPermit(view, permit, false);
+    if (!values || Array.isArray(values) || Object.keys(values).some((id) => !ids.includes(id)))
+      throw Error('初始化结果包含未声明的步骤');
+    const text = JSON.stringify(values);
+    if (known.some((secret) => secret && text.includes(secret)))
+      throw Error('初始化结果含凭据内容，不能作为连续处理的可复用初值');
+    const row = {
+      version: 1,
+      runId: run.id,
+      sessionId: run.batch.sessionId,
+      scopeSha256: view.scopeSha256,
+      ids,
+      values,
+      valuesSha256: digest(values),
+    };
+    if (this.store.get('batch-initialization', run.id)) throw Error('首次初始化结果不能覆盖');
+    if (!this.store.resultLedgers.owned(run.id)) throw Error('初始化结果缺少固定保留政策');
+    this.store.put('batch-initialization', run.id, row);
+    permit.initializationSource = { runId: run.id, sha256: digest(row) };
   }
   /** Called synchronously with the original final secret set and complete schema-checked value. */
   capture(capture: ReuseCapture) {
@@ -558,6 +628,9 @@ export class EntryBatches {
           versionId: run.versionId,
           runReviewAuthorization: captured.authorization,
           batchAdmissionProof: proof,
+          ...(permit.initializationSource
+            ? { batchInitializationSource: permit.initializationSource }
+            : {}),
         });
         this.store.put('run', run.id, run);
         this.store.event(run.id, 'state', '', { state: 'QUEUED' });

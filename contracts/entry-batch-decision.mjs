@@ -59,10 +59,11 @@ function field(schema, keys) {
 /** The caller independently validates the full fixed result Schema. */
 export function assertBatchDeclaration(declaration, resultSchema) {
   if (
-    !exact(declaration, ['version', 'decisionPath', 'progressPath', 'reasonPath']) ||
+    !exact(declaration, ['version', 'decisionPath', 'progressPath', 'reasonPath', ...(owns(declaration, 'initializationSteps') ? ['initializationSteps'] : [])]) ||
     declaration.version !== 1
   )
     throw Error('连续批次声明无效');
+  if (owns(declaration, 'initializationSteps') && (!Array.isArray(declaration.initializationSteps) || !declaration.initializationSteps.length || declaration.initializationSteps.length > 1000 || new Set(declaration.initializationSteps).size !== declaration.initializationSteps.length || declaration.initializationSteps.some(id => typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(id)))) throw Error('仅首次执行步骤声明无效');
   const paths = [declaration.decisionPath, declaration.progressPath, declaration.reasonPath];
   paths.forEach(path);
   if (new Set(paths.map((keys) => JSON.stringify(keys))).size !== paths.length)
@@ -103,4 +104,30 @@ export function extractBatchDecision(declaration, resultSchema, value) {
   if (!batchDecisions.includes(decision) || !text(progress, 1, 256) || !text(reason, 1, 1000))
     throw Error('本批决策结果不完整，未安排下一批');
   return { version: 1, decision, progress, reason };
+}
+
+/** Selected nodes must be unique, outside item loops, and not overlap. */
+export function assertBatchInitialization(declaration, flow) {
+  const selected = declaration?.initializationSteps ?? [];
+  const wanted = new Set(selected), found = new Set();
+  function visit(nodes, inLoop = false, selectedParent = false) {
+    for (const node of nodes) {
+      const chosen = wanted.has(node.id);
+      if (chosen) {
+        if (inLoop || selectedParent || found.has(node.id) || node.type === 'loop')
+          throw Error('仅首次执行步骤不能位于循环内、包含循环或相互嵌套');
+        found.add(node.id);
+      }
+      if (node.type === 'loop') {
+        if (selectedParent || chosen) throw Error('初始化步骤不能包含循环');
+        visit(node.body, true, selectedParent || chosen);
+      }
+      if (node.type === 'condition') {
+        visit(node.then, inLoop, selectedParent || chosen);
+        visit(node.else, inLoop, selectedParent || chosen);
+      }
+    }
+  }
+  visit(flow.steps);
+  if (found.size !== wanted.size) throw Error('仅首次执行步骤已删除，请重新选择');
 }

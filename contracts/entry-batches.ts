@@ -1,4 +1,4 @@
-import { assertBatchDeclaration, batchCapability } from './entry-batch-decision.mjs';
+import { assertBatchDeclaration, assertBatchInitialization, batchCapability } from './entry-batch-decision.mjs';
 /** Pure protocol relationships. A valid value is never a permit to execute a Run. */
 export const batchSessionPolicy = 'stable-scope-v1';
 export const batchTerminalPhases = new Set(['stopped', 'completed', 'interrupted']);
@@ -16,6 +16,10 @@ export function assertEntryBatching(entry: any, resultSchema: unknown): void {
   if (present !== entry.capabilities.includes(batchCapability))
     fail('连续批次映射与入口能力须同时明确声明');
   if (present) assertBatchDeclaration(entry.batching, resultSchema);
+  const initializes = !!entry.batching?.initializationSteps?.length;
+  if (initializes !== entry.capabilities.includes('entry-initialization-v1'))
+    fail('仅首次执行步骤与能力声明须同时存在');
+  if (entry.flow && typeof entry.flow === 'object') assertBatchInitialization(entry.batching, entry.flow);
 }
 /** Full RunReview environment validation must run before this projection. */
 export function stableBatchAuthorization(value: any): Record<string, unknown> {

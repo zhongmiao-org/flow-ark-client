@@ -24,8 +24,13 @@ const rpc = new Rpc(
       rpc.call('state', { state, ...data }),
     );
     if (pendingPause) control.control('pause');
-    return execute(args.flow, args.parameters, {
+    const initialization: Record<string, unknown> = {};
+    const outputs = await execute(args.flow, args.parameters, {
       signal: abort.signal,
+      initialization: args.initialization,
+      initialized: (id, value) => {
+        initialization[id] = structuredClone(value);
+      },
       captureResults: Boolean(args.debug),
       boundary: async (instance, node, signal) => {
         await control!.boundary(
@@ -243,6 +248,7 @@ const rpc = new Rpc(
         throw new Error('节点不支持');
       },
     });
+    return { outputs, initialization };
   },
 );
 process.on('message', (m: any) => {

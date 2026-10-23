@@ -10,7 +10,7 @@ import {
   type AuthorCheckout,
   type AuthorReceipt,
 } from '../shared/template-author';
-import type { Bootstrap, FlowRecord } from '../shared/types';
+import type { Bootstrap, Flow, FlowRecord } from '../shared/types';
 import type { TemplateNavigation } from './TemplateInstancePage';
 import { flatten } from './flow-editing';
 import AuthorSchemaEditor from './AuthorSchemaEditor';
@@ -1005,6 +1005,7 @@ export default function TemplateAuthorWorkspace({
                     <AuthorBatchEditor
                       key={entry.id}
                       schema={entry.resultSchema}
+                      flow={entry.flow as Flow}
                       value={entry.batching}
                       changeSchema={(schema) =>
                         edit((d) => {
@@ -1018,16 +1019,24 @@ export default function TemplateAuthorWorkspace({
                           if (batching) {
                             current.batching = batching;
                             current.capabilities = [
-                              ...new Set([...current.capabilities, 'entry-batches-v1']),
+                              ...new Set([
+                                ...current.capabilities.filter(
+                                  (c) => c !== 'entry-initialization-v1',
+                                ),
+                                'entry-batches-v1',
+                                ...(batching.initializationSteps?.length
+                                  ? ['entry-initialization-v1']
+                                  : []),
+                              ]),
                             ];
                           } else {
                             delete current.batching;
                             current.capabilities = current.capabilities.filter(
-                              (c) => c !== 'entry-batches-v1',
+                              (c) => !['entry-batches-v1', 'entry-initialization-v1'].includes(c),
                             );
                             current.flow.requiredCapabilities =
                               current.flow.requiredCapabilities.filter(
-                                (c) => c !== 'entry-batches-v1',
+                                (c) => !['entry-batches-v1', 'entry-initialization-v1'].includes(c),
                               );
                           }
                         })
