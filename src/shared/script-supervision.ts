@@ -1,6 +1,6 @@
 import type { CleanupResult } from './embedded-lifecycle';
 
-export const SCRIPT_READY_TIMEOUT_MS = 3000;
+export const SCRIPT_READY_TIMEOUT_MS = 10000;
 export const SCRIPT_CLEANUP_TIMEOUT_MS = 5000;
 export const SCRIPT_RECOVERY_TIMEOUT_MS = 5000;
 export const SCRIPT_COOPERATIVE_STOP_MS = 200;
