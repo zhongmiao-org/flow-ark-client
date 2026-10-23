@@ -109,15 +109,16 @@ export default function RunDetail({
     }
     previousTab.current = tab;
   }, [tab]);
+  const r: Run = d.run;
+  const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state);
   const [, tick] = useState(0);
   useEffect(() => {
+    if (terminal) return;
     const timer = setInterval(() => tick((v) => v + 1), 1000);
     return () => clearInterval(timer);
-  }, []);
-  const r: Run = d.run;
+  }, [terminal]);
   const observed = { ...d, fault: d.fault ?? fault };
   const view = presentRun({ ...observed, output: undefined }, Date.now());
-  const terminal = ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(r.state);
   const controllable = view.activity === 'active' && !view.closing;
   const lastSaved =
     !terminal && (Boolean(observed.fault) || (r.state !== 'QUEUED' && view.activity !== 'active'));
