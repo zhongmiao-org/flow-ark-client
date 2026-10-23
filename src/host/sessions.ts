@@ -163,7 +163,14 @@ export class Sessions {
         }
         return result;
       } catch (error) {
-        if (this.ownsEmbedded(session, runId)) await this.closeEmbedded(session);
+        // A rejected command is not proof that its native page was lost. Keep
+        // the exact, idle resource for inspection; never adopt/retry the command.
+        // Timeout/cancellation/loss and an unconfirmed native operation still close.
+        if (
+          this.ownsEmbedded(session, runId) &&
+          !(await this.retainFailedEmbeddedPage(session, runId, signal))
+        )
+          await this.closeEmbedded(session);
         throw error;
       }
     }
@@ -278,6 +285,45 @@ export class Sessions {
   }
   private ownsEmbedded(session: EmbeddedSession, runId: string) {
     return session.owner === runId || (!session.owner && session.lastOwner === runId);
+  }
+  private async retainFailedEmbeddedPage(
+    session: EmbeddedSession,
+    runId: string,
+    signal?: AbortSignal,
+  ) {
+    const current = () =>
+      this.embedded === session &&
+      session.owner === runId &&
+      session.phase === 'ready' &&
+      !session.lost &&
+      !session.stop.signal.aborted &&
+      !signal?.aborted &&
+      !this.stopping &&
+      !this.recoveryError &&
+      resourceId(session.resourceId);
+    if (!current()) return false;
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      const review = await Promise.race([
+        this.system('browser.embedded.review', {}),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('失败网页核对超时')), 1500);
+        }),
+      ]);
+      return Boolean(
+        current() &&
+          review?.started === true &&
+          review.resourceId === session.resourceId &&
+          Number.isSafeInteger(review.documentRevision) &&
+          review.documentRevision >= 0 &&
+          typeof review.loading === 'boolean' &&
+          review.blocked === undefined,
+      );
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
   }
   private async startEmbedded(session: EmbeddedSession) {
     const receipt = await this.system('browser.embedded.start', { token: session.token });
