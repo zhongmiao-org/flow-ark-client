@@ -53,6 +53,7 @@ export function validateObject<T>(name: string, value: unknown): T {
 }
 export const capabilities = [
   'entry-batches-v1',
+  'entry-initialization-v1',
   effectNodeCapability,
   'source-reduce-v1',
   'source-reduce',

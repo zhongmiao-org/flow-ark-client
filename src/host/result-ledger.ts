@@ -42,6 +42,7 @@ const byKey: Record<string, RawFamily> = {
   'author-sdk-result': 'entry-result',
   'entry-result-display': 'entry-display',
   'run-result-reuse': 'entry-reuse',
+  'batch-initialization': 'entry-reuse',
   'typed-run-index': 'typed-result-index',
   output: 'run-output',
   'run-output-packed': 'run-output',

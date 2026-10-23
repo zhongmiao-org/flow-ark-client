@@ -21,6 +21,7 @@ import { validateFlow, validateObject, walk, capabilities } from '../core/valida
 import { declareNativeBoundaries } from './export-boundaries';
 import { schemaDefaults } from '../shared/template-config';
 import { assertPortableSourceFlow } from './source-boundaries';
+import { assertBatchInitialization } from '../../contracts/entry-batch-decision.mjs';
 
 function neutralParameters(parameters: Flow['parameters']): Flow['parameters'] {
   const neutral = (v: Json): Json =>
@@ -123,6 +124,7 @@ export async function compileAuthor(input: AuthorDefinition): Promise<PackageDat
     [];
   for (const e of d.entries) {
     const flow = authorInputFlow(e, expandAuthorFlow(d, e));
+    assertBatchInitialization(e.batching, flow);
     flow.id = e.id;
     flow.name = e.name;
     const unsupported = [...new Set([...flow.requiredCapabilities, ...e.capabilities])].filter(

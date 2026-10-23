@@ -1,6 +1,29 @@
 import { Alert, Button, Card, Checkbox, Select } from 'antd';
 import type { BatchDeclaration } from '../shared/entry-batches';
-import { assertBatchDeclaration } from '../../contracts/entry-batch-decision.mjs';
+import {
+  assertBatchDeclaration,
+  assertBatchInitialization,
+} from '../../contracts/entry-batch-decision.mjs';
+import type { Flow, Step } from '../shared/types';
+
+function initializationChoices(
+  nodes: Step[],
+  path: string[] = [],
+): { value: string; label: string }[] {
+  const containsLoop = (node: Step): boolean =>
+    node.type === 'loop' ||
+    (node.type === 'condition' && [...node.then, ...node.else].some(containsLoop));
+  return nodes.flatMap((node) => {
+    if (node.type === 'loop') return [];
+    const name = [...path, typeof node.name === 'string' && node.name ? node.name : node.type];
+    return [
+      ...(!containsLoop(node) ? [{ value: node.id, label: name.join(' › ') }] : []),
+      ...(node.type === 'condition'
+        ? initializationChoices([...node.then, ...node.else], name)
+        : []),
+    ];
+  });
+}
 
 type Choice = { path: string[]; label: string; schema: any };
 function fields(schema: any, path: string[] = [], labels: string[] = []): Choice[] {
@@ -40,12 +63,14 @@ const mappings = [
 ] as const;
 export default function AuthorBatchEditor({
   schema,
+  flow,
   value,
   disabled,
   change,
   changeSchema,
 }: {
   schema: unknown;
+  flow: Flow;
   value?: BatchDeclaration;
   disabled: boolean;
   change: (value?: BatchDeclaration) => void;
@@ -59,6 +84,7 @@ export default function AuthorBatchEditor({
   if (value)
     try {
       assertBatchDeclaration(value, schema);
+      assertBatchInitialization(value, flow);
     } catch (e) {
       issue = e instanceof Error ? e.message : '结果字段引用尚未核对';
     }
@@ -85,6 +111,31 @@ export default function AuthorBatchEditor({
       </Checkbox>
       {value && (
         <div className="batch-form">
+          <label>
+            <span>仅首次执行（可选）</span>
+            <Select
+              mode="multiple"
+              aria-label="仅首次执行的初始化步骤"
+              disabled={disabled}
+              value={value.initializationSteps ?? []}
+              placeholder="选择初始化步骤，后续在同一会话复用结果"
+              options={initializationChoices(flow.steps)}
+              showSearch
+              optionFilterProp="label"
+              onChange={(ids: string[]) => {
+                const next = { ...value };
+                if (ids.length)
+                  next.initializationSteps = ids as NonNullable<
+                    BatchDeclaration['initializationSteps']
+                  >;
+                else delete next.initializationSteps;
+                change(next);
+              }}
+            />
+          </label>
+          <p>
+            首批成功后复用所选步骤的完整结果；后续继续取数和处理。步骤不能相互嵌套或包含循环，当前对象核对与发送动作应保留在循环内。失败或重新打开后不自动恢复。
+          </p>
           {mappings.map(([key, label]) => {
             const selected = JSON.stringify(value[key]);
             const options = choices.map((field) => ({

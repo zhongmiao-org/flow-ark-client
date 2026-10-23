@@ -179,6 +179,7 @@ export default function RunBatchPanel({ run, open }: { run: Run; open: (detail: 
             已登记 {view.startedBatches} 批，已结束 {view.finishedBatches} 批，最多{' '}
             {view.limits.maxBatches} 批。
           </p>
+          <p>配置为“仅首次执行”的步骤将在后续批次复用首批结果；逐项处理与完整回执分别保留。</p>
           {view.current && (
             <p>
               第 {view.current.ordinal} 批{live ? '正在处理' : '请查看原运行核对'}

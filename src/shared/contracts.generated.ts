@@ -4784,6 +4784,11 @@ export interface BatchDeclaration {
   decisionPath: BatchFieldPath;
   progressPath: BatchFieldPath;
   reasonPath: BatchFieldPath;
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  initializationSteps?: [string, ...string[]];
 }
 export interface AIRequest {
   provider: 'openai-codex' | 'deepseek';

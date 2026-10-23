@@ -5,6 +5,8 @@ export type Execution = {
   signal: AbortSignal;
   boundary(instance: string, node: Step, signal: AbortSignal): Promise<void>;
   captureResults?: boolean;
+  initialization?: { ids: string[]; values?: Record<string, unknown> };
+  initialized?(id: string, value: unknown): void;
   emit(type: string, instance: string, data: any): Promise<void>;
   perform(node: Step, resolved: any, instance: string, signal: AbortSignal): Promise<any>;
   human(message: string, signal: AbortSignal): Promise<any>;
@@ -68,6 +70,14 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
     for (const n of nodes) {
       const instance = path + n.id;
       parent.check();
+      if (ctx.initialization?.values && ctx.initialization.ids.includes(n.id)) {
+        if (!Object.hasOwn(ctx.initialization.values, n.id))
+          throw Error('首批未产生此初始化步骤的结果，已停止后续处理：' + n.id);
+        // Restore at the original lexical location. No action, boundary, or
+        // fabricated node execution event is emitted for a reused result.
+        local.steps[n.id] = outputs[n.id] = structuredClone(ctx.initialization.values[n.id]);
+        continue;
+      }
       await parent.run(() => ctx.boundary(instance, n, parent.signal));
       parent.check();
       if (++executions > 10000) throw new Error('单次运行超过 10000 步');
@@ -141,6 +151,8 @@ export async function execute(flow: Flow, params: any, ctx: Execution) {
       // not retroactively time out that completed node; an enclosing budget still applies.
       parent.check();
       local.steps[n.id] = outputs[n.id] = result ?? null;
+      if (!ctx.initialization?.values && ctx.initialization?.ids.includes(n.id))
+        ctx.initialized?.(n.id, result ?? null);
       await parent.run(() =>
         ctx.emit('node-end', instance, {
           completed: true,

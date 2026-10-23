@@ -1763,6 +1763,7 @@ export class Runtime {
     try {
       let failure: string | undefined;
       let outputs: unknown;
+      let initialization: Record<string, unknown> = {};
       try {
         this.store.state(run.id, 'RUNNING');
         const s = this.store.get<FlowRecord & PreparedScripts>('snapshot', run.id)!;
@@ -1777,17 +1778,25 @@ export class Runtime {
         this.checkActive(active);
         await this.waitActive(active, this.runReview.checkExecution(run, s));
         this.checkActive(active);
-        outputs = await rpc.call(
+        const initialValues = this.batches.initialization(run);
+        if (initialValues?.values)
+          this.store.event(run.id, 'log', '', {
+            message: `复用本次连续会话首批的 ${Object.keys(initialValues.values).length} 个初始化步骤结果；后续继续处理，不重新初始化`,
+          });
+        const executed = await rpc.call(
           'execute',
           {
             ...s,
             parameters: resolveParameterSources(s.flow),
             debug: Boolean(run.debug),
+            initialization: initialValues,
             ...prepared,
             executable: this.executable,
           },
           24 * 3600000,
         );
+        outputs = executed.outputs;
+        initialization = executed.initialization;
         this.checkActive(active);
         this.authorSdk.complete(s, run.id, outputs, active.abort.signal, () =>
           this.checkActive(active),
@@ -1850,7 +1859,10 @@ export class Runtime {
         this.templates.finish(run.id);
         if (state === 'SUCCEEDED') {
           try {
-            saveRunOutput(this.store, run.id, redact(outputs, this.secrets));
+            this.store.atomic(() => {
+              this.batches.saveInitialization(run, initialization, this.secrets);
+              saveRunOutput(this.store, run.id, redact(outputs, this.secrets));
+            });
           } catch (error) {
             // A healthy rollback of an output admission rejection is a Run
             // failure, not a database failure. Never publish partial output or

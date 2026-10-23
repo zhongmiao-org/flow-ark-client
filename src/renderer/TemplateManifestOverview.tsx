@@ -59,6 +59,7 @@ export const capabilityLabel = (name: string) =>
       context: '配置与状态',
       'template-data-v1': '配置与状态 v1',
       'entry-batches-v1': '连续有限批次',
+      'entry-initialization-v1': '同一连续会话仅初始化一次',
       effect: '动作去重与回执',
       'template-sdk-v1': '模板 SDK',
     }) as Record<string, string>

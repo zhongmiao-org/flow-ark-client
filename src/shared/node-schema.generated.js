@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (4b50b9bfddd38f978a2a47d9d83488be69cc631921aa3eecefc9c45f2ba99e7d). Do not edit. */
+/* Generated from contracts/p1.schema.json (4a4a77fb2c7db3c2df98025a0ecbde2ace1e9e2db3b60b8fb9b6ccc8cc114d2e). Do not edit. */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
   try {
@@ -79443,6 +79443,7 @@ function validate721(data, { instancePath = "", parentData, parentDataProperty, 
   return errors === 0;
 }
 validate721.evaluated = { "items": true, "dynamicProps": false, "dynamicItems": false };
+var pattern504 = new RegExp("^[A-Za-z0-9_-]{1,100}$", "u");
 function validate720(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -79491,7 +79492,7 @@ function validate720(data, { instancePath = "", parentData, parentDataProperty, 
       errors++;
     }
     for (const key0 in data) {
-      if (!(key0 === "version" || key0 === "decisionPath" || key0 === "progressPath" || key0 === "reasonPath")) {
+      if (!(key0 === "version" || key0 === "decisionPath" || key0 === "progressPath" || key0 === "reasonPath" || key0 === "initializationSteps")) {
         const err4 = { instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" };
         if (vErrors === null) {
           vErrors = [err4];
@@ -79530,12 +79531,89 @@ function validate720(data, { instancePath = "", parentData, parentDataProperty, 
         errors = vErrors.length;
       }
     }
+    if (data.initializationSteps !== void 0) {
+      let data4 = data.initializationSteps;
+      if (Array.isArray(data4)) {
+        if (data4.length > 1e3) {
+          const err6 = { instancePath: instancePath + "/initializationSteps", schemaPath: "#/properties/initializationSteps/maxItems", keyword: "maxItems", params: { limit: 1e3 }, message: "must NOT have more than 1000 items" };
+          if (vErrors === null) {
+            vErrors = [err6];
+          } else {
+            vErrors.push(err6);
+          }
+          errors++;
+        }
+        if (data4.length < 1) {
+          const err7 = { instancePath: instancePath + "/initializationSteps", schemaPath: "#/properties/initializationSteps/minItems", keyword: "minItems", params: { limit: 1 }, message: "must NOT have fewer than 1 items" };
+          if (vErrors === null) {
+            vErrors = [err7];
+          } else {
+            vErrors.push(err7);
+          }
+          errors++;
+        }
+        const len0 = data4.length;
+        for (let i0 = 0; i0 < len0; i0++) {
+          let data5 = data4[i0];
+          if (typeof data5 === "string") {
+            if (!pattern504.test(data5)) {
+              const err8 = { instancePath: instancePath + "/initializationSteps/" + i0, schemaPath: "#/properties/initializationSteps/items/pattern", keyword: "pattern", params: { pattern: "^[A-Za-z0-9_-]{1,100}$" }, message: 'must match pattern "^[A-Za-z0-9_-]{1,100}$"' };
+              if (vErrors === null) {
+                vErrors = [err8];
+              } else {
+                vErrors.push(err8);
+              }
+              errors++;
+            }
+          } else {
+            const err9 = { instancePath: instancePath + "/initializationSteps/" + i0, schemaPath: "#/properties/initializationSteps/items/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            if (vErrors === null) {
+              vErrors = [err9];
+            } else {
+              vErrors.push(err9);
+            }
+            errors++;
+          }
+        }
+        let i1 = data4.length;
+        let j0;
+        if (i1 > 1) {
+          const indices0 = {};
+          for (; i1--; ) {
+            let item0 = data4[i1];
+            if (typeof item0 !== "string") {
+              continue;
+            }
+            if (typeof indices0[item0] == "number") {
+              j0 = indices0[item0];
+              const err10 = { instancePath: instancePath + "/initializationSteps", schemaPath: "#/properties/initializationSteps/uniqueItems", keyword: "uniqueItems", params: { i: i1, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i1 + " are identical)" };
+              if (vErrors === null) {
+                vErrors = [err10];
+              } else {
+                vErrors.push(err10);
+              }
+              errors++;
+              break;
+            }
+            indices0[item0] = i1;
+          }
+        }
+      } else {
+        const err11 = { instancePath: instancePath + "/initializationSteps", schemaPath: "#/properties/initializationSteps/type", keyword: "type", params: { type: "array" }, message: "must be array" };
+        if (vErrors === null) {
+          vErrors = [err11];
+        } else {
+          vErrors.push(err11);
+        }
+        errors++;
+      }
+    }
   } else {
-    const err6 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    const err12 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
     if (vErrors === null) {
-      vErrors = [err6];
+      vErrors = [err12];
     } else {
-      vErrors.push(err6);
+      vErrors.push(err12);
     }
     errors++;
   }
@@ -80969,7 +81047,7 @@ function validate731(data, { instancePath = "", parentData, parentDataProperty, 
 }
 validate731.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var schema256 = { "type": "object", "properties": { "path": { "type": "string", "pattern": "^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$" }, "encoding": { "enum": ["utf8", "base64"] }, "body": { "type": "string", "maxLength": 1048576 } }, "required": ["path", "encoding", "body"], "additionalProperties": false };
-var pattern509 = new RegExp("^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$", "u");
+var pattern510 = new RegExp("^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$", "u");
 function validate733(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -81022,7 +81100,7 @@ function validate733(data, { instancePath = "", parentData, parentDataProperty, 
     if (data.path !== void 0) {
       let data0 = data.path;
       if (typeof data0 === "string") {
-        if (!pattern509.test(data0)) {
+        if (!pattern510.test(data0)) {
           const err4 = { instancePath: instancePath + "/path", schemaPath: "#/properties/path/pattern", keyword: "pattern", params: { pattern: "^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$" }, message: 'must match pattern "^(?!assets/template-author\\.json$)(assets|prompts|scripts|schemas|flows)/[a-zA-Z0-9][a-zA-Z0-9._/-]{0,220}$"' };
           if (vErrors === null) {
             vErrors = [err4];
@@ -82092,7 +82170,7 @@ function validate735(data, { instancePath = "", parentData, parentDataProperty, 
 }
 validate735.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var author_packagemetadata_v1 = validate737;
-var pattern514 = new RegExp("^prompts/[a-z][a-z0-9-]{0,99}\\.md$", "u");
+var pattern515 = new RegExp("^prompts/[a-z][a-z0-9-]{0,99}\\.md$", "u");
 function validate737(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -82272,7 +82350,7 @@ function validate737(data, { instancePath = "", parentData, parentDataProperty, 
             if (data2.path !== void 0) {
               let data5 = data2.path;
               if (typeof data5 === "string") {
-                if (!pattern514.test(data5)) {
+                if (!pattern515.test(data5)) {
                   const err16 = { instancePath: instancePath + "/prompts/" + i0 + "/path", schemaPath: "#/properties/prompts/items/properties/path/pattern", keyword: "pattern", params: { pattern: "^prompts/[a-z][a-z0-9-]{0,99}\\.md$" }, message: 'must match pattern "^prompts/[a-z][a-z0-9-]{0,99}\\.md$"' };
                   if (vErrors === null) {
                     vErrors = [err16];
@@ -83500,7 +83578,7 @@ function validate739(data, { instancePath = "", parentData, parentDataProperty, 
 validate739.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var data_context_v1 = validate740;
 var schema261 = { "type": "object", "properties": { "version": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-zA-Z0-9_-]{1,100}$" }, "owner": { "$ref": "#/$defs/TemplateDataOwner" }, "configurationRevision": { "type": "integer", "minimum": 1, "maximum": 9007199254740990 }, "configurationSchema": { "type": "object", "additionalProperties": { "$ref": "#/$defs/Json" } }, "stateSchema": { "type": "object", "additionalProperties": { "$ref": "#/$defs/Json" } }, "configuration": { "$ref": "#/$defs/Json" }, "schemaSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "createdAt": { "type": "string", "minLength": 1, "maxLength": 100 } }, "required": ["version", "id", "owner", "configurationRevision", "configurationSchema", "stateSchema", "configuration", "schemaSha256", "createdAt"], "additionalProperties": false };
-var pattern531 = new RegExp("^[0-9]+\\.[0-9]+\\.[0-9]+$", "u");
+var pattern532 = new RegExp("^[0-9]+\\.[0-9]+\\.[0-9]+$", "u");
 function validate741(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -83662,7 +83740,7 @@ function validate741(data, { instancePath = "", parentData, parentDataProperty, 
         if (data2.version !== void 0) {
           let data4 = data2.version;
           if (typeof data4 === "string") {
-            if (!pattern531.test(data4)) {
+            if (!pattern532.test(data4)) {
               const err14 = { instancePath: instancePath + "/package/version", schemaPath: "#/oneOf/0/properties/package/properties/version/pattern", keyword: "pattern", params: { pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$" }, message: 'must match pattern "^[0-9]+\\.[0-9]+\\.[0-9]+$"' };
               if (vErrors === null) {
                 vErrors = [err14];
@@ -85927,7 +86005,7 @@ function validate757(data, { instancePath = "", parentData, parentDataProperty, 
 }
 validate757.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
 var author_sdk_context_v1 = validate760;
-var pattern556 = new RegExp("^[a-z]", "u");
+var pattern557 = new RegExp("^[a-z]", "u");
 function validate761(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -86194,7 +86272,7 @@ function validate761(data, { instancePath = "", parentData, parentDataProperty, 
           }
           errors++;
         }
-        if (!pattern556.test(data3)) {
+        if (!pattern557.test(data3)) {
           const err22 = { instancePath: instancePath + "/entryId", schemaPath: "#/properties/entryId/pattern", keyword: "pattern", params: { pattern: "^[a-z]" }, message: 'must match pattern "^[a-z]"' };
           if (vErrors === null) {
             vErrors = [err22];
