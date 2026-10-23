@@ -547,8 +547,13 @@ function WorkspaceApp() {
     const timer = setInterval(refresh, 2000);
     return () => clearInterval(timer);
   }, [refresh]);
+  const detailSettled =
+    detail &&
+    ['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(detail.run.state) &&
+    detail.execution &&
+    detail.execution.active?.runId !== detail.run.id;
   useEffect(() => {
-    if (!detail) return;
+    if (!detail || detailSettled) return;
     const id = detail.run.id;
     let live = true,
       pending = false;
@@ -563,12 +568,12 @@ function WorkspaceApp() {
       } finally {
         pending = false;
       }
-    }, 1500);
+    }, 4000);
     return () => {
       live = false;
       clearInterval(timer);
     };
-  }, [detail?.run?.id]);
+  }, [detail?.run?.id, detailSettled]);
   function returnSchedule() {
     setDetail(null);
     setSection('schedules');
