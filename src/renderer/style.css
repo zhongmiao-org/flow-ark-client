@@ -2041,6 +2041,30 @@ main {
   color: var(--fa-status-warning);
   font-size: 11px;
 }
+.run-output-segments {
+  margin: 16px 0;
+}
+.run-output-segments > p {
+  margin: 8px 0;
+}
+.run-output-segment-controls,
+.run-output-segment-jump {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.run-output-segment-controls {
+  flex-wrap: wrap;
+}
+.run-output-segment-jump {
+  color: var(--fa-text-secondary);
+}
+.run-output-segment-jump .ant-input {
+  width: 64px;
+}
+.run-output-segments .run-output-segment-error {
+  color: var(--fa-status-error);
+}
 @media (max-width: 1150px) {
   .with-browser .run-observation-metrics {
     grid-template-columns: 1fr;
