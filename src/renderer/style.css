@@ -2056,6 +2056,10 @@ main {
 .run-output-segment-controls {
   flex-wrap: wrap;
 }
+.run-output-segment-controls > .ant-btn {
+  width: auto;
+  margin: 0;
+}
 .run-output-segment-jump {
   color: var(--fa-text-secondary);
 }
