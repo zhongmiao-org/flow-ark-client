@@ -778,6 +778,51 @@ export class EmbeddedPage {
       );
     }
   }
+  private async waitMainFrameIdle(remaining: () => number) {
+    const timeoutMs = remaining();
+    this.abort.signal.throwIfAborted();
+    if (this.contents.isDestroyed()) throw Error('网页会话已关闭');
+    if (!this.contents.isLoadingMainFrame()) return;
+    await new Promise<void>((resolve, reject) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const finish = (error?: unknown) => {
+        clearTimeout(timer);
+        this.contents.removeListener('did-stop-loading', check);
+        this.contents.removeListener('did-frame-finish-load', frameFinished);
+        this.contents.removeListener('did-start-navigation', navigation);
+        this.contents.removeListener('destroyed', destroyed);
+        this.abort.signal.removeEventListener('abort', cancelled);
+        if (error) reject(error);
+        else resolve();
+      };
+      const check = () => {
+        try {
+          remaining();
+          this.abort.signal.throwIfAborted();
+          if (this.contents.isDestroyed()) throw Error('网页会话已关闭');
+          if (!this.contents.isLoadingMainFrame()) finish();
+        } catch (error) {
+          finish(error);
+        }
+      };
+      const frameFinished = (_event: Electron.Event, isMainFrame: boolean) => {
+        if (isMainFrame) check();
+      };
+      const navigation = (details: { isMainFrame: boolean }) => {
+        if (details.isMainFrame) finish(Error('采集期间网页或框架发生导航/更换，整次结果未采用'));
+      };
+      const destroyed = () => finish(Error('网页会话已关闭'));
+      const cancelled = () => finish(this.abort.signal.reason);
+      this.contents.on('did-stop-loading', check);
+      this.contents.on('did-frame-finish-load', frameFinished);
+      this.contents.on('did-start-navigation', navigation);
+      this.contents.on('destroyed', destroyed);
+      this.abort.signal.addEventListener('abort', cancelled, { once: true });
+      timer = setTimeout(() => finish(Error('浏览器命令超时（含框架定位）')), timeoutMs);
+      check();
+    });
+  }
+
   private async collect(command: BrowserCommand, path: string[], remaining: () => number) {
     const node = resolvedBrowserFields({
       id: 'driver',
@@ -793,7 +838,6 @@ export class EmbeddedPage {
     });
     this.abort.signal.throwIfAborted();
     if (this.contents.isDestroyed()) throw Error('网页会话已关闭');
-    if (this.contents.isLoadingMainFrame()) throw Error('主页面正在加载，关联采集未开始');
     const url = this.contents.getURL();
     const changedFrames = new Set<string>(),
       usedFrames = new Set<string>();
@@ -847,6 +891,9 @@ export class EmbeddedPage {
       }
     };
     try {
+      // Keep the original URL and change observer while the committed document
+      // finishes loading. A new navigation must never become this command's source.
+      await this.waitMainFrameIdle(remaining);
       verify();
       const { frameTree } = await this.send('Page.getFrameTree');
       let frameId: string = frameTree.frame.id,
