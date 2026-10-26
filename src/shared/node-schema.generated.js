@@ -1,4 +1,4 @@
-/* Generated from contracts/p1.schema.json (4a4a77fb2c7db3c2df98025a0ecbde2ace1e9e2db3b60b8fb9b6ccc8cc114d2e). Do not edit. */
+/* Generated from contracts/p1.schema.json (bbbe0e8c434975960da2c316e96d00410b8e8ad75ecb6c8067701ff481da6a91). Do not edit. */
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
   try {

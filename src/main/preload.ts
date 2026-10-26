@@ -196,6 +196,8 @@ const allowed = new Set([
   'template.export',
   'template.create',
   'template.detail',
+  'template.resourceExtension.preview',
+  'template.resourceExtension.apply',
   'template.handoff.preview',
   'template.handoff.confirm',
   'template.handoff.get',

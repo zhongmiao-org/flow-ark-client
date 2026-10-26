@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "requestId": "resource-extension-example",
+  "requestSha256": "24d02814651a3bd0940c49f04a5879218cff42d12c57e8516b15b90e06751f2e",
+  "instanceId": "instance-example",
+  "previousRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "basePackage": {
+    "id": "document-archive",
+    "version": "1.0.0",
+    "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "extensionPackage": {
+    "id": "document-archive",
+    "version": "1.0.1",
+    "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "resources": [
+    {
+      "id": "records",
+      "name": "记录目录",
+      "kind": "directory",
+      "access": "readwrite",
+      "required": true
+    }
+  ],
+  "entries": [
+    {
+      "entryId": "archive",
+      "resourceIds": [
+        "records"
+      ]
+    }
+  ],
+  "appliedAt": "2026-10-26T00:00:00.000Z",
+  "receiptSha256": "bcb8d86b893333e13683d907a7f76475e7b15d69bad7b11bb64f068909a01ba5"
+}

@@ -95,6 +95,27 @@ export const templateSaveSchema = z
   })
   .strict();
 export type TemplateSave = z.infer<typeof templateSaveSchema>;
+const resourceExtensionPackage = z
+  .object({
+    id: z.string().regex(/^[a-z][a-z0-9-]{0,99}$/),
+    version: z
+      .string()
+      .regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$/),
+    digest: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+const resourceExtensionPreview = z
+  .object({
+    version: z.literal(1),
+    instanceId: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/),
+    expectedRevision: z.string().regex(/^[a-f0-9]{64}$/),
+    basePackage: resourceExtensionPackage,
+    extensionPackage: resourceExtensionPackage,
+  })
+  .strict();
+const resourceExtensionApply = resourceExtensionPreview
+  .extend({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/) })
+  .strict();
 export const methods = {
   ...batchMethods,
   ...fieldsPickMethods,
@@ -211,6 +232,8 @@ export const methods = {
   'template.export': z.object({ key: z.string().max(240) }).strict(),
   'template.create': z.object({ key: z.string().max(240), copyFrom: id.optional() }).strict(),
   'template.detail': z.object({ id }).strict(),
+  'template.resourceExtension.preview': resourceExtensionPreview,
+  'template.resourceExtension.apply': resourceExtensionApply,
   'template.save': templateSaveSchema,
   'template.answer': z.object({ id, value: z.unknown() }).strict(),
   'flow.export': flowExportSchema,

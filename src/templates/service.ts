@@ -20,9 +20,32 @@ import { schemaDefaults, validateConfigurationSchema } from '../shared/template-
 import { capabilities, validateFlow, validateObject } from '../core/validate';
 import { generate } from '../ai/providers';
 import type { Bindings, FlowRecord, Run } from '../shared/types';
-import type { TemplateHumanReview } from '../shared/contracts.generated';
+import type {
+  TemplateHumanReview,
+  TemplateResourceExtensionPreviewRequest,
+  TemplateResourceExtensionPreviewResponse,
+  TemplateResourceExtensionApplyResponse,
+} from '../shared/contracts.generated';
 import type { TemplateInstance } from './types';
 import { templateSaveSchema, type TemplateSave } from '../shared/ipc';
+import {
+  assertFixedReceipt,
+  deriveExtension,
+  digest as extensionDigest,
+  receiptValue,
+  type ExtensionApplyRequest,
+  type ExtensionReceipt,
+} from '../../contracts/template-resource-extension.mjs';
+import {
+  assertExtensionReceipt,
+  effectiveResourceDeclarations,
+  effectiveResourceEntry,
+  extensionPackageKey,
+  extensionPackageReference,
+  verifyResourceExtension,
+} from './resource-extension';
+
+const extensionOperationKind = 'template-resource-extension-operation';
 
 function actionConfirmation(pkg: PackageData, entry: Entry, id: string) {
   const declaration = pkg.manifest.actions.find((action) => action.id === id);
@@ -60,6 +83,253 @@ export class Templates {
   }
   remove(key: string) {
     return this.exclusive(() => this.removeOne(key));
+  }
+  previewResourceExtension(
+    request: TemplateResourceExtensionPreviewRequest,
+    assertIdle: () => void,
+  ): Promise<TemplateResourceExtensionPreviewResponse> {
+    validateObject('TemplateResourceExtensionPreviewRequest', request);
+    const args = structuredClone(request);
+    return this.exclusive<TemplateResourceExtensionPreviewResponse>(async () => {
+      const blocked = (error: unknown): TemplateResourceExtensionPreviewResponse => ({
+        ...args,
+        status: 'blocked',
+        reason: (error instanceof Error ? error.message : '无法核对目录声明扩展').slice(0, 2000),
+      });
+      let before: ReturnType<Templates['snapshot']>;
+      try {
+        before = this.snapshot(args.instanceId);
+        // A lost apply response must be recoverable using its old expected revision.
+        const existing = before.instance.templateResourceExtension;
+        if (existing) {
+          this.assertRegisteredExtension(before.instance, existing);
+          if (
+            canonical(existing.basePackage) !== canonical(args.basePackage) ||
+            canonical(existing.extensionPackage) !== canonical(args.extensionPackage)
+          )
+            throw Error('此实例已经接入另一份目录声明扩展，请重新读取当前实例');
+          const pkg = await this.library.load(before.instance.packageKey);
+          await verifyResourceExtension(pkg, existing, (key) => this.library.load(key));
+          const current = this.snapshot(args.instanceId);
+          if (canonical(current.instance.templateResourceExtension ?? null) !== canonical(existing))
+            throw Error('已登记的目录声明扩展发生变化，请重新读取');
+          this.assertCurrentExtensionRecords(current);
+          return validateObject<TemplateResourceExtensionPreviewResponse>(
+            'TemplateResourceExtensionPreviewResponse',
+            { ...args, status: 'already-applied', receipt: structuredClone(existing) },
+          );
+        }
+        assertIdle();
+        this.assertExtensionRequest(args, before);
+      } catch (error) {
+        return blocked(error);
+      }
+      let compatible: ReturnType<typeof deriveExtension>;
+      try {
+        const base = await this.library.load(extensionPackageKey(args.basePackage));
+        const extension = await this.library.load(extensionPackageKey(args.extensionPackage));
+        this.assertExtensionPackages(args, base, extension);
+        compatible = deriveExtension(base, extension);
+      } catch (error) {
+        return {
+          ...args,
+          status: 'incompatible',
+          reason: (error instanceof Error ? error.message : '模板包不符合目录声明扩展条件').slice(
+            0,
+            2000,
+          ),
+        };
+      }
+      try {
+        assertIdle();
+        this.assertExtensionRequest(args, this.snapshot(args.instanceId));
+        return validateObject<TemplateResourceExtensionPreviewResponse>(
+          'TemplateResourceExtensionPreviewResponse',
+          {
+            ...args,
+            status: 'compatible',
+            resources: compatible.resources,
+            entries: compatible.entries,
+          },
+        );
+      } catch (error) {
+        return blocked(error);
+      }
+    });
+  }
+  applyResourceExtension(
+    request: ExtensionApplyRequest,
+    assertIdle: () => void,
+  ): Promise<TemplateResourceExtensionApplyResponse> {
+    validateObject('TemplateResourceExtensionApplyRequest', request);
+    const args = structuredClone(request);
+    return this.exclusive<TemplateResourceExtensionApplyResponse>(async () => {
+      const previous = this.store.get<ExtensionReceipt>(extensionOperationKind, args.requestId);
+      if (previous) {
+        assertExtensionReceipt(previous);
+        if (previous.requestSha256 !== extensionDigest(args))
+          throw Error('目录声明接入请求标识已经用于不同请求');
+        const current = this.snapshot(args.instanceId);
+        this.assertRegisteredExtension(current.instance, previous);
+        this.assertCurrentExtensionRecords(current);
+        return validateObject<TemplateResourceExtensionApplyResponse>(
+          'TemplateResourceExtensionApplyResponse',
+          { version: 1, receipt: structuredClone(previous) },
+        );
+      }
+      assertIdle();
+      this.assertExtensionRequest(args, this.snapshot(args.instanceId));
+      const base = await this.library.load(extensionPackageKey(args.basePackage));
+      const extension = await this.library.load(extensionPackageKey(args.extensionPackage));
+      this.assertExtensionPackages(args, base, extension);
+      const compatible = deriveExtension(base, extension);
+      const receipt = receiptValue(args, compatible, new Date().toISOString());
+      assertExtensionReceipt(receipt);
+      return this.store.tx(() => {
+        assertIdle();
+        const current = this.snapshot(args.instanceId);
+        this.assertExtensionRequest(args, current);
+        if (this.store.get(extensionOperationKind, args.requestId))
+          throw Error('目录声明接入请求已经变化，请核对原请求');
+        for (const entry of base.manifest.entries) {
+          const record = current.records[entry.id];
+          const ref = record?.bindings.template;
+          if (
+            !record ||
+            !ref ||
+            record.id !== current.instance.entryFlows[entry.id] ||
+            ref.instanceId !== args.instanceId ||
+            ref.entryId !== entry.id ||
+            ref.packageKey !== current.instance.packageKey ||
+            ref.digest !== base.manifest.contentDigest ||
+            record.templateResourceExtension
+          )
+            throw Error('原入口流程或资源声明已变化，未接入目录声明');
+        }
+        this.store.put(extensionOperationKind, args.requestId, receipt);
+        this.store.put('template-instance', args.instanceId, {
+          ...current.instance,
+          templateResourceExtension: structuredClone(receipt),
+        });
+        for (const addition of receipt.entries) {
+          const record = current.records[addition.entryId]!;
+          this.store.put('flow', record.id, {
+            ...record,
+            templateResourceExtension: structuredClone(receipt),
+            updatedAt: receipt.appliedAt,
+          });
+        }
+        return validateObject<TemplateResourceExtensionApplyResponse>(
+          'TemplateResourceExtensionApplyResponse',
+          { version: 1, receipt: structuredClone(receipt) },
+        );
+      });
+    });
+  }
+  private assertExtensionRequest(
+    request: TemplateResourceExtensionPreviewRequest,
+    snapshot: ReturnType<Templates['snapshot']>,
+  ) {
+    if (snapshot.instance.templateResourceExtension)
+      throw Error('此实例已经接入目录声明扩展，请读取既有回执');
+    if (
+      snapshot.revision !== request.expectedRevision ||
+      snapshot.instance.packageKey !== extensionPackageKey(request.basePackage)
+    )
+      throw Error('实例或原模板来源已变化，请重新读取后核对');
+  }
+  private assertExtensionPackages(
+    request: TemplateResourceExtensionPreviewRequest,
+    base: PackageData,
+    extension: PackageData,
+  ) {
+    if (
+      canonical(extensionPackageReference(base)) !== canonical(request.basePackage) ||
+      canonical(extensionPackageReference(extension)) !== canonical(request.extensionPackage)
+    )
+      throw Error('已安装模板包与请求中的准确版本或摘要不匹配');
+    this.assertExtensionPackageInstalled(request.basePackage);
+    this.assertExtensionPackageInstalled(request.extensionPackage);
+  }
+  private assertExtensionPackageInstalled(ref: ExtensionReceipt['basePackage']) {
+    const key = extensionPackageKey(ref);
+    const installed = this.store.get<InstalledPackage>('template-package', key);
+    if (
+      !installed ||
+      installed.key !== key ||
+      installed.manifest.id !== ref.id ||
+      installed.manifest.version !== ref.version ||
+      installed.manifest.contentDigest !== ref.digest
+    )
+      throw Error('目录声明扩展引用的准确模板版本尚未安装');
+  }
+  private assertRegisteredExtension(instance: TemplateInstance, receipt: ExtensionReceipt) {
+    assertExtensionReceipt(receipt);
+    this.assertExtensionPackageInstalled(receipt.basePackage);
+    this.assertExtensionPackageInstalled(receipt.extensionPackage);
+    const operation = this.store.get<ExtensionReceipt>(extensionOperationKind, receipt.requestId);
+    if (
+      instance.id !== receipt.instanceId ||
+      instance.packageKey !== extensionPackageKey(receipt.basePackage) ||
+      canonical(instance.templateResourceExtension ?? null) !== canonical(receipt) ||
+      canonical(operation ?? null) !== canonical(receipt)
+    )
+      throw Error('目录声明扩展没有匹配的实例与已提交回执');
+  }
+  private assertCurrentExtensionRecords(snapshot: ReturnType<Templates['snapshot']>) {
+    const receipt = snapshot.instance.templateResourceExtension;
+    if (receipt) this.assertRegisteredExtension(snapshot.instance, receipt);
+    for (const [entryId, record] of Object.entries(snapshot.records)) {
+      const expected = receipt?.entries.some((item) => item.entryId === entryId) ? receipt : null;
+      if (canonical(record?.templateResourceExtension ?? null) !== canonical(expected))
+        throw Error('实例与当前入口的目录声明扩展不一致，请保留现场核对');
+    }
+  }
+  /** The same synchronous authority check is reused immediately before Run admission and writes. */
+  assertResourceExtension(record: FlowRecord) {
+    const fixed = record.templateResourceExtension;
+    if (!fixed) return; // Missing historical fields never acquire the current instance extension.
+    const ref = record.bindings.template;
+    if (!ref) throw Error('目录声明扩展缺少原模板实例来源');
+    const live = this.store.get<TemplateInstance>('template-instance', ref.instanceId);
+    const current = this.store.get<FlowRecord>('flow', record.id);
+    if (!live || !live.templateResourceExtension || !current?.templateResourceExtension)
+      throw Error('当前实例或入口的目录声明扩展已失效');
+    this.assertRegisteredExtension(live, live.templateResourceExtension);
+    assertFixedReceipt(fixed, live.templateResourceExtension, ref.instanceId, ref.entryId);
+    assertFixedReceipt(fixed, current.templateResourceExtension, ref.instanceId, ref.entryId);
+    if (
+      live.entryFlows[ref.entryId] !== record.id ||
+      ref.packageKey !== extensionPackageKey(fixed.basePackage) ||
+      ref.digest !== fixed.basePackage.digest ||
+      canonical(current.bindings.template ?? null) !== canonical(ref)
+    )
+      throw Error('目录声明扩展的固定入口来源已变化');
+    const addition = fixed.entries.find((item) => item.entryId === ref.entryId)!;
+    for (const id of addition.resourceIds)
+      if (
+        canonical(live.resources[id] ?? null) !==
+          canonical(record.bindings.resources?.[id] ?? null) ||
+        canonical(current.bindings.resources?.[id] ?? null) !==
+          canonical(record.bindings.resources?.[id] ?? null) ||
+        record.bindings.files[id] !== record.bindings.resources?.[id]?.path ||
+        current.bindings.files[id] !== record.bindings.resources?.[id]?.path
+      )
+        throw Error('目录声明扩展的当前资源绑定已变化，请返回原入口重新核对');
+  }
+  async resourceScope(record: FlowRecord, fixedPackage?: PackageData) {
+    this.assertResourceExtension(record);
+    const context = await this.context(record, fixedPackage);
+    const receipt = record.templateResourceExtension;
+    if (receipt)
+      await verifyResourceExtension(context.pkg, receipt, (key) => this.library.load(key));
+    this.assertResourceExtension(record);
+    return {
+      ...context,
+      entry: effectiveResourceEntry(context.entry, receipt),
+      resources: effectiveResourceDeclarations(context.pkg, receipt),
+      ...(receipt ? { resourceExtension: receipt } : {}),
+    };
   }
   private questions = new Map<
     string,
@@ -102,9 +372,17 @@ export class Templates {
   }
   private async removeOne(key: string) {
     for (const kind of ['template-instance', 'flow', 'version', 'snapshot'])
-      for (const r of this.store.list<any>(kind))
-        if (r.packageKey === key || r.bindings?.template?.packageKey === key)
+      for (const r of this.store.list<any>(kind)) {
+        const extension = r.templateResourceExtension as ExtensionReceipt | undefined;
+        if (
+          r.packageKey === key ||
+          r.bindings?.template?.packageKey === key ||
+          (extension &&
+            (extensionPackageKey(extension.basePackage) === key ||
+              extensionPackageKey(extension.extensionPackage) === key))
+        )
           throw new Error('模板版本被实例、计划或运行引用，不能删除');
+      }
     await this.library.remove(key);
     this.store.remove('template-package', key);
   }
@@ -153,7 +431,10 @@ export class Templates {
     instance: TemplateInstance,
     inputs: Record<string, unknown> = {},
   ) {
-    for (const entry of pkg.manifest.entries) {
+    const receipt = instance.templateResourceExtension;
+    const resources = effectiveResourceDeclarations(pkg, receipt);
+    for (const declaredEntry of pkg.manifest.entries) {
+      const entry = effectiveResourceEntry(declaredEntry, receipt);
       const flow = materializeFlow(pkg, entry.id);
       flow.id = instance.entryFlows[entry.id];
       flow.name = (instance.name + ' · ' + entry.name).slice(0, 200);
@@ -167,7 +448,7 @@ export class Templates {
         credentials: string[] = [];
       let browserId: string | undefined;
       for (const id of entry.resources) {
-        const r = pkg.manifest.resources.find((r) => r.id === id)!;
+        const r = resources.find((r) => r.id === id)!;
         const v = instance.resources[id];
         if (!v) continue;
         if (v.path && ['file', 'directory'].includes(r.kind)) files[id] = v.path;
@@ -202,6 +483,9 @@ export class Templates {
         id: flow.id,
         flow: next,
         bindings,
+        ...(receipt?.entries.some((item) => item.entryId === entry.id)
+          ? { templateResourceExtension: structuredClone(receipt) }
+          : {}),
         updatedAt: new Date().toISOString(),
       });
     }
@@ -248,10 +532,13 @@ export class Templates {
   }
   private describe(pkg: PackageData, snapshot: ReturnType<Templates['snapshot']>) {
     const { instance, records, revision } = snapshot;
+    const receipt = instance.templateResourceExtension;
     return {
       instance,
       revision,
       manifest: pkg.manifest,
+      effectiveResources: effectiveResourceDeclarations(pkg, receipt),
+      ...(receipt ? { resourceExtension: structuredClone(receipt) } : {}),
       configurationSchema: jsonFile(pkg.files, pkg.manifest.configurationSchema),
       entries: pkg.manifest.entries.map((e) => {
         const input = jsonFile(pkg.files, e.inputSchema);
@@ -260,7 +547,7 @@ export class Templates {
           ([name, source]) => `${name} ← ${source.$ref}`,
         );
         return {
-          ...e,
+          ...effectiveResourceEntry(e, receipt),
           // Add presentation-only guidance to the existing schema description.
           // Keep the package and its validation rules unchanged; never include values.
           input: sources.length
@@ -286,7 +573,17 @@ export class Templates {
     const current = this.snapshot(id);
     if (current.instance.packageKey !== before.instance.packageKey)
       throw new Error('实例来源已变化，请重新读取');
+    await this.verifyInstanceResourceExtension(pkg, current);
+    if (this.snapshot(id).revision !== current.revision) throw Error('实例已变化，请重新读取');
     return this.describe(pkg, current);
+  }
+  private async verifyInstanceResourceExtension(
+    pkg: PackageData,
+    snapshot: ReturnType<Templates['snapshot']>,
+  ) {
+    this.assertCurrentExtensionRecords(snapshot);
+    const receipt = snapshot.instance.templateResourceExtension;
+    if (receipt) await verifyResourceExtension(pkg, receipt, (key) => this.library.load(key));
   }
   save(request: TemplateSave) {
     // Validate and copy at enqueue time, before another caller can alter the draft.
@@ -298,9 +595,11 @@ export class Templates {
     if (before.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
     const pkg = await this.library.load(before.instance.packageKey),
       manifest = pkg.manifest;
+    await this.verifyInstanceResourceExtension(pkg, before);
+    const resources = effectiveResourceDeclarations(pkg, before.instance.templateResourceExtension);
     validateData(jsonFile(pkg.files, manifest.configurationSchema), args.configuration);
     for (const [key, value] of Object.entries(args.resources)) {
-      const declaration = manifest.resources.find((r) => r.id === key);
+      const declaration = resources.find((r) => r.id === key);
       if (!declaration) throw new Error('未知资源绑定');
       const fields =
         declaration.kind === 'ai'
@@ -345,6 +644,7 @@ export class Templates {
       // Package loading is asynchronous; other editor writes can occur while it runs.
       const current = this.snapshot(args.id);
       if (current.revision !== args.revision) throw new Error('实例已变化，请重新读取后保存');
+      this.assertCurrentExtensionRecords(current);
       checkResults();
       if (Object.values(args.resources).some((v) => v.source)) {
         if (!this.sourceChanges) throw Error('来源绑定宿主尚未连接');
@@ -414,7 +714,7 @@ export class Templates {
   }
   async preflight(record: FlowRecord, scheduled = false) {
     if (!record.bindings.template) return;
-    const { pkg, entry } = await this.context(record);
+    const { pkg, entry, resources } = await this.resourceScope(record);
     if (scheduled && !entry.schedulable) throw new Error('入口不支持定时执行');
     for (const cap of entry.capabilities)
       if (!capabilities.includes(cap)) throw new Error('入口缺少能力：' + cap);
@@ -427,7 +727,7 @@ export class Templates {
       if (!record.bindings.grants?.[id] || record.bindings.grants[id] === 'deny')
         throw new Error('入口动作尚未授权：' + id);
     for (const id of entry.resources) {
-      const declaration = pkg.manifest.resources.find((r) => r.id === id)!;
+      const declaration = resources.find((r) => r.id === id)!;
       const binding = record.bindings.resources?.[id];
       if (!binding) {
         if (declaration.required) throw new Error('入口缺少资源绑定：' + id);
@@ -475,7 +775,7 @@ export class Templates {
     };
     available();
     if (!record.bindings.template) return available;
-    const { entry, ref, pkg } = await this.context(record, fixedPackage);
+    const { entry, ref, pkg } = await this.resourceScope(record, fixedPackage);
     if (!entry.actions.length) throw new Error('入口未声明写入动作');
     const fixed = structuredClone({
       flowId: record.id,
@@ -485,6 +785,7 @@ export class Templates {
     });
     const check = () => {
       available();
+      this.assertResourceExtension(record);
       const live = this.store.get<TemplateInstance>('template-instance', ref.instanceId);
       const configuration = fixed.configuration;
       if (
@@ -724,14 +1025,14 @@ export class Templates {
       active?: () => void;
     },
   ) {
-    const { pkg, entry, ref } = await this.context(record, services.fixedPackage);
+    const { pkg, entry, ref, resources } = await this.resourceScope(record, services.fixedPackage);
     signal.throwIfAborted();
     if (!args || typeof args.operation !== 'string') throw new Error('模板 SDK 请求无效');
     const need = (cap: string) => {
       if (!entry.capabilities.includes(cap)) throw new Error('入口未声明能力：' + cap);
     };
     const resource = (kind: string) => {
-      const d = pkg.manifest.resources.find((r) => r.id === args.resourceId);
+      const d = resources.find((r) => r.id === args.resourceId);
       if (!d || !entry.resources.includes(d.id) || d.kind !== kind)
         throw new Error('资源不属于当前入口');
       const binding = record.bindings.resources?.[d.id];
@@ -790,7 +1091,7 @@ export class Templates {
       }
       case 'file': {
         need('file');
-        const d = pkg.manifest.resources.find((r) => r.id === args.resourceId);
+        const d = resources.find((r) => r.id === args.resourceId);
         if (!d || !['file', 'directory'].includes(d.kind)) throw new Error('文件资源未声明');
         const { binding } = resource(d.kind);
         const op = args.request?.operation;
@@ -821,6 +1122,9 @@ export class Templates {
         }
         if (op === 'read') {
           if ((await stat(target)).size > 10 * 1024 * 1024) throw new Error('文件过大');
+          services.active?.();
+          signal.throwIfAborted();
+          this.assertResourceExtension(record);
           return readFile(target, 'utf8');
         }
         await this.canWrite(record, runId, signal, services.active, pkg);
@@ -830,6 +1134,7 @@ export class Templates {
         )
           throw new Error('输出过大');
         signal.throwIfAborted();
+        this.assertResourceExtension(record);
         await writeFile(target, args.request.content, { mode: 0o600 });
         return services.artifact(args.request.name ?? 'output.txt', args.request.content);
       }

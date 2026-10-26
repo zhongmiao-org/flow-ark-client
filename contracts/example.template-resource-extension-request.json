@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "requestId": "resource-extension-example",
+  "instanceId": "instance-example",
+  "expectedRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "basePackage": {
+    "id": "document-archive",
+    "version": "1.0.0",
+    "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "extensionPackage": {
+    "id": "document-archive",
+    "version": "1.0.1",
+    "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

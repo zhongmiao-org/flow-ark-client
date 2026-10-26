@@ -9,4 +9,5 @@ export type TemplateInstance = {
   grants: NonNullable<Bindings['grants']>;
   entryFlows: Record<string, string>;
   createdAt: string;
+  templateResourceExtension?: import('../shared/contracts.generated').TemplateResourceExtensionReceipt;
 };

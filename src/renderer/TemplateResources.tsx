@@ -40,6 +40,7 @@ export default function TemplateResources({
   openEntry: (id: string) => void;
 }) {
   const { instance, manifest } = detail;
+  const resources = detail.effectiveResources;
   const scopeId = useId();
   const chooseButtons = useRef(new Map<string, HTMLButtonElement>());
   const [choosing, setChoosing] = useState<string>();
@@ -66,7 +67,7 @@ export default function TemplateResources({
     change((current) => {
       const { resources, directoryDraft } = patchResourceBinding(
         current.instance.resources,
-        current.manifest.resources,
+        current.effectiveResources,
         current.directoryDraft,
         id,
         binding,
@@ -88,10 +89,10 @@ export default function TemplateResources({
           </h2>
           <ConfigProvider componentDisabled={busy}>
             <fieldset disabled={busy} className="template-resource-fields">
-              {manifest.resources.length === 0 && <p>此模板未声明本机资源。</p>}
-              {manifest.resources.map((resource) => {
+              {resources.length === 0 && <p>此模板未声明本机资源。</p>}
+              {resources.map((resource) => {
                 const binding = instance.resources[resource.id] ?? {};
-                const defaultSource = manifest.resources.find(
+                const defaultSource = resources.find(
                   (source) => source.id === resource.defaultDirectoryFrom,
                 );
                 const derived = detail.directoryDraft?.derived[resource.id];
@@ -388,7 +389,7 @@ export default function TemplateResources({
           <h2>按入口检查</h2>
           {detail.entries.map((entry) => {
             const missing = entry.resources.filter((id) => {
-              const declaration = manifest.resources.find((item) => item.id === id)!;
+              const declaration = resources.find((item) => item.id === id)!;
               const binding = instance.resources[id];
               if (!binding) return declaration.required;
               return declaration.kind === 'ai'
@@ -443,9 +444,7 @@ export default function TemplateResources({
                 {missing.length > 0 && (
                   <p>
                     待配置：
-                    {missing
-                      .map((id) => manifest.resources.find((item) => item.id === id)!.name)
-                      .join('、')}
+                    {missing.map((id) => resources.find((item) => item.id === id)!.name).join('、')}
                   </p>
                 )}
                 {!pending && !incomplete && (
