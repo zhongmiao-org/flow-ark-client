@@ -32,6 +32,7 @@ import { Field } from './TemplateConfiguration';
 import ActionButton from './ActionButton';
 import TemplateEntry from './TemplateEntry';
 import TemplateResources from './TemplateResources';
+import TemplateResourceExtension from './TemplateResourceExtension';
 import {
   acceptTemplateSave,
   equal,
@@ -162,6 +163,21 @@ export default function TemplateInstancePage({
   const lock = useRef(false),
     pending = useRef(false),
     root = useRef<HTMLDivElement>(null);
+  const [incompleteDraft, setIncompleteDraft] = useState(false);
+  useEffect(() => {
+    const target = root.current;
+    if (!target) return;
+    const update = () => setIncompleteDraft(!!target.querySelector('[data-value-incomplete]'));
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(target, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['data-value-incomplete'],
+    });
+    return () => observer.disconnect();
+  }, []);
   const dialogHeading = useRef<HTMLHeadingElement>(null),
     continueButton = useRef<HTMLButtonElement>(null);
   const focus = useRef<HTMLElement | null>(null);
@@ -718,6 +734,43 @@ export default function TemplateInstancePage({
                   { label: '实例 ID', value: instance.id },
                   { label: '包内容摘要', value: draft.manifest.contentDigest },
                 ]}
+              />
+              <TemplateResourceExtension
+                detail={saved}
+                packages={data.templates}
+                blocked={blocked}
+                readBlocked={busy || checking}
+                dirty={templateDirty(draft, saved) || incompleteDraft}
+                hasDraft={() =>
+                  templateDirty(draft, saved) ||
+                  !!root.current?.querySelector('[data-value-incomplete]')
+                }
+                work={work}
+                accept={(next) => {
+                  setSaved(structuredClone(next));
+                  // A later read can finish after the user edits a field. Advance
+                  // only the source baseline and retain those local inputs.
+                  setDraft((current) => ({
+                    ...next,
+                    instance: {
+                      ...next.instance,
+                      name: current.instance.name,
+                      configuration: current.instance.configuration,
+                      resources: current.instance.resources,
+                      grants: current.instance.grants,
+                    },
+                    directoryDraft: current.directoryDraft,
+                    resultSourceChoices: current.resultSourceChoices,
+                    entries: next.entries.map((entry) => ({
+                      ...entry,
+                      values:
+                        current.entries.find((item) => item.id === entry.id)?.values ??
+                        entry.values,
+                    })),
+                  }));
+                  setSourceError('');
+                }}
+                configure={() => switchTab('resources', true)}
               />
               <div className="template-version-adoption">
                 <Tag

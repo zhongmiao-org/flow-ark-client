@@ -38,6 +38,9 @@ export function executionVersion(record: FlowRecord, prepared: PreparedScripts) 
     ...(prepared.authorSdk ? { authorSdk: prepared.authorSdk } : {}),
     ...(prepared.resultSources ? { resultSources: prepared.resultSources } : {}),
     ...(prepared.resultRetention ? { resultRetention: prepared.resultRetention } : {}),
+    ...(prepared.templateResourceExtension
+      ? { templateResourceExtension: prepared.templateResourceExtension }
+      : {}),
   });
 }
 
@@ -155,6 +158,9 @@ export class RunRerun {
       ...(selected.outputTarget ? { outputTarget: structuredClone(selected.outputTarget) } : {}),
       ...(selected.toolTargets ? { toolTargets: structuredClone(selected.toolTargets) } : {}),
       ...(selected.desktopTarget ? { desktopTarget: structuredClone(selected.desktopTarget) } : {}),
+      ...(selected.templateResourceExtension
+        ? { templateResourceExtension: structuredClone(selected.templateResourceExtension) }
+        : {}),
       updatedAt: selected.updatedAt,
       ...(args.mode === 'snapshot'
         ? {

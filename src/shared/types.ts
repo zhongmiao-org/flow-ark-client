@@ -19,6 +19,7 @@ export type PreparedScripts = {
   authorSdk?: import('./contracts.generated').TemplateAuthorSdkContext;
   resultSources?: import('./contracts.generated').RunResultPreparedSources;
   resultRetention?: import('./contracts.generated').ResultRetentionPolicy;
+  templateResourceExtension?: import('./contracts.generated').TemplateResourceExtensionReceipt;
 };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Bindings = {
@@ -43,6 +44,7 @@ export type Bindings = {
   configuration?: { adapter: string; schema: Json; values: Json; revision?: number };
 };
 export type FlowRecord = {
+  templateResourceExtension?: import('./contracts.generated').TemplateResourceExtensionReceipt;
   desktopTarget?: import('./desktop-planning').DesktopTaskTarget;
   toolTargets?: import('./task-mcp-targets').TaskMcpTarget[];
   outputTarget?: import('./task-output').TaskOutputTarget;

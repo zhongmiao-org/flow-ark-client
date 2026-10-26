@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.52.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.53.0/p1.schema.json",
   "title": "FlowArk P1 0.51.0",
   "$defs": {
     "Json": {
@@ -2759,6 +2759,9 @@
         },
         "resultRetention": {
           "$ref": "#/$defs/ResultRetentionPolicy"
+        },
+        "templateResourceExtension": {
+          "$ref": "#/$defs/TemplateResourceExtensionReceipt"
         }
       },
       "required": [
@@ -18399,6 +18402,377 @@
           "$ref": "#/$defs/ResultUnavailableCapacity"
         }
       ]
+    },
+    "TemplateResourceExtensionPackage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[a-zA-Z0-9.-]+)?$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "digest"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionDirectory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "const": "directory"
+        },
+        "access": {
+          "enum": [
+            "write",
+            "readwrite"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "access",
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionEntryAddition": {
+      "type": "object",
+      "properties": {
+        "entryId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,99}$"
+        },
+        "resourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,99}$"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "entryId",
+        "resourceIds"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionPreviewRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "instanceId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "basePackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        },
+        "extensionPackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        }
+      },
+      "required": [
+        "version",
+        "instanceId",
+        "expectedRevision",
+        "basePackage",
+        "extensionPackage"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionApplyRequest": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "instanceId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "expectedRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "basePackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        },
+        "extensionPackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        }
+      },
+      "required": [
+        "version",
+        "instanceId",
+        "expectedRevision",
+        "basePackage",
+        "extensionPackage",
+        "requestId"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "requestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "instanceId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+        },
+        "previousRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "basePackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        },
+        "extensionPackage": {
+          "$ref": "#/$defs/TemplateResourceExtensionPackage"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateResourceExtensionDirectory"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateResourceExtensionEntryAddition"
+          },
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true
+        },
+        "appliedAt": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+        },
+        "receiptSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "requestId",
+        "requestSha256",
+        "instanceId",
+        "previousRevision",
+        "basePackage",
+        "extensionPackage",
+        "resources",
+        "entries",
+        "appliedAt",
+        "receiptSha256"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateResourceExtensionPreviewResponse": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "instanceId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "expectedRevision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "basePackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "extensionPackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "status": {
+              "const": "compatible"
+            },
+            "resources": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/TemplateResourceExtensionDirectory"
+              },
+              "minItems": 1,
+              "maxItems": 100,
+              "uniqueItems": true
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/TemplateResourceExtensionEntryAddition"
+              },
+              "minItems": 1,
+              "maxItems": 50,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "version",
+            "instanceId",
+            "expectedRevision",
+            "basePackage",
+            "extensionPackage",
+            "status",
+            "resources",
+            "entries"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "instanceId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "expectedRevision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "basePackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "extensionPackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "status": {
+              "enum": [
+                "incompatible",
+                "blocked"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            }
+          },
+          "required": [
+            "version",
+            "instanceId",
+            "expectedRevision",
+            "basePackage",
+            "extensionPackage",
+            "status",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "const": 1
+            },
+            "instanceId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+            },
+            "expectedRevision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "basePackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "extensionPackage": {
+              "$ref": "#/$defs/TemplateResourceExtensionPackage"
+            },
+            "status": {
+              "const": "already-applied"
+            },
+            "receipt": {
+              "$ref": "#/$defs/TemplateResourceExtensionReceipt"
+            }
+          },
+          "required": [
+            "version",
+            "instanceId",
+            "expectedRevision",
+            "basePackage",
+            "extensionPackage",
+            "status",
+            "receipt"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TemplateResourceExtensionApplyResponse": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "receipt": {
+          "$ref": "#/$defs/TemplateResourceExtensionReceipt"
+        }
+      },
+      "required": [
+        "version",
+        "receipt"
+      ],
+      "additionalProperties": false
     }
   }
 }

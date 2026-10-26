@@ -12,7 +12,7 @@ import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
 import { EntryResults } from './entry-results';
 import { EntryBatches, type BatchDefinition } from './entry-batches';
-import { batchMethods } from '../shared/entry-batches';
+import { batchMethods, type BatchSessionView } from '../shared/entry-batches';
 import { jsonFile, type PackageData } from '../../contracts/package-format';
 import { saveRunOutput, readRunOutput } from './run-output';
 import { assertEntryBatching } from '../../contracts/entry-batches';
@@ -33,6 +33,8 @@ import type {
   RunResultTarget,
   RunResultResource,
   RunResultSaveChoices,
+  TemplateResourceExtensionPreviewRequest,
+  TemplateResourceExtensionApplyRequest,
 } from '../shared/contracts.generated';
 import { assertConversationSourceNode } from '../../contracts/conversation-source';
 import { archiveMethods } from '../shared/conversation-archive';
@@ -649,9 +651,9 @@ export class Runtime {
       dispatch: () => this.dispatch(),
       embedded: () => this.system('browser.embedded.review', {}),
       template: async (record) => {
-        const { pkg, entry } = await this.templates.context(record);
+        const { pkg, entry, resources } = await this.templates.resourceScope(record);
         return {
-          resources: pkg.manifest.resources.filter((r) => entry.resources.includes(r.id)),
+          resources: resources.filter((r) => entry.resources.includes(r.id)),
           actions: pkg.manifest.actions.filter((a) => entry.actions.includes(a.id)),
         };
       },
@@ -1028,6 +1030,9 @@ export class Runtime {
       flow = { ...flow, parameters: bindings.configuration.values as any };
     validateFlow(flow);
     const record = {
+      ...(previous?.templateResourceExtension
+        ? { templateResourceExtension: structuredClone(previous.templateResourceExtension) }
+        : {}),
       ...(previous?.webTarget ? { webTarget: previous.webTarget } : {}),
       ...(previous?.outputTarget ? { outputTarget: previous.outputTarget } : {}),
       ...(previous?.toolTargets ? { toolTargets: previous.toolTargets } : {}),
@@ -1106,6 +1111,8 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
+      if (record.templateResourceExtension)
+        prepared.templateResourceExtension = structuredClone(record.templateResourceExtension);
       // A queued execution is fixed even when its older manual snapshot has no
       // versionId. Fixed bundles/versions (reruns, plans, subsequent batches)
       // likewise retain the original policy, including an absent legacy flag.
@@ -1120,6 +1127,7 @@ export class Runtime {
       if (prepared.resultRetention) this.typedResults.assertRetainedFlow(record);
       const check = () => {
         checkCredentials();
+        this.templates.assertResourceExtension(record);
         if (prepared.resultSources) this.resultSources.assertPrepared(prepared.resultSources);
       };
       check();
@@ -1314,6 +1322,30 @@ export class Runtime {
   private assertNoHandoff(owner?: string) {
     if (this.handoffId && this.handoffId !== owner)
       throw Error('正在停止本实例后执行入口，请先核对原请求');
+  }
+  private assertResourceExtensionIdle(instanceId: string) {
+    this.assertAdmitting();
+    this.assertNoHandoff();
+    const belongs = (run: Run) => {
+      const record =
+        this.store.get<FlowRecord>('snapshot', run.id) ??
+        this.store.get<FlowRecord>('flow', run.flowId);
+      return record?.bindings.template?.instanceId === instanceId;
+    };
+    if (this.store.list<Run>('run').some((run) => !terminal.has(run.state) && belongs(run)))
+      throw Error('本实例仍有排队或活动运行，请等待结束后接入目录声明');
+    if (this.active) {
+      const run = this.store.get<Run>('run', this.active.id);
+      if (!run || belongs(run)) throw Error('本实例运行仍在收尾，请等待资源回收');
+    }
+    for (const row of this.store.list<BatchSessionView>('batch-session')) {
+      const record = this.store.get<FlowRecord>('flow', row.flowId);
+      if (
+        record?.bindings.template?.instanceId === instanceId &&
+        this.batches.records.get(row.sessionId)?.live
+      )
+        throw Error('本实例仍有存活的连续会话，请等待结束后接入目录声明');
+    }
   }
   private handoffScope(selection: HandoffSelection) {
     this.templates.assertSource(selection.flowId, selection.source);
@@ -2281,7 +2313,7 @@ export class Runtime {
       if (!snapshot.bindings.template) return true;
       const node = walk(snapshot.flow.steps).find((n) => n.id === args.id);
       if (!node) throw new Error('节点不属于当前快照');
-      const { entry, pkg } = await this.templates.context(snapshot);
+      const { entry, pkg, resources } = await this.templates.resourceScope(snapshot);
       if (node.type === 'effect')
         assertEffectNodeCapabilities(node, snapshot.flow.requiredCapabilities, pkg.manifest, entry);
       else if (node.type === 'source')
@@ -2291,7 +2323,7 @@ export class Runtime {
       else if (!entry.capabilities.includes(node.type)) throw new Error('入口未声明节点能力');
       if (node.type === 'file' || node.type === 'excel') {
         const binding = args.binding;
-        const resource = pkg.manifest.resources.find((r) => r.id === binding);
+        const resource = resources.find((r) => r.id === binding);
         if (!entry.resources.includes(binding) || !resource || resource.kind !== 'directory')
           throw new Error('节点资源未由入口声明');
         const write = node.operation !== 'read';
@@ -3491,6 +3523,35 @@ export class Runtime {
         return this.templates.create(args.key, args.copyFrom);
       case 'template.detail':
         return this.templates.detail(args.id);
+      case 'template.resourceExtension.preview': {
+        const request = validateObject<TemplateResourceExtensionPreviewRequest>(
+          'TemplateResourceExtensionPreviewRequest',
+          args,
+        );
+        await this.ready;
+        return this.templates.previewResourceExtension(request, () =>
+          this.assertResourceExtensionIdle(request.instanceId),
+        );
+      }
+      case 'template.resourceExtension.apply': {
+        const request = validateObject<TemplateResourceExtensionApplyRequest>(
+          'TemplateResourceExtensionApplyRequest',
+          args,
+        );
+        const pending = this.admissions.then(async () => {
+          await this.ready;
+          this.assertAdmitting();
+          this.assertNoHandoff();
+          return this.templates.applyResourceExtension(request, () =>
+            this.assertResourceExtensionIdle(request.instanceId),
+          );
+        });
+        this.admissions = pending.then(
+          () => {},
+          () => {},
+        );
+        return pending;
+      }
       case 'template.save': {
         const result = await this.templates.save(args);
         this.resultSources.consumeChoices(args.resultSourceChoices);
@@ -3503,6 +3564,8 @@ export class Runtime {
         const request = flowExportSchema.parse(payload);
         if (typeof path !== 'string') throw new Error('导出路径由 Main 选择');
         const record = this.store.get<FlowRecord>('flow', (request.flow as Flow).id);
+        if (record?.templateResourceExtension)
+          throw Error('本地流程已接入额外目录声明，请在模板作者中纳入这些声明后导出标准包');
         const ref = record?.bindings.template;
         const source = ref ? await this.templates.library.load(ref.packageKey) : undefined;
         const pkg = await exportDefinition(

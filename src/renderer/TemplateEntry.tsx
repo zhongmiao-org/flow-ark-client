@@ -66,6 +66,7 @@ export default function TemplateEntry({
 }) {
   const entry = detail.entries.find((e) => e.id === entryId)!;
   const instance = detail.instance;
+  const resources = detail.effectiveResources;
   const [configurations, setConfigurations] = useState<
     Partial<Record<AIProviderId, AIConfigurationState>>
   >({});
@@ -130,9 +131,7 @@ export default function TemplateEntry({
     });
     return () => cancelAnimationFrame(frame);
   }, [inputSaved, active, busy, checking, sourceChecking]);
-  const aiResources = detail.manifest.resources.filter(
-    (r) => r.kind === 'ai' && entry.resources.includes(r.id),
-  );
+  const aiResources = resources.filter((r) => r.kind === 'ai' && entry.resources.includes(r.id));
   const selectedProvider = (id: string): AIProviderId =>
     choices[id] ??
     (instance.resources[id]?.provider === 'openai-codex' ? 'openai-codex' : 'deepseek');
@@ -225,7 +224,7 @@ export default function TemplateEntry({
     incompleteInput || !equal(entry.values, saved.entries.find((e) => e.id === entryId)?.values);
   const dirtyConfiguration = !equal(instance, saved.instance);
   const missing = entry.resources.filter((id) => {
-    const declaration = detail.manifest.resources.find((r) => r.id === id)!;
+    const declaration = resources.find((r) => r.id === id)!;
     const binding = instance.resources[id];
     if (!binding) return declaration.required;
     if (declaration.kind === 'ai')
@@ -361,9 +360,7 @@ export default function TemplateEntry({
     ...(missing.length
       ? [
           '待配置资源：' +
-            missing
-              .map((id) => detail.manifest.resources.find((resource) => resource.id === id)!.name)
-              .join('、'),
+            missing.map((id) => resources.find((resource) => resource.id === id)!.name).join('、'),
         ]
       : []),
     ...(denied.length
@@ -674,10 +671,7 @@ export default function TemplateEntry({
                             <span>资源</span>
                             <p>
                               {entry.resources
-                                .map(
-                                  (id) =>
-                                    detail.manifest.resources.find((r) => r.id === id)?.name ?? id,
-                                )
+                                .map((id) => resources.find((r) => r.id === id)?.name ?? id)
                                 .join('、') || '无需本机资源'}
                             </p>
                           </div>

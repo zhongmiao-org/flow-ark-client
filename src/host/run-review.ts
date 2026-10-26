@@ -471,6 +471,12 @@ export class RunReview {
 
   private async prepare(args: RunReviewInput, fixed?: PreparedScripts) {
     const captured = this.capture(args);
+    if (
+      fixed &&
+      digest(fixed.templateResourceExtension ?? null) !==
+        digest(captured.record.templateResourceExtension ?? null)
+    )
+      throw Error('连续运行固定的目录声明已变化，请重新检查');
     const before = await this.environment(captured.record, captured.target);
     if (this.capture(args).signature !== captured.signature)
       throw new Error('检查期间流程或任务已改变，请重新检查');

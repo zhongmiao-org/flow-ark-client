@@ -3392,6 +3392,43 @@ export type ResultRetentionCell =
       ];
     };
 export type RunResultCapacity = ResultRetainedCapacity | ResultLegacyCapacity | ResultUnavailableCapacity;
+export type TemplateResourceExtensionPreviewResponse =
+  | {
+      version: 1;
+      instanceId: string;
+      expectedRevision: string;
+      basePackage: TemplateResourceExtensionPackage;
+      extensionPackage: TemplateResourceExtensionPackage;
+      status: 'compatible';
+      /**
+       * @minItems 1
+       * @maxItems 100
+       */
+      resources: [TemplateResourceExtensionDirectory, ...TemplateResourceExtensionDirectory[]];
+      /**
+       * @minItems 1
+       * @maxItems 50
+       */
+      entries: [TemplateResourceExtensionEntryAddition, ...TemplateResourceExtensionEntryAddition[]];
+    }
+  | {
+      version: 1;
+      instanceId: string;
+      expectedRevision: string;
+      basePackage: TemplateResourceExtensionPackage;
+      extensionPackage: TemplateResourceExtensionPackage;
+      status: 'incompatible' | 'blocked';
+      reason: string;
+    }
+  | {
+      version: 1;
+      instanceId: string;
+      expectedRevision: string;
+      basePackage: TemplateResourceExtensionPackage;
+      extensionPackage: TemplateResourceExtensionPackage;
+      status: 'already-applied';
+      receipt: TemplateResourceExtensionReceipt;
+    };
 
 export interface FlowArkP1 {
   CredentialRef?: CredentialRef;
@@ -3681,6 +3718,14 @@ export interface FlowArkP1 {
   ResultLegacyCapacity?: ResultLegacyCapacity;
   ResultUnavailableCapacity?: ResultUnavailableCapacity;
   RunResultCapacity?: RunResultCapacity;
+  TemplateResourceExtensionPackage?: TemplateResourceExtensionPackage;
+  TemplateResourceExtensionDirectory?: TemplateResourceExtensionDirectory;
+  TemplateResourceExtensionEntryAddition?: TemplateResourceExtensionEntryAddition;
+  TemplateResourceExtensionPreviewRequest?: TemplateResourceExtensionPreviewRequest;
+  TemplateResourceExtensionApplyRequest?: TemplateResourceExtensionApplyRequest;
+  TemplateResourceExtensionReceipt?: TemplateResourceExtensionReceipt;
+  TemplateResourceExtensionPreviewResponse?: TemplateResourceExtensionPreviewResponse;
+  TemplateResourceExtensionApplyResponse?: TemplateResourceExtensionApplyResponse;
 }
 export interface CredentialRef {
   credentialId: string;
@@ -4545,6 +4590,7 @@ export interface RunSnapshot {
   authorSdk?: TemplateAuthorSdkContext;
   resultSources?: RunResultPreparedSources;
   resultRetention?: ResultRetentionPolicy;
+  templateResourceExtension?: TemplateResourceExtensionReceipt;
 }
 export interface ScriptBundle {
   nodeId: string;
@@ -4643,6 +4689,47 @@ export interface RunResultAuthorSource {
 export interface ResultRetentionPolicy {
   version: 1;
   policy: 'run-owned-results-v1';
+}
+export interface TemplateResourceExtensionReceipt {
+  version: 1;
+  requestId: string;
+  requestSha256: string;
+  instanceId: string;
+  previousRevision: string;
+  basePackage: TemplateResourceExtensionPackage;
+  extensionPackage: TemplateResourceExtensionPackage;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  resources: [TemplateResourceExtensionDirectory, ...TemplateResourceExtensionDirectory[]];
+  /**
+   * @minItems 1
+   * @maxItems 50
+   */
+  entries: [TemplateResourceExtensionEntryAddition, ...TemplateResourceExtensionEntryAddition[]];
+  appliedAt: string;
+  receiptSha256: string;
+}
+export interface TemplateResourceExtensionPackage {
+  id: string;
+  version: string;
+  digest: string;
+}
+export interface TemplateResourceExtensionDirectory {
+  id: string;
+  name: string;
+  kind: 'directory';
+  access: 'write' | 'readwrite';
+  required: boolean;
+}
+export interface TemplateResourceExtensionEntryAddition {
+  entryId: string;
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  resourceIds: [string, ...string[]];
 }
 export interface RunEvent {
   runId: string;
@@ -86881,4 +86968,23 @@ export interface ResultUnavailableCapacity {
   status: 'unavailable';
   policy: 'run-owned-results-v1' | 'legacy-full-values-v1';
   reason: 'missing' | 'owner-mismatch' | 'integrity' | 'limit' | 'storage';
+}
+export interface TemplateResourceExtensionPreviewRequest {
+  version: 1;
+  instanceId: string;
+  expectedRevision: string;
+  basePackage: TemplateResourceExtensionPackage;
+  extensionPackage: TemplateResourceExtensionPackage;
+}
+export interface TemplateResourceExtensionApplyRequest {
+  version: 1;
+  instanceId: string;
+  expectedRevision: string;
+  basePackage: TemplateResourceExtensionPackage;
+  extensionPackage: TemplateResourceExtensionPackage;
+  requestId: string;
+}
+export interface TemplateResourceExtensionApplyResponse {
+  version: 1;
+  receipt: TemplateResourceExtensionReceipt;
 }
