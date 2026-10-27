@@ -8,7 +8,7 @@
 
 制作入口的编排副本可“保存并编辑调试值”，配置与状态均为该副本私有数据，不进入公开 ZIP。动作库中的“配置与状态”读取本次固定配置或最新状态；更新状态须选择读取结果的修订及完整新值，冲突时停止。运行结果保留写入回执，已提交状态不因运行取消而撤销。
 
-本次本机开发数据清理由 scripts/maintenance/reset-local-work.mjs 显式执行，与普通用户启动和升级完全分离。详见治理仓库 docs/templates/acceptance.md。
+本机开发数据整理与普通启动、升级分离。已有业务的工作区使用显式选择性维护工具；`reset-local-work.mjs` 是整库开发重置，不能用于保留正式业务的工作区。详见下方维护说明及治理仓库的清理记录。
 
 通用的本地 RPA 工作台，用于编排、运行和查看自动化流程。当前为 **macOS Apple Silicon 0.3.0 开发候选**，尚未正式发版。
 
@@ -133,3 +133,16 @@ FLOWARK_TEST_EXECUTABLE=/absolute/path/FlowArk.app/Contents/MacOS/FlowArk pnpm t
 0.2.1 开发候选统一导入导出：自定义流程、修改后的模板流程和模板库均使用「导出 ZIP」，默认文件名对应包内清单。自定义流程导出参数结构、逻辑目录／浏览器资源及默认禁止的写入授权；重新导入后填写入口参数、重新绑定资源并授权即可执行。模板库导出原包；编辑器导出新的本地模板身份，不携带实例值、路径、凭据或历史。动态上传目录及未静态打包的脚本依赖需先整理再导出。
 
 `test:file-create` 验证文件属性表单、文本限制、撤销/重做、能力声明、运行前检查，以及内置浏览器读取本机无账号页面后的真实新建文本与同名停止。测试使用独立数据目录，两次启动严格串行；前一个子进程确认退出后才重开，不触碰日常实例。此检查不等于首次教学界面已完成。
+
+### 显式选择性维护（macOS）
+
+先停止 FlowArk 及其拥有的运行进程，完整备份数据目录，并取得停止状态的独立 SQLite 备份。使用已安装的 Electron 执行 `scripts/maintenance/prune-local-work.cjs`，不下载浏览器、不启动业务。密钥仅通过系统安全存储在内存读取；不传入 API Key，不允许明文密钥降级。
+
+```sh
+pnpm exec electron scripts/maintenance/prune-local-work.cjs preview --data /absolute/data --backup /absolute/backup.sqlite --roots /absolute/keep-roots.json --plan /absolute/preview.json
+pnpm exec electron scripts/maintenance/prune-local-work.cjs apply --data /absolute/data --backup /absolute/backup.sqlite --plan /absolute/preview.json --expect PREVIEW_SHA256
+pnpm exec electron scripts/maintenance/prune-local-work.cjs audit --data /absolute/data --backup /absolute/backup.sqlite --plan /absolute/preview.json --expect PREVIEW_SHA256
+pnpm exec electron scripts/maintenance/prune-local-work.cjs restore --data /absolute/data --backup /absolute/backup.sqlite --plan /absolute/preview.json --expect PREVIEW_SHA256
+```
+
+`keep-roots.json` 为私有的 `{ "ids": ["需要保留的实际对象ID"] }`。预览按真实引用保护依赖，并保留全部动作记录、Skill、访谈和未知类型；保留流程的完整运行历史也保留。预览与清理清单含本机名称/ID，应与备份一起私有保存。工具只移除未保留的数据库记录及其归属事件，不改保留记录正文，不删除凭据、浏览器 Profile、外部资料或目录文件。源数据变化、备份不一致、应用仍运行或清单摘要不符均拒绝。恢复要求清理后数据未再次变化；若已继续使用，应先恢复到独立维护副本核对，不覆盖新数据。
