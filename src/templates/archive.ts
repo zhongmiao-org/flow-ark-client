@@ -1,7 +1,6 @@
 import yauzl from 'yauzl';
 import { capabilities, validateFlow } from '../core/validate';
 import { materializeFlow } from '../../contracts/package-format';
-import { transform } from 'esbuild';
 import { open, copyFile, mkdtemp, rm, readFile, mkdir, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -216,8 +215,7 @@ export class PackageLibrary {
           ),
         });
       }
-      for (const p of pkg.manifest.scripts)
-        await transform(pkg.files.get(p)!.toString('utf8'), { loader: 'js', format: 'esm' });
+      await assertStandalonePackage(pkg);
       const token = randomUUID();
       this.pending.set(token, { directory, pkg });
       return { token, manifest: pkg.manifest };
