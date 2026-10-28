@@ -121,6 +121,20 @@ export async function exportDefinition(
       if (!m.scripts.includes(path)) m.scripts.push(path);
     }
   json(entry.flow, f);
+  if (!files.get('README.md')?.toString('utf8').trim())
+    files.set(
+      'README.md',
+      Buffer.from(
+        `# ${f.name}\n\n${f.description ?? ''}\n\n` +
+          '## 导入与运行\n\n' +
+          '在模板库导入此完整 ZIP，核对入口、资源和动作后创建自己的实例。无需解包或复制额外脚本。\n\n' +
+          '通过参数与资源页面填写自己的参数、选择本机目录、浏览器或 AI 服务，并单独确认当前入口的动作权限。' +
+          '公开包不携带凭据、绑定、运行历史或既有授权，所有写动作默认禁止。\n\n' +
+          '按入口步骤运行，在运行详情核对实际结果。失败、取消或结果未知时先核对原记录，不能凭运行结束推断外部动作成功。\n\n' +
+          '## 编辑与更新\n\n' +
+          '从模板制作工作区复制准确版本后继续维护并导出新版本；已有实例和运行快照保持固定。\n',
+      ),
+    );
   m.files = [...files]
     .map(([path, b]) => ({ path, size: b.length, sha256: sha256(b) }))
     .sort((a, b) => a.path.localeCompare(b.path));

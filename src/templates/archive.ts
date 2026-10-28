@@ -14,6 +14,7 @@ import {
 } from '../../contracts/package-format';
 import JSZip from 'jszip';
 import { assertPortableSourceFlow } from './source-boundaries';
+import { assertStandalonePackage } from './standalone';
 export async function readArchive(path: string, resultEntry?: string): Promise<PackageData> {
   if ((await stat(path)).size > LIMITS.archive) throw new Error('模板压缩包超过 20 MiB');
   return new Promise((resolve, reject) => {
@@ -112,10 +113,19 @@ export async function readArchive(path: string, resultEntry?: string): Promise<P
   });
 }
 export async function writeArchive(pkg: PackageData, path: string) {
-  await writeFile(path, await archiveBytes(pkg), { mode: 0o600 });
+  await writeVerifiedArchive(path, await archiveBytes(pkg));
+}
+async function writeVerifiedArchive(path: string, bytes: Buffer) {
+  try {
+    await writeFile(path, bytes, { mode: 0o600, flush: true });
+    if (!(await readFile(path)).equals(bytes)) throw Error('ZIP 文件读回内容不一致');
+  } catch {
+    throw Error('ZIP 保存结果未确认，请检查原保存位置；不会自动重写或报告导出成功');
+  }
 }
 export async function archiveBytes(pkg: PackageData) {
   validatePackage(pkg.files);
+  await assertStandalonePackage(pkg);
   for (const entry of pkg.manifest.entries)
     assertPortableSourceFlow(materializeFlow(pkg, entry.id));
   const zip = new JSZip();
@@ -216,8 +226,12 @@ export class PackageLibrary {
     return readArchive(join(this.root, key, 'package.zip'), resultEntry);
   }
   async export(key: string, target: string) {
-    await this.load(key);
-    await copyFile(join(this.root, key, 'package.zip'), target);
+    const source = join(this.root, key, 'package.zip');
+    const bytes = await readFile(source);
+    const pkg = await this.load(key);
+    await assertStandalonePackage(pkg);
+    if (!(await readFile(source)).equals(bytes)) throw Error('原模板包已变化，请重新选择');
+    await writeVerifiedArchive(target, bytes);
   }
   async remove(key: string) {
     await this.load(key);
