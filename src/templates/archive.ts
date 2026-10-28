@@ -2,7 +2,7 @@ import yauzl from 'yauzl';
 import { capabilities, validateFlow } from '../core/validate';
 import { materializeFlow } from '../../contracts/package-format';
 import { transform } from 'esbuild';
-import { stat, copyFile, mkdtemp, rm, readFile, mkdir, rename, writeFile } from 'node:fs/promises';
+import { open, copyFile, mkdtemp, rm, readFile, mkdir, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import {
@@ -16,10 +16,44 @@ import JSZip from 'jszip';
 import { assertPortableSourceFlow } from './source-boundaries';
 import { assertStandalonePackage } from './standalone';
 export async function readArchive(path: string, resultEntry?: string): Promise<PackageData> {
-  if ((await stat(path)).size > LIMITS.archive) throw new Error('模板压缩包超过 20 MiB');
+  return parseArchive(await archiveFileBytes(path), resultEntry);
+}
+async function archiveFileBytes(path: string): Promise<Buffer> {
+  const file = await open(path, 'r');
+  try {
+    const size = (await file.stat()).size;
+    if (size > LIMITS.archive) throw new Error('模板压缩包超过 20 MiB');
+    // One bounded snapshot, including one extra byte to detect growth during the read.
+    const bytes = Buffer.alloc(size + 1);
+    let length = 0;
+    while (length < bytes.length) {
+      const result = await file.read(bytes, length, bytes.length - length, length);
+      if (!result.bytesRead) break;
+      length += result.bytesRead;
+    }
+    if (length !== size) throw Error('模板 ZIP 读取期间发生变化，请重新选择');
+    return bytes.subarray(0, size);
+  } finally {
+    await file.close();
+  }
+}
+function assertResultEntryLimit(files: Map<string, Buffer>, resultEntry?: string) {
+  if (resultEntry === undefined) return;
+  const manifest = JSON.parse(files.get('manifest.json')?.toString('utf8') ?? '{}');
+  const entry = Array.isArray(manifest.entries)
+    ? manifest.entries.find((item: any) => item?.id === resultEntry)
+    : undefined;
+  const resultSchema = entry && files.get(packagePath(entry.resultSchema));
+  if (resultSchema && resultSchema.length > 65536) {
+    const error = new Error('入口结果定义超过只读展示范围');
+    Object.assign(error, { code: 'ENTRY_RESULT_LIMIT' });
+    throw error;
+  }
+}
+function parseArchive(bytes: Buffer, resultEntry?: string): Promise<PackageData> {
   return new Promise((resolve, reject) => {
-    yauzl.open(
-      path,
+    yauzl.fromBuffer(
+      bytes,
       { lazyEntries: true, validateEntrySizes: true, strictFileNames: true },
       (error, zip) => {
         if (error || !zip) {
@@ -42,18 +76,7 @@ export async function readArchive(path: string, resultEntry?: string): Promise<P
           try {
             // A result preview must reject its fixed Schema before validatePackage
             // parses/compiles it. The existing whole-archive integrity limits still apply.
-            if (resultEntry !== undefined) {
-              const manifest = JSON.parse(files.get('manifest.json')?.toString('utf8') ?? '{}');
-              const entry = Array.isArray(manifest.entries)
-                ? manifest.entries.find((item: any) => item?.id === resultEntry)
-                : undefined;
-              const resultSchema = entry && files.get(packagePath(entry.resultSchema));
-              if (resultSchema && resultSchema.length > 65536) {
-                const error = new Error('入口结果定义超过只读展示范围');
-                Object.assign(error, { code: 'ENTRY_RESULT_LIMIT' });
-                throw error;
-              }
-            }
+            assertResultEntryLimit(files, resultEntry);
             const pkg = validatePackage(files);
             for (const entry of pkg.manifest.entries)
               assertPortableSourceFlow(materializeFlow(pkg, entry.id));
@@ -140,9 +163,23 @@ export async function archiveBytes(pkg: PackageData) {
   return bytes;
 }
 export type InstalledPackage = { key: string; manifest: Manifest; installedAt: string };
+const VERIFIED_PACKAGE_COUNT = 8;
+const VERIFIED_PACKAGE_BYTES = 32 * 1024 * 1024;
+function assertPackageKey(key: string) {
+  if (!/^[a-z][a-z0-9-]{0,99}@[0-9A-Za-z.-]+$/.test(key)) throw new Error('模板标识无效');
+}
+function clonePackage(pkg: PackageData): PackageData {
+  return {
+    manifest: structuredClone(pkg.manifest),
+    files: new Map([...pkg.files].map(([path, bytes]) => [path, Buffer.from(bytes)])),
+  };
+}
 export class PackageLibrary {
   private installing: Promise<unknown> = Promise.resolve();
   private pending = new Map<string, { directory: string; pkg: PackageData }>();
+  // Private snapshots only. Every load still reads and compares the actual archive bytes.
+  private verified = new Map<string, { raw: Buffer; pkg: PackageData; bytes: number }>();
+  private verifiedBytes = 0;
   constructor(
     private root: string,
     private clientVersion: string,
@@ -222,22 +259,74 @@ export class PackageLibrary {
     }
   }
   async load(key: string, resultEntry?: string): Promise<PackageData> {
-    if (!/^[a-z][a-z0-9-]{0,99}@[0-9A-Za-z.-]+$/.test(key)) throw new Error('模板标识无效');
-    return readArchive(join(this.root, key, 'package.zip'), resultEntry);
+    assertPackageKey(key);
+    try {
+      return await this.loadBytes(
+        key,
+        await archiveFileBytes(join(this.root, key, 'package.zip')),
+        resultEntry,
+      );
+    } catch (error) {
+      this.forget(key);
+      throw error;
+    }
+  }
+  private forget(key: string) {
+    const cached = this.verified.get(key);
+    if (cached) this.verifiedBytes -= cached.bytes;
+    this.verified.delete(key);
+  }
+  private async loadBytes(key: string, raw: Buffer, resultEntry?: string): Promise<PackageData> {
+    const cached = this.verified.get(key);
+    if (cached?.raw.equals(raw)) {
+      assertResultEntryLimit(cached.pkg.files, resultEntry);
+      this.verified.delete(key);
+      this.verified.set(key, cached);
+      return clonePackage(cached.pkg);
+    }
+    this.forget(key);
+    const pkg = await parseArchive(raw, resultEntry);
+    const bytes =
+      raw.length +
+      [...pkg.files.values()].reduce((n, b) => n + b.length, 0) +
+      Buffer.byteLength(JSON.stringify(pkg.manifest));
+    // Another load may have completed while this archive was being parsed.
+    this.forget(key);
+    if (bytes <= VERIFIED_PACKAGE_BYTES) {
+      while (
+        this.verified.size >= VERIFIED_PACKAGE_COUNT ||
+        this.verifiedBytes + bytes > VERIFIED_PACKAGE_BYTES
+      )
+        this.forget(this.verified.keys().next().value!);
+      // No returned Map, Buffer or manifest aliases a cache entry.
+      this.verified.set(key, { raw, pkg: clonePackage(pkg), bytes });
+      this.verifiedBytes += bytes;
+    }
+    return pkg;
   }
   async export(key: string, target: string) {
-    const source = join(this.root, key, 'package.zip');
-    const bytes = await readFile(source);
-    const pkg = await this.load(key);
-    await assertStandalonePackage(pkg);
-    if (!(await readFile(source)).equals(bytes)) throw Error('原模板包已变化，请重新选择');
-    await writeVerifiedArchive(target, bytes);
+    assertPackageKey(key);
+    try {
+      const source = join(this.root, key, 'package.zip');
+      const bytes = await archiveFileBytes(source);
+      const pkg = await this.loadBytes(key, bytes);
+      await assertStandalonePackage(pkg);
+      if (!(await archiveFileBytes(source)).equals(bytes))
+        throw Error('原模板包已变化，请重新选择');
+      await writeVerifiedArchive(target, bytes);
+    } catch (error) {
+      this.forget(key);
+      throw error;
+    }
   }
   async remove(key: string) {
     await this.load(key);
+    this.forget(key);
     await rm(join(this.root, key), { recursive: true, force: true });
   }
   async dispose() {
+    this.verified.clear();
+    this.verifiedBytes = 0;
     for (const token of [...this.pending.keys()]) await this.cancel(token);
   }
   async cleanStaging() {
