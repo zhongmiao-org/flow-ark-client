@@ -35,6 +35,7 @@ export default function SkillPicker({
   }, [value?.path, value?.skill?.versionId, value?.skill?.sha256]);
   const [choices, setChoices] = useState<SkillChoice[]>([]),
     [error, setError] = useState(''),
+    [notice, setNotice] = useState(''),
     [revision, setRevision] = useState(0);
   useEffect(() => {
     let live = true;
@@ -53,12 +54,41 @@ export default function SkillPicker({
       live = false;
     };
   }, [revision]);
-  const selected = choices.find(
+  const selectedChoice = choices.find(
     (v) =>
       v.binding.path === value?.path &&
       v.ref.versionId === value?.skill?.versionId &&
       v.ref.sha256 === value?.skill?.sha256,
-  )?.id;
+  );
+  const selected = selectedChoice?.id;
+  const recheckWorkspace = async () => {
+    if (disabled || selecting || !selectedChoice) return;
+    const choice = selectedChoice;
+    const visit = ++generation.current;
+    setSelecting(true);
+    setError('');
+    setNotice('');
+    try {
+      const path = await window.flowark.request('file.choose', { kind: 'directory' });
+      if (!path || visit !== generation.current) return;
+      await window.flowark.request('skill.relocate', { id: choice.id, path, reviewed: true });
+      if (visit !== generation.current) return;
+      await window.flowark.request('skill.inspectBinding', { path, ref: choice.ref });
+      const updated = await window.flowark.request('skill.list');
+      if (visit !== generation.current) return;
+      setChoices(updated);
+      changeRef.current({ path, skill: choice.ref });
+      setNotice('同一确认版本与原记录一致，工作区已核对登记。保存资源后生效，不会自动运行。');
+    } catch (reason) {
+      if (visit === generation.current)
+        setError(
+          (reason instanceof Error ? reason.message : '工作区核对未完成') +
+            '；原绑定保留，请选择包含完整同版本文件的工作区。',
+        );
+    } finally {
+      if (visit === generation.current) setSelecting(false);
+    }
+  };
   return (
     <div className="skill-picker">
       <Select
@@ -68,6 +98,7 @@ export default function SkillPicker({
         onChange={(id) => {
           const next = choices.find((v) => v.id === id);
           const visit = ++generation.current;
+          setNotice('');
           if (!id) {
             changeRef.current(undefined);
             return;
@@ -105,10 +136,16 @@ export default function SkillPicker({
           })),
         ]}
       />
-      <Button disabled={disabled} onClick={() => setRevision((v) => v + 1)}>
+      <Button disabled={disabled || selecting} onClick={() => setRevision((v) => v + 1)}>
         刷新确认版本
       </Button>
+      {selectedChoice && (
+        <Button disabled={disabled || selecting} onClick={() => void recheckWorkspace()}>
+          {selecting ? '正在核对…' : '选择并核对工作区'}
+        </Button>
+      )}
       {error && <Alert type="error" title={error} />}
+      {notice && <Alert type="success" title={notice} />}
       <p>固定选择版本，运行前复验文件；新版本不会自动替换此绑定。确认Skill不授予模型或外发权限。</p>
     </div>
   );
