@@ -69,7 +69,7 @@ function fail(reason: string, code: CapacityReason = 'integrity'): never {
   throw new ResultRetentionError(reason, code);
 }
 const equal = (a: unknown, b: unknown) => canonical(a) === canonical(b);
-const refKey = (r: Ref) => r.family + ':' + r.id;
+const refKey = (r: Pick<Ref, 'family' | 'id'>) => r.family + ':' + r.id;
 const identity = (runId: string, family: RawFamily, kind: string, key: string): Ref => ({
   family,
   kind,
@@ -79,6 +79,11 @@ const identity = (runId: string, family: RawFamily, kind: string, key: string): 
 
 /** Host-only coordinator. No template API, deletion, GC or automatic policy activation. */
 export class RunResultLedgerStore {
+  private verifiedView?: {
+    runId: string;
+    generation: number;
+    value: { owner: LedgerOwner; ledger: ResultLedger; refs: Ref[] };
+  };
   private pending = new Map<string, Pending>();
   private newRuns = new Set<string>();
   private newSnapshots = new Set<string>();
@@ -184,14 +189,24 @@ export class RunResultLedgerStore {
     const ref = identity(index.owner.runId, 'typed-result-index', SOURCES, index.owner.runId);
     return { family: ref.family, id: ref.id, value: index };
   }
-  private consistency(ledger: ResultLedger, refs: Ref[], owner: LedgerOwner, snapshot: any) {
+  private consistency(
+    ledger: ResultLedger,
+    refs: Ref[],
+    owner: LedgerOwner,
+    snapshot: any,
+    actual: ActualCopy[],
+  ) {
+    const copies = new Map(actual.map((copy) => [refKey(copy), copy.value]));
+    const rowsByKey = new Map<string, any>(
+      refs.map((ref) => [ref.kind + ':' + ref.key, copies.get(refKey(ref))]),
+    );
     const nodes = new Map(walk(snapshot.flow.steps).map((n) => [n.id, n]));
     const indexed = refs.filter((r) => r.kind === 'typed-run-index');
     if (ledger.results.length && indexed.length !== 1) fail('逻辑结果索引缺失');
     if (indexed.length > 1) fail('逻辑结果索引重复');
     if (
       indexed.length &&
-      !equal(this.store.get<any>('typed-run-index', owner.runId)?.entries, ledger.results)
+      !equal(rowsByKey.get('typed-run-index:' + owner.runId)?.entries, ledger.results)
     )
       fail('逻辑结果镜像不一致');
     const rows = new Set(refs.filter((r) => r.kind === 'typed-run-result').map((r) => r.key));
@@ -209,7 +224,7 @@ export class RunResultLedgerStore {
         !(meta.nodeInstance === meta.nodeId || meta.nodeInstance.endsWith('/' + meta.nodeId))
       )
         fail('逻辑结果不属于固定节点实例');
-      const row = this.store.get<any>('typed-run-result', meta.id);
+      const row = rowsByKey.get('typed-run-result:' + meta.id);
       if (
         !rows.has(meta.id) ||
         !row ||
@@ -221,7 +236,7 @@ export class RunResultLedgerStore {
         fail('完整结果包装来源不一致');
     }
     for (const ref of refs.filter((r) => r.kind === 'template-data-operation')) {
-      const row = this.store.get<any>(ref.kind, ref.key);
+      const row = rowsByKey.get(ref.kind + ':' + ref.key);
       if (row?.receipt?.status !== 'written') continue;
       const nodeId = String(row.nodeInstance).split('/').at(-1)!;
       const node = nodes.get(nodeId);
@@ -242,6 +257,13 @@ export class RunResultLedgerStore {
     }
   }
   private verified(runId: string) {
+    const generation = this.store.transactionWriteGeneration;
+    if (
+      this.store.inTransaction &&
+      this.verifiedView?.runId === runId &&
+      this.verifiedView.generation === generation
+    )
+      return this.verifiedView.value;
     const { owner, snapshot } = this.ownerSource(runId);
     const ledger = this.store.get<ResultLedger>(LEDGER, runId);
     if (!ledger) fail('目录缺失', 'missing');
@@ -249,12 +271,13 @@ export class RunResultLedgerStore {
     if (!equal(ledger.owner, owner)) fail('目录不属于固定运行', 'owner-mismatch');
     const index = this.index(this.store.get(SOURCES, runId), owner);
     // verifyCopies performs the same complete inspectLedger before checking actual rows.
-    verifyCopies(ledger, owner, [
-      this.indexCopy(index),
-      ...index.refs.map((r) => this.actual(r, runId)),
-    ]);
-    this.consistency(ledger, index.refs, owner, snapshot);
-    return { owner, ledger, refs: index.refs };
+    const actual = [this.indexCopy(index), ...index.refs.map((r) => this.actual(r, runId))];
+    verifyCopies(ledger, owner, actual);
+    this.consistency(ledger, index.refs, owner, snapshot, actual);
+    const value = { owner, ledger, refs: index.refs };
+    // At most one authenticated view, only until this original transaction writes or ends.
+    if (this.store.inTransaction) this.verifiedView = { runId, generation, value };
+    return value;
   }
   private touch(runId: string): Pending {
     const saved = this.pending.get(runId);
@@ -492,7 +515,7 @@ export class RunResultLedgerStore {
         });
         if (!result_retention_result_ledger_v1(next)) fail('最终目录格式无效');
         verifyCopies(next, pending.owner, actual);
-        this.consistency(next, ordered, pending.owner, current.snapshot);
+        this.consistency(next, ordered, pending.owner, current.snapshot, actual);
         this.store.put(SOURCES, runId, index);
         this.store.put(LEDGER, runId, next);
       }
@@ -501,6 +524,7 @@ export class RunResultLedgerStore {
     }
   }
   finishTransaction() {
+    this.verifiedView = undefined;
     this.pending.clear();
     this.newRuns.clear();
     this.newSnapshots.clear();
