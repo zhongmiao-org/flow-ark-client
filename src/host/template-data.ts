@@ -523,11 +523,13 @@ export class TemplateData {
       }
       // No await between this exact quota reservation and the original CAS transaction.
       // Preserve the original conflict receipt when the expected revision is already stale.
-      if (owned || this.readState(context).revision === request.expectedRevision)
-        beforeWrite?.(result, stages);
-      if (owned)
-        this.store.resultLedgers.assertStateReservation(runId, node.id, nodeInstance, result);
-      persist(receipt);
+      this.store.atomic(() => {
+        if (owned || this.readState(context).revision === request.expectedRevision)
+          beforeWrite?.(result, stages);
+        if (owned)
+          this.store.resultLedgers.assertStateReservation(runId, node.id, nodeInstance, result);
+        persist(receipt);
+      });
       try {
         receipt = this.store.tx(() => {
           check();

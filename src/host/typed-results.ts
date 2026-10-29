@@ -117,8 +117,13 @@ export class TypedResults {
     };
     block(record.flow.steps, '');
   }
-  private capacity(runId: string, id: string, sha256: string, bytes: number) {
-    const entries = this.list(runId);
+  private capacity(
+    runId: string,
+    id: string,
+    sha256: string,
+    bytes: number,
+    entries = this.list(runId),
+  ) {
     const old = entries.find((entry) => entry.id === id);
     if (old) {
       if (old.sha256 !== sha256) throw Error('同一步骤结果身份已使用');
@@ -213,8 +218,6 @@ export class TypedResults {
     const id = digest({ runId, nodeId, nodeInstance, type }),
       sha256 = digest(value),
       bytes = skillBytes(value);
-    const entries = this.list(runId);
-    if (this.capacity(runId, id, sha256, bytes)) return;
     const meta: TypedResultMeta = {
       id,
       nodeId,
@@ -224,7 +227,9 @@ export class TypedResults {
       bytes,
       sha256,
     };
-    this.store.atomic(() => {
+    const written = this.store.atomic(() => {
+      const entries = this.list(runId);
+      if (this.capacity(runId, id, sha256, bytes, entries)) return false;
       const owned = this.store.resultLedgers.owned(runId);
       if (owned) this.store.resultLedgers.stageResult(runId, meta, value);
       if (browserInput?.version === 12) {
@@ -266,8 +271,9 @@ export class TypedResults {
         this.store.put('document-source-proof', digest({ source }), pointer);
       }
       this.store.put('typed-run-index', runId, { entries: [...entries, meta] });
+      return true;
     });
-    this.reservations.delete(id);
+    if (written) this.reservations.delete(id);
   }
   private effectResult(runId: string, nodeId: string, value: unknown) {
     assertEffectResult(value);

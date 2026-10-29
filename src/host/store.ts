@@ -31,6 +31,7 @@ export class Store {
   private db: DatabaseSync;
   private key: Buffer;
   private transactionDepth = 0;
+  private writeGeneration = 0;
   readonly resultLedgers: RunResultLedgerStore;
   fault?: string;
   constructor(path: string, key: Buffer) {
@@ -68,6 +69,7 @@ export class Store {
     if (this.fault) throw new Error(this.fault);
     this.write(() => this.db.exec('BEGIN IMMEDIATE'));
     this.transactionDepth++;
+    this.writeGeneration = 0;
     try {
       const r = fn();
       this.resultLedgers.prepareCommit();
@@ -87,6 +89,9 @@ export class Store {
   }
   get inTransaction() {
     return this.transactionDepth > 0;
+  }
+  get transactionWriteGeneration() {
+    return this.writeGeneration;
   }
   /** Reuse the original host transaction; never nest BEGIN or commit a caller's partial writes. */
   atomic<T>(fn: () => T): T {
@@ -109,6 +114,7 @@ export class Store {
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforePut(kind, id, stored, this.get(kind, id));
       try {
+        this.writeGeneration++;
         this.db
           .prepare(
             'INSERT INTO documents VALUES(?,?,?) ON CONFLICT(kind,id) DO UPDATE SET payload=excluded.payload',
@@ -137,6 +143,7 @@ export class Store {
     return this.atomic(() => {
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
+      this.writeGeneration++;
       this.write(() =>
         this.db.prepare('DELETE FROM documents WHERE kind=? AND id=?').run(kind, id),
       );
@@ -222,6 +229,7 @@ export class Store {
         }),
       ) as Event;
       this.resultLedgers.beforeEvent(event);
+      this.writeGeneration++;
       this.write(() =>
         this.db.prepare('INSERT INTO events VALUES(?,?,?)').run(runId, sequence, this.seal(event)),
       );
