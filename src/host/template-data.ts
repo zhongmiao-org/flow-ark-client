@@ -68,21 +68,32 @@ export class TemplateData {
     private store: Store,
     private deps: Deps,
   ) {}
-  recover() {
-    for (const op of this.store.list<{ runId: string; nodeInstance: string; receipt: DataReceipt }>(
-      'template-data-operation',
-    ))
-      if (['prepared', 'unknown'].includes(op.receipt.status))
-        this.store.attention(
-          'unknown-result',
-          '状态写入结果待核对',
-          {
-            runId: op.runId,
-            operationId: op.receipt.operationId,
-            reason: '运行曾中断；请在运行结果中核对原状态操作，不会自动重写',
-          },
-          'template-data:' + op.receipt.operationId,
-        );
+  async recover() {
+    const kind = 'template-data-operation',
+      ceiling = this.store.lastPosition(kind);
+    let before = ceiling + 1;
+    while (before > 0) {
+      const page = this.store.page<{
+        runId: string;
+        nodeInstance: string;
+        receipt: DataReceipt;
+      }>(kind, ceiling, before, 8);
+      if (!page.length) break;
+      for (const { value: op } of page)
+        if (['prepared', 'unknown'].includes(op.receipt.status))
+          this.store.attention(
+            'unknown-result',
+            '状态写入结果待核对',
+            {
+              runId: op.runId,
+              operationId: op.receipt.operationId,
+              reason: '运行曾中断；请在运行结果中核对原状态操作，不会自动重写',
+            },
+            'template-data:' + op.receipt.operationId,
+          );
+      before = page.at(-1)!.position;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
   }
   private operation(runId: string, nodeInstance: string) {
     return digest({ runId, nodeInstance });

@@ -622,14 +622,17 @@ export class Runtime {
       prepareNext: (plan) => this.runReview.prepareNextBatch(plan),
       dispatch: () => this.dispatch(),
       cancel: (id) => this.control(id, 'cancel'),
-      unresolved: (id) =>
-        (this.pendingCapabilities.get(id) ?? 0) > 0 ||
-        this.store
-          .list<any>('template-effect')
-          .some((r) => r.runId === id && !['confirmed', 'failed'].includes(r.state)) ||
-        this.store
-          .list<any>('template-data-operation')
-          .some((r) => r.runId === id && ['prepared', 'unknown'].includes(r.receipt?.status)),
+      unresolved: (id) => {
+        if ((this.pendingCapabilities.get(id) ?? 0) > 0) return true;
+        const owned = this.store.resultLedgers.operationRows(id);
+        const effects = owned?.effects ?? this.store.list<any>('template-effect');
+        if (effects.some((r) => r.runId === id && !['confirmed', 'failed'].includes(r.state)))
+          return true;
+        const data = owned?.data ?? this.store.list<any>('template-data-operation');
+        return data.some(
+          (r) => r.runId === id && ['prepared', 'unknown'].includes(r.receipt?.status),
+        );
+      },
     });
     this.runReview = new RunReview(this.store, {
       batches: this.batches,
@@ -763,12 +766,12 @@ export class Runtime {
       error: (error) => this.redactError(error),
     });
     this.ready = Promise.all([this.scripts.ready, this.templates.library.cleanStaging()]).then(
-      () => {
+      async () => {
         // A recovery probe can take several seconds. Plans missed during that
         // interval are skipped before any timer or queued admission can proceed.
+        await this.templateData.recover();
         this.skipMissed('application-restart');
         this.lastTick = Date.now();
-        this.templateData.recover();
         this.handoffs.recover();
         this.batches.recover();
         this.recovering = false;

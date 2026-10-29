@@ -508,6 +508,16 @@ export class RunResultLedgerStore {
   release(runId: string) {
     for (const [id, hold] of this.stateHolds) if (hold.runId === runId) this.stateHolds.delete(id);
   }
+  /** Complete owned inventory, authenticated in one transaction; legacy callers still scan. */
+  operationRows(runId: string) {
+    return this.store.atomic(() => {
+      if (!this.owned(runId)) return undefined;
+      const { refs } = this.verified(runId);
+      const rows = (kind: string) =>
+        refs.filter((ref) => ref.kind === kind).map((ref) => this.store.get<any>(kind, ref.key));
+      return { effects: rows('template-effect'), data: rows('template-data-operation') };
+    });
+  }
   list(runId: string): ResultMeta[] {
     const pending = this.pending.get(runId);
     return structuredClone(
