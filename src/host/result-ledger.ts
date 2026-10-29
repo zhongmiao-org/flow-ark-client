@@ -94,27 +94,34 @@ export class RunResultLedgerStore {
   }
 
   owned(runId: string): boolean {
+    return this.retainedSnapshot(runId) !== undefined;
+  }
+  private retainedSnapshot(runId: string) {
     const snapshot = this.store.get<any>('snapshot', runId);
     if (!snapshot || !Object.hasOwn(snapshot, 'resultRetention')) {
       if (this.store.get(LEDGER, runId) || this.store.get(SOURCES, runId))
         fail('目录仍存在但原运行政策来源缺失');
-      return false;
+      return undefined;
     }
     if (!result_retention_policy_v1(snapshot.resultRetention)) fail('运行保存政策无效');
-    return true;
+    return snapshot;
   }
-  private owner(runId: string, supplied?: Run): LedgerOwner {
+  private ownerSource(runId: string, supplied?: Run) {
     const run = supplied ?? this.store.get<Run>('run', runId);
-    const snapshot = this.store.get<any>('snapshot', runId);
+    const snapshot = this.retainedSnapshot(runId);
     if (!run || !snapshot) fail('原运行或固定方案缺失', 'missing');
-    if (run.id !== runId || run.flowId !== snapshot.id || !this.owned(runId))
+    if (run.id !== runId || run.flowId !== snapshot.id)
       fail('原运行与固定方案不一致', 'owner-mismatch');
-    return {
+    const owner: LedgerOwner = {
       runId,
       flowId: run.flowId,
       versionId: run.versionId,
       snapshotSha256: digest(snapshot),
     };
+    return { owner, snapshot };
+  }
+  private owner(runId: string, supplied?: Run): LedgerOwner {
+    return this.ownerSource(runId, supplied).owner;
   }
   private sourceRun(kind: string, key: string, value: any): string | undefined {
     if (Object.hasOwn(byKey, kind)) return key;
@@ -177,10 +184,8 @@ export class RunResultLedgerStore {
     const ref = identity(index.owner.runId, 'typed-result-index', SOURCES, index.owner.runId);
     return { family: ref.family, id: ref.id, value: index };
   }
-  private consistency(ledger: ResultLedger, refs: Ref[], owner: LedgerOwner) {
-    const nodes = new Map(
-      walk(this.store.get<any>('snapshot', owner.runId).flow.steps).map((n) => [n.id, n]),
-    );
+  private consistency(ledger: ResultLedger, refs: Ref[], owner: LedgerOwner, snapshot: any) {
+    const nodes = new Map(walk(snapshot.flow.steps).map((n) => [n.id, n]));
     const indexed = refs.filter((r) => r.kind === 'typed-run-index');
     if (ledger.results.length && indexed.length !== 1) fail('逻辑结果索引缺失');
     if (indexed.length > 1) fail('逻辑结果索引重复');
@@ -237,18 +242,18 @@ export class RunResultLedgerStore {
     }
   }
   private verified(runId: string) {
-    const owner = this.owner(runId);
+    const { owner, snapshot } = this.ownerSource(runId);
     const ledger = this.store.get<ResultLedger>(LEDGER, runId);
     if (!ledger) fail('目录缺失', 'missing');
     if (!result_retention_result_ledger_v1(ledger)) fail('目录格式无效');
     if (!equal(ledger.owner, owner)) fail('目录不属于固定运行', 'owner-mismatch');
-    inspectLedger(ledger, owner);
     const index = this.index(this.store.get(SOURCES, runId), owner);
+    // verifyCopies performs the same complete inspectLedger before checking actual rows.
     verifyCopies(ledger, owner, [
       this.indexCopy(index),
       ...index.refs.map((r) => this.actual(r, runId)),
     ]);
-    this.consistency(ledger, index.refs, owner);
+    this.consistency(ledger, index.refs, owner, snapshot);
     return { owner, ledger, refs: index.refs };
   }
   private touch(runId: string): Pending {
@@ -465,7 +470,8 @@ export class RunResultLedgerStore {
         }
       }
       for (const [runId, pending] of this.pending) {
-        if (!equal(this.owner(runId), pending.owner)) fail('提交时拥有者已变化');
+        const current = this.ownerSource(runId);
+        if (!equal(current.owner, pending.owner)) fail('提交时拥有者已变化');
         const refs = new Map(pending.refs.map((r) => [refKey(r), r]));
         for (const [key, ref] of pending.touched) refs.set(key, ref);
         const ordered = [...refs.values()].sort((a, b) =>
@@ -486,7 +492,7 @@ export class RunResultLedgerStore {
         });
         if (!result_retention_result_ledger_v1(next)) fail('最终目录格式无效');
         verifyCopies(next, pending.owner, actual);
-        this.consistency(next, ordered, pending.owner);
+        this.consistency(next, ordered, pending.owner, current.snapshot);
         this.store.put(SOURCES, runId, index);
         this.store.put(LEDGER, runId, next);
       }
@@ -501,6 +507,16 @@ export class RunResultLedgerStore {
   }
   release(runId: string) {
     for (const [id, hold] of this.stateHolds) if (hold.runId === runId) this.stateHolds.delete(id);
+  }
+  /** Complete owned inventory, authenticated in one transaction; legacy callers still scan. */
+  operationRows(runId: string) {
+    return this.store.atomic(() => {
+      if (!this.owned(runId)) return undefined;
+      const { refs } = this.verified(runId);
+      const rows = (kind: string) =>
+        refs.filter((ref) => ref.kind === kind).map((ref) => this.store.get<any>(kind, ref.key));
+      return { effects: rows('template-effect'), data: rows('template-data-operation') };
+    });
   }
   list(runId: string): ResultMeta[] {
     const pending = this.pending.get(runId);

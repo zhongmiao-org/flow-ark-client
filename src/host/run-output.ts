@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { deflateRawSync, inflateRawSync } from 'node:zlib';
+import { brotliCompressSync, brotliDecompressSync, constants, inflateRawSync } from 'node:zlib';
 import Ajv from 'ajv/dist/2020.js';
 import schema from '../../contracts/run-output-packed.schema.json';
 import type { Store } from './store';
@@ -63,7 +63,7 @@ function expandedBytes(value: unknown) {
 
 type Packed = {
   version: 1;
-  encoding: 'deflate-raw-json-v1';
+  encoding: 'deflate-raw-json-v1' | 'brotli-json-v1';
   runId: string;
   expandedBytes: number;
   sha256: string;
@@ -87,11 +87,18 @@ export function saveRunOutput(store: Store, runId: string, value: unknown) {
   if (bytes.length !== expectedBytes) throw Error('完整运行汇总的JSON计量不一致');
   const record: Packed = {
     version: 1,
-    encoding: 'deflate-raw-json-v1',
+    encoding: 'brotli-json-v1',
     runId,
     expandedBytes: bytes.length,
     sha256: sha256(bytes),
-    data: deflateRawSync(bytes).toString('base64'),
+    data: brotliCompressSync(bytes, {
+      params: {
+        [constants.BROTLI_PARAM_MODE]: constants.BROTLI_MODE_TEXT,
+        [constants.BROTLI_PARAM_QUALITY]: 4,
+        [constants.BROTLI_PARAM_LGWIN]: 22,
+        [constants.BROTLI_PARAM_SIZE_HINT]: bytes.length,
+      },
+    }).toString('base64'),
   };
   assertRecord(record, runId);
   // The ledger charges this entire row, including Base64, within the existing Run budget.
@@ -107,7 +114,17 @@ export function readRunOutput(store: Store, runId: string) {
   assertRecord(packed, runId);
   const compressed = Buffer.from(packed.data, 'base64');
   if (compressed.toString('base64') !== packed.data) throw Error('运行汇总编码无效');
-  const bytes = inflateRawSync(compressed, { maxOutputLength: packed.expandedBytes });
+  let bytes: Buffer;
+  if (packed.encoding === 'brotli-json-v1') {
+    const decoded = brotliDecompressSync(compressed, {
+      maxOutputLength: packed.expandedBytes,
+      params: { [constants.BROTLI_DECODER_PARAM_LARGE_WINDOW]: 0 },
+      info: true,
+    }) as unknown as { buffer: Buffer; engine: { bytesWritten: number } };
+    if (decoded.engine.bytesWritten !== compressed.length)
+      throw Error('运行汇总压缩正文存在尾随数据');
+    bytes = decoded.buffer;
+  } else bytes = inflateRawSync(compressed, { maxOutputLength: packed.expandedBytes });
   if (bytes.length !== packed.expandedBytes || sha256(bytes) !== packed.sha256)
     throw Error('完整运行汇总长度或摘要不一致');
   const text = bytes.toString('utf8'),

@@ -7,7 +7,7 @@
   "required": ["version", "encoding", "runId", "expandedBytes", "sha256", "data"],
   "properties": {
     "version": { "const": 1 },
-    "encoding": { "const": "deflate-raw-json-v1" },
+    "encoding": { "enum": ["deflate-raw-json-v1", "brotli-json-v1"] },
     "runId": { "type": "string", "minLength": 1, "maxLength": 100 },
     "expandedBytes": { "type": "integer", "minimum": 1, "maximum": 67108864 },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
