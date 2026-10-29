@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://flowark.local/contracts/0.53.0/p1.schema.json",
+  "$id": "https://flowark.local/contracts/0.53.1/p1.schema.json",
   "title": "FlowArk P1 0.51.0",
   "$defs": {
     "Json": {
