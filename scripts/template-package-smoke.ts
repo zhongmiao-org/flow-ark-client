@@ -1,12 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { exportDefinition } from '../src/templates/export';
 import { writeArchive, readArchive } from '../src/templates/archive';
-const data = await mkdtemp(join(tmpdir(), 'template-ui-'));
+const data = await mkdtemp('template-ui-');
 const definition = await exportDefinition(
   {
     id: 'fixture',
@@ -176,8 +176,8 @@ try {
     await new Promise((r) => setTimeout(r, 100));
   }
   assert.equal(await readFile(join(output, 'result.txt'), 'utf8'), 'ROUNDTRIP WORKS');
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/template-package-ui.png', fullPage: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/template-package-ui.png`, fullPage: true });
   console.log(
     'Template ZIP export, custom workflow UI export/import, default-denied resource binding and real script/file execution passed',
   );

@@ -1,13 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
 import { formLabFlow, formBrowser, formText, formExpected } from './fixtures/platform-flow';
 
-const data = await mkdtemp(join(tmpdir(), 'flowark-debug-desktop-'));
+const data = await mkdtemp('flowark-debug-desktop-');
 const lab = await startFormLab();
 await writeFile(join(data, 'fictional.txt'), formText);
 const app = await electron.launch({
@@ -73,8 +73,8 @@ try {
     '"测试用户甲"',
   );
   assert.equal(lab.state.attempts, 0);
-  await mkdir('test-results', { recursive: true });
-  const pausedShot = 'test-results/debug-paused.png';
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  const pausedShot = `${debugEvidenceRoot()}/debug-paused.png`;
   await page.screenshot({ path: pausedShot, fullPage: true });
   evidence.screenshots.push(pausedShot);
   await page.getByRole('button', { name: '继续', exact: true }).click();
@@ -157,7 +157,7 @@ try {
   clearTimeout(timer);
   evidence.exit = status;
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/debug-desktop.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/debug-desktop.json`, JSON.stringify(evidence, null, 2));
   assert.deepEqual(status, { code: 0, signal: null });
 }

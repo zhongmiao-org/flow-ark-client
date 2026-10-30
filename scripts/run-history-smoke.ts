@@ -1,12 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Store } from '../src/host/store';
 import { startFormLab } from './fixtures/platform-page';
 import type { Run } from '../src/shared/types';
-const data = await mkdtemp('/private/tmp/flowark-run-history-ui-');
+const data = await mkdtemp('flowark-run-history-ui-');
 const lab = await startFormLab();
 const launch = () =>
   electron.launch({
@@ -120,7 +121,7 @@ try {
   const table = () => page.locator('.run-history tbody tr');
   await page.getByLabel('运行时间范围').selectOption('all');
   await wait(async () => (await table().count()) === 6);
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   for (const [width, height] of [
     [1440, 960],
     [1920, 1080],
@@ -135,7 +136,7 @@ try {
       await page.locator('.run-history').evaluate((e) => e.scrollWidth > e.clientWidth + 1),
       false,
     );
-    await page.screenshot({ path: `test-results/figma/runs-${width}.png`, scale: 'css' });
+    await page.screenshot({ path: `${debugEvidenceRoot()}/figma/runs-${width}.png`, scale: 'css' });
   }
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
   await button('触发来源筛选').click();
@@ -165,7 +166,7 @@ try {
   const row = page.getByRole('row').filter({ hasText: old.id.slice(0, 8) });
   await row.getByRole('button', { name: '查看', exact: true }).click();
   await back().waitFor();
-  await page.screenshot({ path: 'test-results/figma/run-detail.png', scale: 'css' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/run-detail.png`, scale: 'css' });
   assert.equal((await call('run.detail', { id: old.id })).artifacts[0].integrity, 'verified');
   await page.getByRole('link', { name: /^第 \d+ 页$/ }).click();
   await page.locator('.history-pagination').getByText('第 3 页', { exact: true }).waitFor();
@@ -192,7 +193,7 @@ try {
   await logsTab.press('ArrowLeft');
   assert.equal(await outputTab.getAttribute('aria-selected'), 'true');
   evidence.checks.push('detail-tabs-keyboard-arrows-home-end-and-focus');
-  await page.screenshot({ path: 'test-results/figma/run-output.png', scale: 'css' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/run-output.png`, scale: 'css' });
   await button('← 返回运行详情').click();
   await page.getByRole('tab', { name: '运行日志', exact: true }).click();
   assert.ok(
@@ -262,8 +263,8 @@ try {
     await page.locator('.run-history').evaluate((e) => e.scrollWidth > e.clientWidth + 1),
     false,
   );
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/run-history-small.png' });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/run-history-small.png` });
   const native = await app.evaluate(async ({ BrowserWindow }) =>
     (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents.executeJavaScript(
       '({ width: innerWidth, url: location.href, input: !!document.querySelector("#fullName") })',
@@ -401,7 +402,7 @@ try {
     clearTimeout(guard);
   }
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/run-history.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/run-history.json`, JSON.stringify(evidence, null, 2));
   console.log(JSON.stringify(evidence));
 }

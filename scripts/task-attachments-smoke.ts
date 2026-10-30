@@ -1,7 +1,7 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, cp, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdir, cp, writeFile, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:http';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -9,8 +9,8 @@ import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import { build } from 'esbuild';
 
-const data = await mkdtemp(join(tmpdir(), 'flowark-attachment-ui-'));
-const appPath = await mkdtemp(join(process.cwd(), 'test-results/attachment-app-'));
+const data = await mkdtemp('flowark-attachment-ui-');
+const appPath = await mkdtemp(join(process.cwd(), `${debugEvidenceRoot()}/attachment-app-`));
 const textFile = join(data, '已选资料.txt'),
   picture = join(data, '目标截图.png'),
   corrupt = join(data, '损坏图片.png');
@@ -177,7 +177,7 @@ async function choose(name: string, file: string | null, expectedError = false) 
     assert.equal(await page!.getByRole('alert').count(), 0, 'unexpected picker error');
 }
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await launch();
   await page!.screenshot({ path: picture, scale: 'css' });
   await writeFile(corrupt, (await readFile(picture)).subarray(0, 40));
@@ -240,7 +240,10 @@ try {
       assert.equal(layout.columns[0].y, 230);
     }
     evidence.layouts.push(layout);
-    await page!.screenshot({ path: `test-results/figma/attachments-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/attachments-${width}.png`,
+      scale: 'css',
+    });
   }
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 1080));
   await button('理解与输出位置').click();
@@ -304,7 +307,9 @@ try {
 } catch (e) {
   failure = e;
   if (page)
-    await page.screenshot({ path: 'test-results/figma/attachments-failure.png' }).catch(() => {});
+    await page
+      .screenshot({ path: `${debugEvidenceRoot()}/figma/attachments-failure.png` })
+      .catch(() => {});
 } finally {
   await closeOwned();
   await new Promise<void>((r) => server.close(() => r()));
@@ -312,7 +317,10 @@ try {
   evidence.closed = evidence.processes.every((p: any) => p.closed);
   evidence.passed &&= !failure && !errors.length && evidence.closed;
   if (failure) evidence.failure = String(failure);
-  await writeFile('test-results/figma/attachments-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/attachments-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

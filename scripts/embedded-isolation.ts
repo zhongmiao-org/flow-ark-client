@@ -1,14 +1,14 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import electronPath from 'electron';
 import { embeddedHarness } from './fixtures/embedded-harness';
 import type { BrowserBinding } from '../src/shared/types';
 
 export async function verifyEmbeddedIsolation() {
-  const data = await mkdtemp(join(tmpdir(), 'flowark-embedded-isolation-'));
+  const data = await mkdtemp('flowark-embedded-isolation-');
   const server = createServer((req, res) => {
     if (req.url === '/payload') {
       res.writeHead(200, {
@@ -154,7 +154,10 @@ export async function verifyEmbeddedIsolation() {
 }
 if (process.argv[1]?.endsWith('embedded-isolation.ts')) {
   const report = await verifyEmbeddedIsolation();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/embedded-isolation.json', JSON.stringify(report, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/embedded-isolation.json`,
+    JSON.stringify(report, null, 2),
+  );
   console.log('Embedded browser isolation, frames, popup, profile and download recovery passed');
 }

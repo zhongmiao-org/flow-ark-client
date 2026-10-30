@@ -1,5 +1,6 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import electronPath from 'electron';
@@ -8,8 +9,8 @@ import { desktopElectron, readDesktopMains } from './desktop-session.mjs';
 import { exportDefinition } from '../src/templates/export';
 import { writeArchive } from '../src/templates/archive';
 import { canonical, sha256, manifestDigest } from '../contracts/package-format';
-const data = await mkdtemp('/private/tmp/flowark-template-entry-ui-');
-const appPath = await mkdtemp(resolve('test-results/template-entry-app-'));
+const data = await mkdtemp('flowark-template-entry-ui-');
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/template-entry-app-`));
 const faultPath = join(data, 'save-fault'),
   savesPath = join(data, 'save-calls');
 const evidence: any = {
@@ -445,9 +446,9 @@ try {
 } finally {
   await writeFile(faultPath, '').catch(() => {});
   await close();
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await writeFile(
-    'test-results/figma/template-entry-summary.json',
+    `${debugEvidenceRoot()}/figma/template-entry-summary.json`,
     JSON.stringify(evidence, null, 2),
   );
   console.log(JSON.stringify(evidence));

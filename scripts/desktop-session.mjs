@@ -1,7 +1,8 @@
 import { _electron } from 'playwright-core';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { debugRoot } from '../src/host/debug-files.mjs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { killOwnedTree } from '../src/host/processes.ts';
@@ -25,7 +26,12 @@ export function readDesktopMains() {
 
 // Shared by all checkouts for this OS user. An abandoned lock is deliberately
 // not stolen: inspect the recorded owner and desktop processes before removing it.
-export function desktopLock(directory = join(tmpdir(), 'flowark-desktop-smoke.lock')) {
+export function desktopLock(directory = join(debugRoot(), '.desktop-smoke.lock')) {
+  const legacy = join(tmpdir(), 'flowark-desktop-smoke.lock');
+  if (existsSync(legacy))
+    throw new Error(
+      `Legacy desktop lock still exists: ${legacy}; inspect its owner before retrying`,
+    );
   try {
     mkdirSync(directory, { mode: 0o700 });
   } catch (error) {

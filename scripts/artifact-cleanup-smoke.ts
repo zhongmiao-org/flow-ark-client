@@ -1,11 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
 import { formBrowser, formText } from './fixtures/platform-flow';
-const data = await mkdtemp('/private/tmp/flowark-artifact-cleanup-ui-');
+const data = await mkdtemp('flowark-artifact-cleanup-ui-');
 const lab = await startFormLab();
 const launch = () =>
   electron.launch({
@@ -128,9 +129,9 @@ try {
     false,
   );
   assert.ok(await preview().evaluate((e) => e.scrollWidth <= e.clientWidth + 1));
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await preview().scrollIntoViewIfNeeded();
-  await page.screenshot({ path: 'test-results/artifact-cleanup-preview.png' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/artifact-cleanup-preview.png` });
   await page.getByLabel('已核对结果并保存需要保留的文件', { exact: true }).check();
   await button('确认清理产物').click();
   await page.getByRole('status').filter({ hasText: '已清理 · 6 个文件' }).waitFor();
@@ -182,7 +183,10 @@ try {
 } finally {
   await app.close();
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/artifact-cleanup.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/artifact-cleanup.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }

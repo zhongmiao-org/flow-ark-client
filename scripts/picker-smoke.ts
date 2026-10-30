@@ -1,9 +1,10 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { embeddedHarness } from './fixtures/embedded-harness';
 import { startFrameFixture } from './fixtures/frames';
 import type { ElementTarget, PickerState } from '../src/shared/element-picker';
-const data = await mkdtemp('/private/tmp/flowark-picker-');
+const data = await mkdtemp('flowark-picker-');
 const lab = await startFrameFixture({ crossSite: true });
 const h = await embeddedHarness(data);
 const evidence: any = { passed: false, data, checks: [] };
@@ -291,8 +292,8 @@ try {
   evidence.passed = true;
   console.log(JSON.stringify(evidence));
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/picker.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/picker.json`, JSON.stringify(evidence, null, 2));
   await h.shutdown();
   await lab.close();
 }

@@ -1,6 +1,7 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
@@ -11,7 +12,7 @@ import { formBrowser, formExpected, formLabFlow, formText } from './fixtures/pla
 
 // Real application/Host/Worker/WebContents and localhost receipts. powerMonitor
 // events are explicitly injected; this is not a hardware sleep/wake test.
-const data = await mkdtemp('/private/tmp/flowark-system-suspend-');
+const data = await mkdtemp('flowark-system-suspend-');
 const lab = await startFormLab();
 await writeFile(join(data, 'fictional.txt'), formText);
 const receipts: string[] = [];
@@ -501,8 +502,8 @@ try {
   await new Promise<void>((done) => receiver.close(() => done()));
   evidence.receipts = receipts;
   evidence.formAttempts = lab.state.attempts;
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(join(data, 'evidence.json'), JSON.stringify(evidence, null, 2));
-  await writeFile('test-results/system-suspend.json', JSON.stringify(evidence, null, 2));
+  await writeFile(`${debugEvidenceRoot()}/system-suspend.json`, JSON.stringify(evidence, null, 2));
   console.log(JSON.stringify(evidence));
 }

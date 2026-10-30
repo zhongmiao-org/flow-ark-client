@@ -1,14 +1,15 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { formText } from './fixtures/platform-flow';
 import { startFormLab } from './fixtures/platform-page';
-const data = await mkdtemp('/private/tmp/flowark-picker-ui-');
+const data = await mkdtemp('flowark-picker-ui-');
 const lab = await startFormLab();
 await writeFile(join(data, 'sample.txt'), formText);
-await mkdir('test-results', { recursive: true });
+await mkdir(debugEvidenceRoot(), { recursive: true });
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
   args: process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')],
@@ -121,7 +122,7 @@ try {
   const editorImage = await app.evaluate(async ({ BrowserWindow }) =>
     (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
   );
-  await writeFile('test-results/picker-editor.png', Buffer.from(editorImage, 'base64'));
+  await writeFile(`${debugEvidenceRoot()}/picker-editor.png`, Buffer.from(editorImage, 'base64'));
   await page.getByRole('button', { name: '参数与绑定', exact: true }).click();
   await page.getByLabel('本机浏览器', { exact: true }).selectOption('embedded');
   await app.evaluate(({ dialog }, path) => {
@@ -198,11 +199,11 @@ try {
   const image = await app.evaluate(async ({ BrowserWindow }) =>
     (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
   );
-  await writeFile('test-results/picker-ui.png', Buffer.from(image, 'base64'));
+  await writeFile(`${debugEvidenceRoot()}/picker-ui.png`, Buffer.from(image, 'base64'));
   console.log(JSON.stringify(evidence));
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/picker-ui.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/picker-ui.json`, JSON.stringify(evidence, null, 2));
   await app.close();
   await lab.close();
 }

@@ -1,6 +1,7 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -13,7 +14,7 @@ import { formBrowser } from './fixtures/platform-flow';
 // Real Vault IPC, Host, Worker, script SDK, persistence and embedded local form.
 // The separately labelled Main encryption failure replaces only safeStorage's
 // encrypt call; it is not an actual Keychain failure or a real provider request.
-const data = await mkdtemp('/private/tmp/flowark-redaction-ui-');
+const data = await mkdtemp('flowark-redaction-ui-');
 const lab = await startFormLab();
 const original = 'fictional-private-' + randomBytes(18).toString('hex');
 const pending = 'fictional-pending-' + randomBytes(18).toString('hex');
@@ -444,8 +445,8 @@ try {
   }
   await lab.close();
   evidence.formAttempts = lab.state.attempts;
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(join(data, 'evidence.json'), JSON.stringify(evidence, null, 2));
-  await writeFile('test-results/redaction.json', JSON.stringify(evidence, null, 2));
+  await writeFile(`${debugEvidenceRoot()}/redaction.json`, JSON.stringify(evidence, null, 2));
   console.log(JSON.stringify(evidence));
 }

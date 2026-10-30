@@ -1,13 +1,12 @@
+import { debugMkdtemp as mkdtemp } from '../src/host/debug-files.mjs';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { verifyBundle } from './verify-bundle.mjs';
 const executablePath = process.env.FLOWARK_TEST_EXECUTABLE;
 if (!executablePath) throw new Error('Set FLOWARK_TEST_EXECUTABLE');
 await verifyBundle(executablePath.split('/Contents/MacOS/')[0]);
-const data = await mkdtemp(join(tmpdir(), 'flowark-install-'));
+const data = await mkdtemp('flowark-install-');
 let runId;
 for (let phase = 0; phase < 2; phase++) {
   const app = await electron.launch({

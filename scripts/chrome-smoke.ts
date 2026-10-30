@@ -1,12 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import { createServer } from 'node:http';
-import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { writeFile, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { inspectBrowser } from '../src/adapters/browsers';
 import { startFrameFixture } from './fixtures/frames';
 import { PlaywrightDriver } from '../src/adapters/playwright';
-const root = await mkdtemp(join(tmpdir(), 'flowark-browser-'));
+const root = await mkdtemp('flowark-browser-');
 const chrome = process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app';
 process.env.PLAYWRIGHT_BROWSERS_PATH = join(root, 'empty-browser-cache');
 process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1';
@@ -150,9 +150,9 @@ try {
   );
   await driver.close();
   await cancelled;
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(
-    'test-results/browser.json',
+    `${debugEvidenceRoot()}/browser.json`,
     JSON.stringify(
       {
         time: new Date().toISOString(),

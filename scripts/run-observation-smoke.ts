@@ -1,6 +1,7 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer, type ServerResponse } from 'node:http';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
@@ -12,7 +13,7 @@ import { formBrowser } from './fixtures/platform-flow';
 // Real Host, Worker, script supervision, persistence and embedded localhost form.
 // Only the separately labelled storage-fault presentation case replaces replies;
 // it does not claim to reproduce SQLITE_FULL or a physical disk failure.
-const data = await mkdtemp('/private/tmp/flowark-observation-ui-');
+const data = await mkdtemp('flowark-observation-ui-');
 const lab = await startFormLab();
 const requests: string[] = [];
 const gates = new Map<string, ServerResponse>();
@@ -373,7 +374,7 @@ try {
   await fixed('cancelled-terminal');
   assert.equal(lab.state.attempts, 0);
   note('real-debug-next-step-human-wait-cancel-and-final-duration');
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await page.screenshot({ path: join(data, 'cancelled.png') });
   await gracefulQuit();
   await launch();
@@ -528,8 +529,8 @@ try {
   receiver.closeAllConnections();
   await new Promise<void>((done) => receiver.close(() => done()));
   evidence.requests = requests;
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(join(data, 'evidence.json'), JSON.stringify(evidence, null, 2));
-  await writeFile('test-results/run-observation.json', JSON.stringify(evidence, null, 2));
+  await writeFile(`${debugEvidenceRoot()}/run-observation.json`, JSON.stringify(evidence, null, 2));
   console.log(JSON.stringify(evidence));
 }

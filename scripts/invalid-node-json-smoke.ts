@@ -1,11 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type { FlowRecord, Run } from '../src/shared/types';
 
-const data = await mkdtemp('/private/tmp/flowark-invalid-node-json-');
+const data = await mkdtemp('flowark-invalid-node-json-');
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
   args: process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')],
@@ -342,22 +343,27 @@ try {
   assert.equal(await raw.inputValue(), addedText);
   assert.equal(await button('删除节点').isEnabled(), true);
   note('late-configuration-save-keeps-new-node-invalid-text-and-does-not-enable-stale-execution');
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/invalid-node-json.png' });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/invalid-node-json.png` });
   evidence.passed = true;
 } catch (error) {
   evidence.error = String(error);
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   evidence.uiErrors = await page
     .locator('[role="alert"], .node-advanced .field-error')
     .allTextContents()
     .catch(() => []);
   evidence.bootstrap = await call('bootstrap').catch((error) => ({ error: String(error) }));
-  await page.screenshot({ path: 'test-results/invalid-node-json-failure.png' }).catch(() => {});
+  await page
+    .screenshot({ path: `${debugEvidenceRoot()}/invalid-node-json-failure.png` })
+    .catch(() => {});
   throw error;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/invalid-node-json.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/invalid-node-json.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   const boot = await call('bootstrap').catch(() => ({ runs: [] }));
   for (const run of boot.runs) {
     if (!['SUCCEEDED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(run.state))

@@ -1,10 +1,11 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { embeddedHarness } from './fixtures/embedded-harness';
 import { startFormLab } from './fixtures/platform-page';
 
-const data = await mkdtemp('/private/tmp/flowark-native-close-');
+const data = await mkdtemp('flowark-native-close-');
 const lab = await startFormLab();
 const h = await embeddedHarness(data);
 const evidence: any = { passed: false, data, checks: [] };
@@ -363,8 +364,11 @@ try {
     .catch((failure) => ({ error: String(failure) }));
   throw error;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/embedded-close-lifecycle.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/embedded-close-lifecycle.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   await h.shutdown();
   await lab.close();
   console.log(JSON.stringify(evidence));

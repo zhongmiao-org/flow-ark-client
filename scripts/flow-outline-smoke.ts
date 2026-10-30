@@ -1,11 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import type { ChildProcess } from 'node:child_process';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Step } from '../src/shared/types';
-const data = await mkdtemp('/private/tmp/flowark-outline-');
+const data = await mkdtemp('flowark-outline-');
 const evidence: any = { passed: false, closed: false, data, checks: [], layouts: [] };
 let app: ElectronApplication | undefined,
   page: Page | undefined,
@@ -65,10 +66,13 @@ async function capture(width: number, height: number) {
       [260, 880, 444],
     );
   evidence.layouts.push(layout);
-  await page!.screenshot({ path: `test-results/figma/outline-${width}.png`, scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/outline-${width}.png`,
+    scale: 'css',
+  });
 }
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   app = await electron.launch({
     executablePath: electronPath as unknown as string,
     args: ['.'],
@@ -316,7 +320,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/outline-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/outline-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   const watchdog = setTimeout(() => {
@@ -364,7 +368,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/outline-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/outline-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

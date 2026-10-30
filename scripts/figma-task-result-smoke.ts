@@ -1,15 +1,16 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Flow, Run, Step } from '../src/shared/types';
-const data = await mkdtemp('/private/tmp/flowark-task-result-'),
+const data = await mkdtemp('flowark-task-result-'),
   files = join(data, 'files');
 await mkdir(files);
-await mkdir('test-results/figma', { recursive: true });
+await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
 let posts = 0;
 const server = createServer((req, res) => {
   if (req.method === 'POST') {
@@ -67,7 +68,10 @@ async function capture(kind: string) {
     assert.equal(layout.rootOverflow, false);
     evidence.layouts.push({ kind, ...layout });
     await page!.mouse.move(0, 0);
-    await page!.screenshot({ path: `test-results/figma/task-${kind}-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/task-${kind}-${width}.png`,
+      scale: 'css',
+    });
   }
 }
 async function prepare(name: string, steps: Step[]): Promise<Flow> {
@@ -386,7 +390,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/task-result-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/task-result-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   try {
@@ -429,7 +433,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/task-result-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/task-result-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

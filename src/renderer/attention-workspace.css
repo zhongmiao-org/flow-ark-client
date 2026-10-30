@@ -463,3 +463,14 @@
   margin-bottom: 20px;
   overflow-wrap: anywhere;
 }
+
+.attention-bulk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.attention-card .ant-checkbox-wrapper {
+  margin-bottom: 16px;
+}

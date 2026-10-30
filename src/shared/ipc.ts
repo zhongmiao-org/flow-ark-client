@@ -225,6 +225,31 @@ export const methods = {
   'schedule.update': scheduleUpdateSchema,
   'schedule.toggle': z.object({ id, enabled: z.boolean() }).strict(),
   'attention.read': z.object({ id }).strict(),
+  'attention.trash.list': empty,
+  'attention.batch.preview': z
+    .object({
+      action: z.enum(['read', 'trash', 'restore']),
+      ids: z.array(id).max(20000).optional(),
+    })
+    .strict(),
+  'attention.batch.apply': z.object({ token: id }).strict(),
+  'cache.locations': empty,
+  'cache.location': empty,
+  'cache.scan': empty,
+  'cache.adopt': z
+    .object({
+      scanId: id,
+      id,
+      purpose: z.string().trim().min(3).max(300),
+      category: z.enum(['temporary', 'log', 'profile', 'test-copy']),
+      reviewed: z.literal(true),
+    })
+    .strict(),
+  'cache.preview': z.object({ scanId: id, ids: z.array(id).min(1).max(1000) }).strict(),
+  'cache.clear': z.object({ token: id, reviewed: z.literal(true) }).strict(),
+  'cache.status': empty,
+  'cache.reveal': z.object({ scanId: id, id }).strict(),
+  'cache.root': empty,
   'template.inspect': empty,
   'template.cancelImport': z.object({ token: id }).strict(),
   'template.install': z.object({ token: id }).strict(),

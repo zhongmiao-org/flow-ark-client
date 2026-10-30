@@ -1,11 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { Store } from '../src/host/store';
 
-const data = await mkdtemp('/private/tmp/flowark-artifact-history-');
+const data = await mkdtemp('flowark-artifact-history-');
 const launch = () =>
   electron.launch({
     executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -125,9 +126,9 @@ try {
   await assert.rejects(call('artifact.reveal', { id: later.artifactId }), /移动、删除/);
   assert.equal((await call('run.detail', { id: run.id })).run.state, 'SUCCEEDED');
   assert.equal((await app.evaluate(() => (globalThis as any).revealedArtifacts)).length, 2);
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await row(first.artifactId).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: 'test-results/artifact-history.png' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/artifact-history.png` });
   evidence.checks.push(
     'same-length-tamper-and-missing-status-disabled-buttons-and-resolve-refusal',
   );
@@ -135,7 +136,10 @@ try {
   evidence.runId = run.id;
 } finally {
   await app.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/artifact-history.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/artifact-history.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }

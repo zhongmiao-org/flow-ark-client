@@ -22,6 +22,7 @@ import { activateCollapseWithSpace } from './collapseKeyboard';
 import LocalStoragePanel from './LocalStoragePanel';
 import LocalCredentialsPanel from './LocalCredentialsPanel';
 import AppearancePage from './AppearancePage';
+import CacheSettingsPanel from './CacheSettingsPanel';
 
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
@@ -35,6 +36,7 @@ const tabs = [
   ['resources', '凭据与本机资源'],
   ['scripts', '脚本包'],
   ['appearance', '外观'],
+  ['cache', '缓存与调试文件'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 export type SettingsDestination = Tab;
@@ -377,6 +379,7 @@ export default function LocalSettingsPage({
       )}
       <div id="settings-content">
         {appearancePage && <AppearancePage />}
+        {tab === 'cache' && active && <CacheSettingsPanel openRuns={openRuns} />}
         {tab === 'browser' &&
           (!local ? (
             <div className="local-settings-layout local-browser-overview">

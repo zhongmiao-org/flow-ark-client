@@ -1,9 +1,10 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { embeddedHarness } from './fixtures/embedded-harness';
 
-const data = await mkdtemp('/private/tmp/flowark-pointer-');
+const data = await mkdtemp('flowark-pointer-');
 const hits: string[] = [];
 const server = createServer((request, response) => {
   const url = new URL(request.url!, 'http://fixture');
@@ -218,8 +219,11 @@ try {
     clearTimeout(timer);
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await mkdir('test-results', { recursive: true });
-    await writeFile('test-results/embedded-pointer.json', JSON.stringify(evidence, null, 2));
+    await mkdir(debugEvidenceRoot(), { recursive: true });
+    await writeFile(
+      `${debugEvidenceRoot()}/embedded-pointer.json`,
+      JSON.stringify(evidence, null, 2),
+    );
     console.log(JSON.stringify(evidence, null, 2));
   }
 }

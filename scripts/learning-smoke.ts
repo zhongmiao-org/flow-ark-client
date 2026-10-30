@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:http';
 import { build } from 'esbuild';
-import { cp, mkdir, mkdtemp, readFile, writeFile, access } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -13,11 +14,11 @@ import type { PlanningInput, PlanningResult, TaskDetail } from '../src/shared/pl
 
 // Renderer/Main/Host/Worker and local page are real. Provider HTTP and native
 // directory-dialog results are fixtures. Native OS interaction is a separate check.
-const data = await mkdtemp('/private/tmp/flowark-learning-ui-');
+const data = await mkdtemp('flowark-learning-ui-');
 const output = join(data, 'output');
 await mkdir(output);
-await mkdir('test-results/figma', { recursive: true });
-const appPath = await mkdtemp(resolve('test-results/learning-app-'));
+await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/learning-app-`));
 const title = '示例资料页 · 首次教学验证';
 const evidence: any = {
   passed: false,
@@ -292,7 +293,10 @@ try {
       assert.equal(layout.columns[0].y, 230);
     }
     evidence.layouts.push(layout);
-    await page!.screenshot({ path: `test-results/figma/learning-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/learning-${width}.png`,
+      scale: 'css',
+    });
   }
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 1080));
   await button('先跳过').click();
@@ -386,7 +390,10 @@ try {
       assert.equal(layout.columns[1].height, 710);
     }
     evidence.layouts.push(layout);
-    await page!.screenshot({ path: `test-results/figma/understanding-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/understanding-${width}.png`,
+      scale: 'css',
+    });
   }
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 1080));
   await page!.getByRole('radio', { name: '覆盖原文件', exact: true }).check();
@@ -493,7 +500,10 @@ try {
     'real preview completion',
   );
   await page!.getByText('已完成第一次学习 · 已找到并预览真实结果。', { exact: true }).waitFor();
-  await page!.screenshot({ path: 'test-results/figma/learning-completed.png', scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/learning-completed.png`,
+    scale: 'css',
+  });
   assert.equal(requests.length, 1);
   evidence.checks.push(
     'resume-same-task-reselect-stale-page-real-ai-fixture-adoption-confirmed-worker-run-authenticated-preview',
@@ -566,7 +576,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/learning-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/learning-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   await closeOwned().catch((error) => {
@@ -578,7 +588,10 @@ try {
   evidence.errors = errors;
   evidence.passed &&= !failure && evidence.closed;
   if (failure) evidence.failure = String(failure);
-  await writeFile('test-results/figma/learning-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/learning-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

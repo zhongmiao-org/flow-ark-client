@@ -139,6 +139,15 @@ export class Store {
         .all(kind) as any[]
     ).map((r) => this.open(r.payload));
   }
+  *cacheReferenceDocuments(): Generator<unknown> {
+    // Stream only on an explicit maintenance scan, without copying the database.
+    for (const row of this.db
+      .prepare(
+        "SELECT payload FROM documents WHERE kind NOT IN ('cache-cleanup','cache-registration')",
+      )
+      .iterate())
+      yield this.open(row.payload as string);
+  }
   remove(kind: string, id: string) {
     return this.atomic(() => {
       if (this.resultLedgers.observes(kind))

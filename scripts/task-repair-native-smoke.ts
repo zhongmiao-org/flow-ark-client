@@ -1,7 +1,8 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -14,9 +15,9 @@ import type { RepairInput, RepairPreview } from '../src/shared/task-repair';
 // Real Renderer IPC, Main picker, encrypted Host, provider adapter and Worker.
 // Only the provider HTTP endpoint is redirected inside an ignored private build.
 // This is not evidence of a real DeepSeek/OpenAI connection.
-const data = await mkdtemp('/private/tmp/flowark-repair-native-');
-await mkdir('test-results/figma', { recursive: true });
-const appPath = await mkdtemp(resolve('test-results/repair-native-app-'));
+const data = await mkdtemp('flowark-repair-native-');
+await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/repair-native-app-`));
 const output = join(data, 'output');
 await mkdir(output);
 const requests: PlanningInput[] = [];
@@ -181,7 +182,10 @@ const capture = async (kind: string) => {
     assert.equal(layout.overflow, false, `${kind} ${width}`);
     assert.equal(layout.rootOverflow, false, `${kind} root ${width}`);
     evidence.layouts.push({ kind, width, height, ...layout });
-    await page!.screenshot({ path: `test-results/figma/task-${kind}-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/task-${kind}-${width}.png`,
+      scale: 'css',
+    });
   }
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 960));
 };
@@ -490,7 +494,7 @@ try {
     evidence.error = String(failure);
   }
   await writeFile(
-    'test-results/figma/task-repair-native-summary.json',
+    `${debugEvidenceRoot()}/figma/task-repair-native-summary.json`,
     JSON.stringify(evidence, null, 2),
   );
   console.log(JSON.stringify(evidence, null, 2));

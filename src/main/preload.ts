@@ -4,6 +4,18 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'cache.locations',
+  'cache.location',
+  'cache.scan',
+  'cache.adopt',
+  'cache.preview',
+  'cache.clear',
+  'cache.status',
+  'cache.reveal',
+  'cache.root',
+  'attention.trash.list',
+  'attention.batch.preview',
+  'attention.batch.apply',
   'reduction.runPreview',
   'reduction.runPlan',
   'reduction.runConfirm',

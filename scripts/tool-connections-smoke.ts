@@ -1,14 +1,14 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import type { ElectronApplication, Page } from 'playwright-core';
 import electronPath from 'electron';
 import { desktopElectron, readDesktopMains } from './desktop-session.mjs';
 
-const data = await mkdtemp(join(tmpdir(), 'flowark-connection-ui-'));
+const data = await mkdtemp('flowark-connection-ui-');
 const secret = 'fictional-connection-ui-key';
 const control = { changed: false, stall: false };
 const calls: { method: string; authorized: boolean }[] = [];
@@ -153,7 +153,7 @@ async function layouts(name: string) {
     }
     evidence.layouts.push({ name, viewport: width, ...layout });
     await page!.screenshot({
-      path: `test-results/figma/tools-${name}-${width}.png`,
+      path: `${debugEvidenceRoot()}/figma/tools-${name}-${width}.png`,
       fullPage: true,
     });
   }
@@ -168,7 +168,7 @@ async function discover(key?: string) {
   await heading('检查发现的能力').waitFor();
 }
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await launch();
   assert.deepEqual(await call('tool.connection.list'), []);
   await layouts('catalog');
@@ -332,7 +332,10 @@ try {
   evidence.calls = calls;
   evidence.errors = errors;
   evidence.passed &&= !failure;
-  await writeFile('test-results/tool-connections.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/tool-connections.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(
     JSON.stringify({
       passed: evidence.passed,

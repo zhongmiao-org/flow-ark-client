@@ -1,10 +1,11 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
-const data = await mkdtemp('/private/tmp/flowark-editing-');
+const data = await mkdtemp('flowark-editing-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -188,8 +189,8 @@ try {
       );
     }),
   );
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/flow-editing.png' });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/flow-editing.png` });
   await button('逐步调试').click();
   let run: any;
   await wait(async () => {
@@ -236,8 +237,8 @@ try {
   evidence.runId = run.id;
   evidence.passed = true;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/flow-editing.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/flow-editing.json`, JSON.stringify(evidence, null, 2));
   await app.close();
   await lab.close();
   console.log(JSON.stringify(evidence));

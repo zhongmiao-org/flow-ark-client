@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Bootstrap, Run, Step } from '../src/shared/types';
 import { startFormLab } from './fixtures/platform-page';
@@ -10,8 +11,8 @@ import { formBrowser } from './fixtures/platform-flow';
 
 // Only native close and dialog responses are fault-injected in isolated processes.
 // Host/Worker execution, persistence, UI diagnostics and application quit are real.
-const data = await mkdtemp('/private/tmp/flowark-cleanup-ui-');
-const previewData = await mkdtemp('/private/tmp/flowark-cleanup-preview-');
+const data = await mkdtemp('flowark-cleanup-ui-');
+const previewData = await mkdtemp('flowark-cleanup-preview-');
 const lab = await startFormLab();
 const evidence: any = { passed: false, data, previewData, checks: [], runs: [] };
 let app: ElectronApplication | undefined;
@@ -307,6 +308,9 @@ try {
 } finally {
   if (app) await app.close().catch(() => {});
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/embedded-cleanup.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/embedded-cleanup.json`,
+    JSON.stringify(evidence, null, 2),
+  );
 }

@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Bootstrap, Run } from '../src/shared/types';
@@ -10,7 +11,7 @@ import type { Bootstrap, Run } from '../src/shared/types';
 // Real Electron menu/before-quit paths, host, Worker, queue and persistent records.
 // Only the native message box is replaced, to inspect its text and hold/release a response.
 // All records are created through normal IPC in an isolated data directory.
-const data = await mkdtemp('/private/tmp/flowark-quit-confirmation-');
+const data = await mkdtemp('flowark-quit-confirmation-');
 const evidence: any = {
   passed: false,
   data,
@@ -235,7 +236,10 @@ try {
       }
     }
   }
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/quit-confirmation.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/quit-confirmation.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }

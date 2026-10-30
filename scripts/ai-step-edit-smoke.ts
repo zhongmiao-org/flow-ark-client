@@ -1,9 +1,10 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import type { ChildProcess } from 'node:child_process';
 import type { Step } from '../src/shared/types';
 import { createServer, type ServerResponse } from 'node:http';
 import { build } from 'esbuild';
-import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
@@ -20,9 +21,9 @@ const evidence: any = {
   layouts: [],
   provider: 'local HTTP fixture',
 };
-const data = await mkdtemp('/private/tmp/flowark-ai-step-');
-await mkdir('test-results', { recursive: true });
-const appPath = await mkdtemp(resolve('test-results/ai-step-app-'));
+const data = await mkdtemp('flowark-ai-step-');
+await mkdir(debugEvidenceRoot(), { recursive: true });
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/ai-step-app-`));
 const requests: PlanningInput[] = [];
 let mode: 'clarify' | 'plan' | 'hold' | 'outside' = 'clarify';
 let value = '项目';
@@ -225,7 +226,7 @@ async function capture(name: string) {
   assert.equal(layout.overflow, false);
   assert.equal(layout.rootOverflow, false);
   evidence.layouts.push({ name, ...layout });
-  await page.screenshot({ path: `test-results/figma/ai-step-${name}.png`, scale: 'css' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/ai-step-${name}.png`, scale: 'css' });
 }
 async function review() {
   await page.getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek' }).check();
@@ -246,7 +247,7 @@ async function generate(status: string, label = '生成这一步的修改') {
   await wait(async () => (await detail()).task.status === status, 'unexpected generation state');
 }
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await launch();
   await size(1440, 1080);
   const record = await call('flow.create');
@@ -430,7 +431,9 @@ try {
 } catch (error) {
   failure = error;
   evidence.error = String(error);
-  await page?.screenshot({ path: 'test-results/figma/ai-step-failure.png' }).catch(() => {});
+  await page
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/ai-step-failure.png` })
+    .catch(() => {});
 } finally {
   try {
     await close();
@@ -443,7 +446,7 @@ try {
   await new Promise<void>((done) => server.close(() => done()));
   if (failure) evidence.passed = false;
   await writeFile(
-    'test-results/figma/ai-step-summary.json',
+    `${debugEvidenceRoot()}/figma/ai-step-summary.json`,
     JSON.stringify({ ...evidence, data }, null, 2),
   );
   console.log(JSON.stringify({ ...evidence, data }, null, 2));

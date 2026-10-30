@@ -1,10 +1,10 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
-const data = await mkdtemp(join(tmpdir(), 'flowark-desktop-'));
+const data = await mkdtemp('flowark-desktop-');
 const executable = process.env.FLOWARK_TEST_EXECUTABLE || electronPath;
 const args = process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')];
 const app = await electron.launch({
@@ -107,9 +107,9 @@ try {
   const result = await page.evaluate(() => window.flowark.request('bootstrap'));
   assert.equal(result.runs[0].state, 'SUCCEEDED', JSON.stringify(result.runs[0]));
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await page.screenshot({
-    path: 'test-results/desktop-home.png',
+    path: `${debugEvidenceRoot()}/desktop-home.png`,
     fullPage: true,
   });
   await page.getByRole('button', { name: '编辑 第一个流程' }).click();
@@ -151,7 +151,10 @@ try {
   await page.locator('.node-advanced summary').click();
   await page.locator('.node-advanced .code-input').fill(JSON.stringify(packageNode, null, 2));
   await page.getByRole('region', { name: '脚本本地依赖' }).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: 'test-results/script-packages-editor.png', fullPage: true });
+  await page.screenshot({
+    path: `${debugEvidenceRoot()}/script-packages-editor.png`,
+    fullPage: true,
+  });
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByRole('button', { name: '运行', exact: true }).click();
   const scriptDeadline = Date.now() + 20000;
@@ -179,7 +182,7 @@ try {
   await page.getByRole('button', { name: '我的流程', exact: true }).click();
   await page.getByRole('button', { name: '编辑 第一个流程' }).click();
   await page.screenshot({
-    path: 'test-results/desktop-editor.png',
+    path: `${debugEvidenceRoot()}/desktop-editor.png`,
     fullPage: true,
   });
   await page.getByRole('button', { name: '添加 Excel 表格', exact: true }).click();
@@ -195,7 +198,10 @@ try {
   assert.deepEqual(archiveNode.files, ['result.txt']);
   await page.getByRole('button', { name: '保存', exact: true }).click();
   assert.equal(await page.locator('.inspector').getByText(/招聘/).count(), 0);
-  await page.screenshot({ path: 'test-results/file-operations-editor.png', fullPage: true });
+  await page.screenshot({
+    path: `${debugEvidenceRoot()}/file-operations-editor.png`,
+    fullPage: true,
+  });
   const browserFlow = {
     formatVersion: '1.0',
     id: 'browser-frame-ui',
@@ -246,7 +252,10 @@ try {
   assert.equal(framedNode.version, 2);
   assert.deepEqual(framedNode.framePath, ['iframe#outer', 'iframe#inner']);
   assert.equal(framedNode.selector, '#receipt');
-  await page.screenshot({ path: 'test-results/browser-frame-editor.png', fullPage: true });
+  await page.screenshot({
+    path: `${debugEvidenceRoot()}/browser-frame-editor.png`,
+    fullPage: true,
+  });
   await page.getByLabel('操作', { exact: true }).selectOption('screenshot');
   assert.equal(await frameInput.count(), 0);
   assert.deepEqual(
@@ -268,7 +277,7 @@ try {
   assert.equal(formNode.version, 3);
   assert.deepEqual(formNode.value, ['ts', 'qa']);
   assert.deepEqual(formNode.framePath, ['iframe#outer', 'iframe#inner']);
-  await page.screenshot({ path: 'test-results/browser-form-editor.png', fullPage: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/browser-form-editor.png`, fullPage: true });
   await page.getByLabel('操作', { exact: true }).selectOption('check');
   await page.getByLabel('目标状态', { exact: true }).selectOption('false');
   assert.equal(
@@ -351,7 +360,7 @@ try {
   await page.getByText('成立', { exact: true }).waitFor();
   await page.getByText('否则', { exact: true }).waitFor();
   await assertOutputOnOutline('document');
-  await page.screenshot({ path: 'test-results/flowchart-branches.png', fullPage: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/flowchart-branches.png`, fullPage: true });
   await page.getByRole('button', { name: '保存', exact: true }).click();
   const persisted = await page.evaluate(() => window.flowark.request('bootstrap'));
   assert.deepEqual(
@@ -397,10 +406,10 @@ try {
   await page.getByText('下一项', { exact: true }).waitFor();
   await page.getByText('完成', { exact: true }).waitFor();
   await assertOutputOnOutline('workbook');
-  await page.screenshot({ path: 'test-results/flowchart-loop.png', fullPage: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/flowchart-loop.png`, fullPage: true });
   assert.deepEqual(errors, []);
   await writeFile(
-    'test-results/desktop.json',
+    `${debugEvidenceRoot()}/desktop.json`,
     JSON.stringify(
       {
         time: new Date().toISOString(),

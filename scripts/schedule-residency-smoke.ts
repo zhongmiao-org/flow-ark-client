@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { Store } from '../src/host/store';
@@ -12,7 +13,7 @@ import { formBrowser } from './fixtures/platform-flow';
 
 // Intentionally uses the production one-second timer and four real minute deadlines.
 // No direct Runtime.tick(), fake clock, daily profile, or external website is involved.
-const data = await mkdtemp('/private/tmp/flowark-schedule-residency-');
+const data = await mkdtemp('flowark-schedule-residency-');
 const lab = await startFormLab();
 const began = performance.now();
 const evidence: any = { passed: false, data, startedAt: new Date().toISOString(), checkpoints: [] };
@@ -317,7 +318,10 @@ try {
   }
   await lab.close();
   evidence.elapsedSeconds = Math.round((performance.now() - began) / 1000);
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/schedule-residency.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/schedule-residency.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }

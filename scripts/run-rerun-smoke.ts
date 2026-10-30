@@ -1,15 +1,16 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { FlowRecord, Run, Step } from '../src/shared/types';
 import { startFormLab } from './fixtures/platform-page';
 import { formBrowser } from './fixtures/platform-flow';
 
-const data = await mkdtemp('/private/tmp/flowark-rerun-ui-');
+const data = await mkdtemp('flowark-rerun-ui-');
 const lab = await startFormLab();
 const receipts: string[] = [];
 const receiver = createServer(async (request, response) => {
@@ -380,8 +381,8 @@ try {
       }),
     ),
   );
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/run-rerun.png' });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/run-rerun.png` });
   await button('取消重新运行').click();
   assert.equal(lab.state.attempts, 0);
   await app.close();
@@ -398,8 +399,8 @@ try {
   note('reopen-retains-all-relations-and-runs-with-no-replay');
   evidence.passed = true;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/run-rerun.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/run-rerun.json`, JSON.stringify(evidence, null, 2));
   await app.close();
   await lab.close();
   receiver.closeAllConnections();

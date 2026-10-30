@@ -1,7 +1,8 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { platform, release, tmpdir } from 'node:os';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { platform, release } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectBrowser } from '../src/adapters/browsers';
@@ -9,7 +10,7 @@ import { killOwnedTree } from '../src/host/processes';
 import { startFrameFixture } from './fixtures/frames';
 
 // Only fictional localhost data; all launches share a new dedicated test profile.
-const root = await mkdtemp(join(tmpdir(), 'flowark-browser-recovery-'));
+const root = await mkdtemp('flowark-browser-recovery-');
 const browser = await inspectBrowser(
   process.env.FLOWARK_CHROME_PATH ?? '/Applications/Google Chrome.app',
 );
@@ -82,9 +83,9 @@ try {
 const uploads = fixture.state.uploads.map((buffer) => buffer.toString());
 const passed =
   phases.every((phase) => phase.passed) && uploads.join('|') === [input, input].join('|');
-await mkdir(resolve('test-results'), { recursive: true });
+await mkdir(resolve(debugEvidenceRoot()), { recursive: true });
 await writeFile(
-  resolve('test-results/browser-recovery.json'),
+  resolve(`${debugEvidenceRoot()}/browser-recovery.json`),
   JSON.stringify(
     {
       at: new Date().toISOString(),
@@ -103,4 +104,7 @@ await writeFile(
     2,
   ),
 );
-assert.ok(passed, 'Chrome 上传/下载/关闭/重开回归失败，见 test-results/browser-recovery.json');
+assert.ok(
+  passed,
+  `Chrome 上传/下载/关闭/重开回归失败，见 ${debugEvidenceRoot()}/browser-recovery.json`,
+);

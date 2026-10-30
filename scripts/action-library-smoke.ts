@@ -1,10 +1,11 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const data = await mkdtemp('/private/tmp/flowark-action-library-');
+const data = await mkdtemp('flowark-action-library-');
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
   args: process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')],
@@ -94,12 +95,12 @@ try {
   assert.equal(await position.inputValue(), 'main');
   assert.equal(await page.locator('.action-list button').count(), 21);
   assert.equal((await state()).runs.length, 0);
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/action-library.png' });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/action-library.png` });
   evidence.passed = true;
   console.log(JSON.stringify(evidence));
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/action-library.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/action-library.json`, JSON.stringify(evidence, null, 2));
   await app.close();
 }
