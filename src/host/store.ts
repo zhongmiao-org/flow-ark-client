@@ -34,6 +34,7 @@ export class Store {
   private writeGeneration = 0;
   private cacheReferenceGeneration = 0;
   private flowCatalogCache?: { externalVersion: number; rows: unknown[] };
+  private attentionKeyIndex?: { externalVersion: number; ids: Map<string, string> };
   get cacheReferenceRevision() {
     const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
     return `${this.cacheReferenceGeneration}:${external.data_version}`;
@@ -116,6 +117,7 @@ export class Store {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
       if (kind === 'flow') this.flowCatalogCache = undefined;
+      if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       // Match the actual protected JSON row; optional undefined headers are not persisted.
       const stored = JSON.parse(JSON.stringify(value));
@@ -180,6 +182,7 @@ export class Store {
   remove(kind: string, id: string) {
     return this.atomic(() => {
       if (kind === 'flow') this.flowCatalogCache = undefined;
+      if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
@@ -327,6 +330,50 @@ export class Store {
       'unknown:' + effect.id,
     );
   }
+  private attentionWithKey(key: string): any {
+    // A rolled-back write must never become the source for a later dedupe decision.
+    if (this.inTransaction) return this.list<any>('attention').find((a) => a.dedupeKey === key);
+    const externalVersion = () =>
+      (this.db.prepare('PRAGMA data_version').get() as { data_version: number }).data_version;
+    const before = externalVersion();
+    if (this.attentionKeyIndex?.externalVersion === before) {
+      const id = this.attentionKeyIndex.ids.get(key);
+      if (id === undefined) return undefined;
+      const item = this.get<any>('attention', id);
+      if (item?.dedupeKey === key) return item;
+    }
+    this.attentionKeyIndex = undefined;
+    const documents = this.db
+        .prepare('SELECT id,payload FROM documents WHERE kind=? ORDER BY rowid')
+        .all('attention') as { id: string; payload: string }[],
+      rows = documents.map((row) => this.open(row.payload)),
+      ids = new Map<string, string>();
+    let bytes = 0,
+      reusable = true;
+    for (const [position, row] of rows.entries()) {
+      if (
+        typeof row.dedupeKey !== 'string' ||
+        typeof row.id !== 'string' ||
+        !row.id ||
+        row.id !== documents[position].id
+      ) {
+        reusable = false;
+        break;
+      }
+      // list() preserves rowid order, including reminders currently in the recycle bin.
+      if (!ids.has(row.dedupeKey)) {
+        ids.set(row.dedupeKey, row.id);
+        bytes += Buffer.byteLength(row.dedupeKey, 'utf8') + Buffer.byteLength(row.id, 'utf8');
+        if (bytes > 4 * 1024 * 1024) {
+          reusable = false;
+          break;
+        }
+      }
+    }
+    if (reusable && externalVersion() === before)
+      this.attentionKeyIndex = { externalVersion: before, ids };
+    return rows.find((a) => a.dedupeKey === key);
+  }
   attention(
     kind: string,
     title: string,
@@ -336,7 +383,7 @@ export class Store {
   ) {
     if (kind === 'template' && !isTemplateAttentionOrigin(origin))
       throw new Error('模板提醒缺少有效宿主来源');
-    const old = this.list<any>('attention').find((a) => a.dedupeKey === key);
+    const old = this.attentionWithKey(key);
     if (old) return old;
     const item = {
       id: crypto.randomUUID(),
