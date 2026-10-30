@@ -34,7 +34,8 @@ export class Store {
   private writeGeneration = 0;
   private cacheReferenceGeneration = 0;
   get cacheReferenceRevision() {
-    return this.cacheReferenceGeneration;
+    const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
+    return `${this.cacheReferenceGeneration}:${external.data_version}`;
   }
   readonly resultLedgers: RunResultLedgerStore;
   fault?: string;

@@ -302,6 +302,26 @@ export default function CacheSettingsPanel({ openRuns }: { openRuns: () => void 
             setHistory((previous) => [result, ...previous.filter((r) => r.id !== result.id)]);
             setPreview(undefined);
             setSelected([]);
+            setScan((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    items: previous.items
+                      .filter(
+                        (item) =>
+                          !result.results.some(
+                            (r: CacheResult['results'][number]) =>
+                              r.id === item.id && r.status === 'success',
+                          ),
+                      )
+                      .map((item) =>
+                        result.results.some((r: CacheResult['results'][number]) => r.id === item.id)
+                          ? { ...item, status: 'blocked', reason: '请重新扫描核对剩余文件' }
+                          : item,
+                      ),
+                  }
+                : previous,
+            );
           })
         }
       >

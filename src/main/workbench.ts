@@ -26,6 +26,8 @@ import { randomUUID } from 'node:crypto';
 import { templateFilename, zipExportPath } from '../shared/template-filename';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
+import { mkdirSync } from 'node:fs';
+import { debugMkdtempSync } from '../host/debug-files.mjs';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
 import { LocalCredentials } from './local-credentials';
@@ -68,7 +70,23 @@ function notifyBrowserLifecycle(
   else void rpc.call(method, notice, 8000).catch(unavailable);
 }
 if (process.env.FLOWARK_DATA_DIR) app.setPath('userData', process.env.FLOWARK_DATA_DIR);
-if (!app.requestSingleInstanceLock()) app.quit();
+const instanceLock = app.requestSingleInstanceLock();
+if (!instanceLock) app.quit();
+if (instanceLock) {
+  try {
+    const diagnostics = debugMkdtempSync('flowark-app-diagnostics-', {
+      category: 'log',
+      purpose: '应用会话诊断与崩溃文件',
+    });
+    const crashes = join(diagnostics, 'crashes');
+    mkdirSync(crashes, { mode: 0o700 });
+    app.setPath('crashDumps', crashes);
+  } catch {
+    // Diagnostics are optional. Never turn a location/permission failure into
+    // an uncaught main-process exception or redirect them into a cloud folder.
+    console.error('本机调试目录不可用，请在缓存与调试文件中核对位置和权限。');
+  }
+}
 app.on('second-instance', () => {
   win?.show();
   win?.focus();

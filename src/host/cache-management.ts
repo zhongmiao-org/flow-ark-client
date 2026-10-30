@@ -69,6 +69,7 @@ export class CacheManagement {
     { value: CachePreview; entries: Scanned[]; expires: number }
   >();
   private clearing = false;
+  private referenceCache?: { revision: string; paths: string[]; hashes: Set<string> };
   get compilationLocked() {
     return this.clearing;
   }
@@ -96,22 +97,32 @@ export class CacheManagement {
   }
   private async references() {
     const generation = this.store.cacheReferenceRevision;
-    const paths = new Set<string>([await realpath(this.dataPath)]),
-      hashes = new Set<string>();
-    for (const path of this.inMemoryReferences()) paths.add(path);
-    const visit = (value: unknown) => {
-      if (typeof value === 'string') {
-        if (/^[a-f0-9]{64}$/.test(value)) hashes.add(value);
-        else if (value.startsWith('/') && value.length < 4096 && !value.includes('\n'))
-          paths.add(resolve(value));
-      } else if (Array.isArray(value)) value.forEach(visit);
-      else if (value && typeof value === 'object') Object.values(value).forEach(visit);
-    };
-    let count = 0;
-    for (const record of this.store.cacheReferenceDocuments()) {
-      visit(record);
-      if (++count % 200 === 0) await setImmediate();
+    let cached = this.referenceCache;
+    if (!cached || cached.revision !== generation) {
+      const paths = new Set<string>([this.dataPath]),
+        hashes = new Set<string>();
+      const visit = (value: unknown) => {
+        if (typeof value === 'string') {
+          if (/^[a-f0-9]{64}$/.test(value)) hashes.add(value);
+          else if (value.startsWith('/') && value.length < 4096 && !value.includes('\n'))
+            paths.add(resolve(value));
+        } else if (Array.isArray(value)) value.forEach(visit);
+        else if (value && typeof value === 'object') Object.values(value).forEach(visit);
+      };
+      let count = 0;
+      for (const record of this.store.cacheReferenceDocuments()) {
+        visit(record);
+        if (++count % 200 === 0) await setImmediate();
+      }
+      if (generation !== this.store.cacheReferenceRevision)
+        throw new Error('引用在核对期间发生变化，请重新扫描');
+      cached = { revision: generation, paths: [...paths], hashes };
+      this.referenceCache = cached;
     }
+    // Re-resolve live filesystem aliases even when the protected document set
+    // is unchanged; a moved binding must not reuse its previous real path.
+    const paths = new Set([...cached.paths, ...this.inMemoryReferences()]),
+      hashes = cached.hashes;
     for (const p of [...paths]) {
       try {
         paths.add(await realpath(p));
@@ -252,6 +263,7 @@ export class CacheManagement {
         };
         let list: Entry[] = [],
           ownerPid: number | undefined;
+        let registeredSource = false;
         try {
           const rootStat = await stat(path);
           if (rootStat.isSymbolicLink()) throw new Error('根项目是符号链接，已阻止清理');
@@ -293,7 +305,8 @@ export class CacheManagement {
               typeof registered.purpose === 'string' &&
               Number.isSafeInteger(registered.ownerPid)
             ) {
-              ownerPid = registered.ownerPid;
+              registeredSource = true;
+              ownerPid = registered.status === 'active' ? registered.ownerPid : undefined;
               item.category = ['temporary', 'log', 'profile', 'test-copy'].includes(
                 registered.category,
               )
@@ -302,7 +315,7 @@ export class CacheManagement {
               item.purpose = registered.purpose;
               item.status = 'ready';
               item.reason = '用途已登记；执行前复核占用';
-              if (alive(ownerPid!)) {
+              if (ownerPid && alive(ownerPid)) {
                 item.status = 'active';
                 item.reason = '登记的所属进程仍活动';
               }
@@ -321,7 +334,7 @@ export class CacheManagement {
             item.status = 'protected';
             item.reason = '未登记目录中含有导出文件或备份，不能作为缓存清理';
           }
-          if (item.status === 'ready' && !ownerPid && !origin.compiled) {
+          if (item.status === 'ready' && !registeredSource && !origin.compiled) {
             const adopted = this.store.get<{ signature: string }>('cache-registration', id);
             if (adopted?.signature !== digest(list)) {
               item.status = 'unverified';
@@ -490,6 +503,13 @@ export class CacheManagement {
           row.reason = errorText(e);
         }
         this.store.put('cache-cleanup', token, result);
+        for (const saved of this.scans.values()) {
+          const attempted = saved.entries.get(row.id);
+          if (attempted) {
+            attempted.item.status = 'blocked';
+            attempted.item.reason = '此项目已执行清理，请重新扫描核对剩余文件';
+          }
+        }
       }
       result.state = 'completed';
       this.store.put('cache-cleanup', token, result);
