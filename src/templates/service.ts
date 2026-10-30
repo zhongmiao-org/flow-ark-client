@@ -69,6 +69,18 @@ function actionConfirmation(pkg: PackageData, entry: Entry, id: string) {
 
 export class Templates {
   readonly library: PackageLibrary;
+  private sourceOwnerCache = new Map<
+    string,
+    {
+      stamp: string;
+      value: {
+        revision: string;
+        fingerprint: string;
+        resources: TemplateInstance['resources'];
+        sourceIds: string[];
+      };
+    }
+  >();
   private mutations: Promise<unknown> = Promise.resolve();
   private exclusive<T>(fn: () => Promise<T>): Promise<T> {
     const next = this.mutations.then(fn);
@@ -504,10 +516,18 @@ export class Templates {
     return { instance, records, revision };
   }
   sourceOwner(id: string) {
+    const stamp = this.store.templateSourceRevision;
+    const cached = this.store.inTransaction ? undefined : this.sourceOwnerCache.get(id);
+    if (cached?.stamp === stamp) {
+      this.sourceOwnerCache.delete(id);
+      this.sourceOwnerCache.set(id, cached);
+      return structuredClone(cached.value);
+    }
+    if (!this.store.inTransaction) this.sourceOwnerCache.delete(id);
     const { instance, revision } = this.snapshot(id);
     const pkg = this.store.get<InstalledPackage>('template-package', instance.packageKey);
     if (!pkg) throw Error('实例模板来源不存在');
-    return {
+    const value = {
       revision,
       fingerprint: revision,
       resources: instance.resources,
@@ -515,6 +535,20 @@ export class Templates {
         .filter((r) => r.kind === 'conversation-source' && r.access === 'read')
         .map((r) => r.id),
     };
+    // The original full-source digest is reused only while every contributing
+    // record kind and the external SQLite generation are unchanged. Authority
+    // checks still execute; uncommitted data is never retained here.
+    if (
+      !this.store.inTransaction &&
+      this.store.templateSourceRevision === stamp &&
+      Buffer.byteLength(JSON.stringify(value), 'utf8') <= 64 * 1024
+    ) {
+      if (this.sourceOwnerCache.size >= 8)
+        this.sourceOwnerCache.delete(this.sourceOwnerCache.keys().next().value!);
+      this.sourceOwnerCache.set(id, { stamp, value });
+      return structuredClone(value);
+    }
+    return value;
   }
   assertSource(flowId: string, source: TemplateSource) {
     const { instance, records, revision } = this.snapshot(source.instanceId);
