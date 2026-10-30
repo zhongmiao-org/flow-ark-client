@@ -119,9 +119,19 @@ export class CacheManagement {
         /* Keep the configured path protected even while absent. */
       }
     }
+    // A generic OS temporary root is a capability scope, not proof that every
+    // unrelated diagnostic child belongs to a business record. Exact file and
+    // more specific directory references remain protected; other old children
+    // still require explicit source/purpose review before they can be selected.
+    const temporaryRoots = new Set<string>();
+    for (const p of ['/private/tmp', tmpdir()]) {
+      try {
+        temporaryRoots.add(await realpath(p));
+      } catch {}
+    }
     if (generation !== this.store.cacheReferenceRevision)
       throw new Error('引用在核对期间发生变化，请重新扫描');
-    return { paths: [...paths], hashes };
+    return { paths: [...paths].filter((p) => !temporaryRoots.has(p)), hashes };
   }
   private async usage(): Promise<{ paths: string[]; error?: string }> {
     if (process.platform !== 'darwin')

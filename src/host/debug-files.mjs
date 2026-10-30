@@ -15,12 +15,23 @@ import {
   writeSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 export const debugConfigPath =
-  process.env.FLOWARK_DEBUG_CONFIG || join(homedir(), 'Documents', 'FlowArk', '调试文件位置.json');
-export const defaultDebugRoot = join(homedir(), 'Documents', 'FlowArk', '调试文件');
+  process.env.FLOWARK_DEBUG_CONFIG || join(homedir(), 'FlowArk', '调试文件位置.json');
+export const defaultDebugRoot = join(homedir(), 'FlowArk', '调试文件');
+function localDebugPath(path) {
+  path = resolve(path);
+  const home = resolve(homedir());
+  const cloud = ['Documents', 'Desktop', 'Library/Mobile Documents', 'Library/CloudStorage'];
+  if (
+    !path.startsWith(home + sep) ||
+    cloud.some((p) => path === join(home, p) || path.startsWith(join(home, p) + sep))
+  )
+    throw new Error('调试文件请放在用户主目录的本机文件夹中，不使用文稿、桌面或 iCloud 目录');
+  return path;
+}
 export function checkedDirectory(path, create = false) {
   path = resolve(path);
   if (create) mkdirSync(path, { recursive: true, mode: 0o700 });
@@ -40,14 +51,22 @@ export function debugLocations() {
       typeof v.current !== 'string'
     )
       throw new Error('调试位置配置无效');
-    return v;
+    let current;
+    try {
+      current = localDebugPath(v.current);
+    } catch {
+      current = defaultDebugRoot;
+    }
+    // Prior locations remain read-only scan sources; no further debug output
+    // is created in a cloud-backed or out-of-home folder.
+    return { ...v, current, roots: [...new Set([...v.roots, current])] };
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
     return { version: 1, current: defaultDebugRoot, roots: [defaultDebugRoot] };
   }
 }
 export function setDebugLocation(path) {
-  const current = checkedDirectory(path, true);
+  const current = checkedDirectory(localDebugPath(path), true);
   const old = debugLocations();
   const next = { version: 1, current, roots: [...new Set([...old.roots, current])] };
   checkedDirectory(dirname(debugConfigPath), true);
@@ -58,7 +77,7 @@ export function setDebugLocation(path) {
 }
 export function debugRoot() {
   const root = process.env.FLOWARK_DEBUG_ROOT || debugLocations().current;
-  return checkedDirectory(root, true);
+  return checkedDirectory(localDebugPath(root), true);
 }
 export function debugMkdtempSync(prefix, options = {}) {
   const path = mkdtempSync(
