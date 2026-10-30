@@ -33,6 +33,7 @@ export class Store {
   private transactionDepth = 0;
   private writeGeneration = 0;
   private cacheReferenceGeneration = 0;
+  private templateSourceGeneration = 0;
   private flowCatalogCache?: { externalVersion: number; rows: unknown[] };
   private attentionKeyIndex?: { externalVersion: number; ids: Map<string, string> };
   private protectedRows = new Map<string, { payload: string; value: unknown; weight: number }>();
@@ -41,6 +42,10 @@ export class Store {
     const row = this.protectedRows.get(key);
     if (row) this.protectedRowsWeight -= row.weight;
     this.protectedRows.delete(key);
+  }
+  get templateSourceRevision() {
+    const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
+    return `${this.templateSourceGeneration}:${external.data_version}`;
   }
   get cacheReferenceRevision() {
     const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
@@ -124,6 +129,8 @@ export class Store {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
       this.dropProtectedRow(`${kind}\0${id}`);
+      if (['flow', 'template-instance', 'template-package'].includes(kind))
+        this.templateSourceGeneration++;
       if (kind === 'flow') this.flowCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
@@ -216,6 +223,8 @@ export class Store {
   remove(kind: string, id: string) {
     return this.atomic(() => {
       this.dropProtectedRow(`${kind}\0${id}`);
+      if (['flow', 'template-instance', 'template-package'].includes(kind))
+        this.templateSourceGeneration++;
       if (kind === 'flow') this.flowCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
