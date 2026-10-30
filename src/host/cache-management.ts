@@ -95,6 +95,7 @@ export class CacheManagement {
     return setDebugLocation(next);
   }
   private async references() {
+    const generation = this.store.cacheReferenceRevision;
     const paths = new Set<string>([await realpath(this.dataPath)]),
       hashes = new Set<string>();
     for (const path of this.inMemoryReferences()) paths.add(path);
@@ -118,6 +119,8 @@ export class CacheManagement {
         /* Keep the configured path protected even while absent. */
       }
     }
+    if (generation !== this.store.cacheReferenceRevision)
+      throw new Error('引用在核对期间发生变化，请重新扫描');
     return { paths: [...paths], hashes };
   }
   private async usage(): Promise<{ paths: string[]; error?: string }> {
@@ -126,7 +129,7 @@ export class CacheManagement {
     try {
       const { stdout } = await promisify(execFile)(
         '/usr/sbin/lsof',
-        ['-Fpn', '-a', '-u', String(process.getuid!())],
+        ['-nP', '-Fpn', '-a', '-u', String(process.getuid!()), '-S', '2'],
         { timeout: 15000, maxBuffer: 32 * 1024 * 1024 },
       );
       return {
@@ -414,9 +417,14 @@ export class CacheManagement {
     const result: CacheResult = { id: token, state: 'pending', results: [] };
     try {
       this.store.put('cache-cleanup', token, result);
+      let refs = await this.references(),
+        referenceRevision = this.store.cacheReferenceRevision;
       for (const entry of preview.entries) {
-        const refs = await this.references(),
-          usage = await this.usage();
+        if (referenceRevision !== this.store.cacheReferenceRevision) {
+          refs = await this.references();
+          referenceRevision = this.store.cacheReferenceRevision;
+        }
+        const usage = await this.usage();
         const row: CacheResult['results'][number] = {
           id: entry.item.id,
           path: entry.item.path,

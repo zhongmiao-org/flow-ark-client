@@ -264,6 +264,9 @@ export default function CacheSettingsPanel({ openRuns }: { openRuns: () => void 
                 },
               ]}
             />
+            <Button disabled={!!busy || !selected.length} onClick={() => setSelected([])}>
+              清空选择
+            </Button>
             <Button
               danger
               disabled={!!busy || !selected.length}

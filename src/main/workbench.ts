@@ -325,6 +325,8 @@ app
         }
         await ready;
         if (startupError) throw new Error(startupError);
+        if (method === 'cache.scan' || method === 'cache.clear')
+          return rpc.call(method, args, 300000);
         if (method === 'cache.location') {
           const picked = await dialog.showOpenDialog(win, {
             title: '选择调试文件存放位置（将在其中创建 FlowArk调试文件）',

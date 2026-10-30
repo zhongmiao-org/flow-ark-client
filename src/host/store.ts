@@ -32,6 +32,10 @@ export class Store {
   private key: Buffer;
   private transactionDepth = 0;
   private writeGeneration = 0;
+  private cacheReferenceGeneration = 0;
+  get cacheReferenceRevision() {
+    return this.cacheReferenceGeneration;
+  }
   readonly resultLedgers: RunResultLedgerStore;
   fault?: string;
   constructor(path: string, key: Buffer) {
@@ -109,6 +113,7 @@ export class Store {
   put(kind: string, id: string, value: any) {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
+      if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       // Match the actual protected JSON row; optional undefined headers are not persisted.
       const stored = JSON.parse(JSON.stringify(value));
       if (this.resultLedgers.observes(kind))
@@ -150,6 +155,7 @@ export class Store {
   }
   remove(kind: string, id: string) {
     return this.atomic(() => {
+      if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
       this.writeGeneration++;
