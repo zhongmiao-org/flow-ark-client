@@ -1103,7 +1103,7 @@ export class Runtime {
     const runs = this.store.list<Run>('run').reverse();
     return {
       flows: this.store
-        .list<FlowRecord>('flow')
+        .flowCatalog<FlowRecord>()
         .map((r) => ({ ...r, bindings: normalizeBindings(r.bindings) })),
       runs: runs.slice(0, 200),
       runOverview: runOverview(runs),
