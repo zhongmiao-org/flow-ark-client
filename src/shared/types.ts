@@ -106,6 +106,7 @@ export type Attention = {
   detail: any;
   dedupeKey: string;
   read: boolean;
+  deletedAt?: string;
   time: string;
   origin?: TemplateAttentionOrigin;
 };

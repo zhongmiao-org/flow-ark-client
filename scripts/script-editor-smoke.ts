@@ -1,12 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { ChildProcess } from 'node:child_process';
 import type { FlowRecord } from '../src/shared/types';
 
-const data = await mkdtemp('/private/tmp/flowark-script-editor-');
+const data = await mkdtemp('flowark-script-editor-');
 const evidence: any = { passed: false, closed: false, data, checks: [], layouts: [] };
 let app: ElectronApplication | undefined, page: Page | undefined, failure: unknown;
 let ownedProcess: ChildProcess | undefined;
@@ -56,10 +57,13 @@ const capture = async (width: number, height: number) => {
   assert.equal(layout.overflow, false);
   assert.equal(layout.rootOverflow, false);
   evidence.layouts.push(layout);
-  await page!.screenshot({ path: `test-results/figma/script-${width}.png`, scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/script-${width}.png`,
+    scale: 'css',
+  });
 };
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   app = await electron.launch({
     executablePath: electronPath as unknown as string,
     args: ['.'],
@@ -233,7 +237,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/script-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/script-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   const cleanupTimer = setTimeout(() => {
@@ -293,7 +297,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/script-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/script-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

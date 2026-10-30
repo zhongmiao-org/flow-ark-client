@@ -1,11 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
 
-const data = await mkdtemp('/private/tmp/flowark-figma-editor-');
+const data = await mkdtemp('flowark-figma-editor-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -103,7 +104,7 @@ const capture = async (name: string) => {
   }, name);
   evidence.layouts.push({ name, ...(await inspect()) });
   await page.mouse.move(0, 0);
-  await page.screenshot({ path: `test-results/figma/editor-${name}.png`, scale: 'css' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/editor-${name}.png`, scale: 'css' });
 };
 try {
   await page.getByRole('heading', { name: '你想完成什么？' }).waitFor();
@@ -115,7 +116,7 @@ try {
   await page.evaluate(() => {
     document.querySelector('.window-titlebar')!.textContent = 'FlowArk · 编排隔离测试（自动退出）';
   });
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1920, 1080));
   await call('browser.embedded.enable');
   const browser = (await call('bootstrap')).browsers.find((b: any) => b.product === 'embedded');
@@ -298,8 +299,11 @@ try {
     if (testProcess.exitCode === null && testProcess.signalCode === null)
       testProcess.kill('SIGKILL');
     await lab.close();
-    await mkdir('test-results/figma', { recursive: true });
-    await writeFile('test-results/figma/editor-summary.json', JSON.stringify(evidence, null, 2));
+    await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+    await writeFile(
+      `${debugEvidenceRoot()}/figma/editor-summary.json`,
+      JSON.stringify(evidence, null, 2),
+    );
     console.log(
       JSON.stringify({
         passed: evidence.passed,

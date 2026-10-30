@@ -413,7 +413,10 @@ try {
   process.exit(1);
 }
 app.setName('flow-ark-client');
-const control = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'flowark-prune-'));
+const control = require('../../src/host/debug-files.mjs').debugMkdtempSync('flowark-prune-', {
+  retained: false,
+  purpose: '离线维护控制临时目录',
+});
 fs.chmodSync(control, 0o700);
 app.setPath('userData', control);
 app

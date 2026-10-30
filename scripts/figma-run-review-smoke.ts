@@ -1,13 +1,14 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import type { Flow, FlowRecord, Run } from '../src/shared/types';
 
-const data = await mkdtemp('/private/tmp/flowark-review-ui-'),
+const data = await mkdtemp('flowark-review-ui-'),
   files = join(data, 'files');
 await mkdir(files);
 const server = createServer((_req, response) => {
@@ -78,10 +79,13 @@ async function capture(width: number, height: number) {
   assert.equal(layout.rootOverflow, false);
   assert.equal(layout.cards, 5);
   evidence.layouts.push(layout);
-  await page!.screenshot({ path: `test-results/figma/run-review-${width}.png`, scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/run-review-${width}.png`,
+    scale: 'css',
+  });
 }
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   assert.equal(app, undefined);
   app = await electron.launch({
     executablePath: electronPath as unknown as string,
@@ -330,7 +334,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/run-review-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/run-review-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   try {
@@ -374,7 +378,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/run-review-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/run-review-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

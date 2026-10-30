@@ -26,6 +26,8 @@ import { randomUUID } from 'node:crypto';
 import { templateFilename, zipExportPath } from '../shared/template-filename';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
+import { mkdirSync } from 'node:fs';
+import { debugMkdtempSync } from '../host/debug-files.mjs';
 import { Rpc } from '../shared/rpc';
 import { Vault } from './vault';
 import { LocalCredentials } from './local-credentials';
@@ -68,7 +70,23 @@ function notifyBrowserLifecycle(
   else void rpc.call(method, notice, 8000).catch(unavailable);
 }
 if (process.env.FLOWARK_DATA_DIR) app.setPath('userData', process.env.FLOWARK_DATA_DIR);
-if (!app.requestSingleInstanceLock()) app.quit();
+const instanceLock = app.requestSingleInstanceLock();
+if (!instanceLock) app.quit();
+if (instanceLock) {
+  try {
+    const diagnostics = debugMkdtempSync('flowark-app-diagnostics-', {
+      category: 'log',
+      purpose: '应用会话诊断与崩溃文件',
+    });
+    const crashes = join(diagnostics, 'crashes');
+    mkdirSync(crashes, { mode: 0o700 });
+    app.setPath('crashDumps', crashes);
+  } catch {
+    // Diagnostics are optional. Never turn a location/permission failure into
+    // an uncaught main-process exception or redirect them into a cloud folder.
+    console.error('本机调试目录不可用，请在缓存与调试文件中核对位置和权限。');
+  }
+}
 app.on('second-instance', () => {
   win?.show();
   win?.focus();
@@ -325,6 +343,25 @@ app
         }
         await ready;
         if (startupError) throw new Error(startupError);
+        if (method === 'cache.scan' || method === 'cache.clear')
+          return rpc.call(method, args, 300000);
+        if (method === 'cache.location') {
+          const picked = await dialog.showOpenDialog(win, {
+            title: '选择调试文件存放位置（将在其中创建 FlowArk调试文件）',
+            properties: ['openDirectory', 'createDirectory'],
+          });
+          if (picked.canceled || !picked.filePaths[0]) return null;
+          return rpc.call(method, { path: join(picked.filePaths[0], 'FlowArk调试文件') });
+        }
+        if (method === 'cache.reveal' || method === 'cache.root') {
+          const path = await rpc.call(method, args);
+          if (method === 'cache.reveal') shell.showItemInFolder(path);
+          else {
+            const error = await shell.openPath(path);
+            if (error) throw new Error(error);
+          }
+          return true;
+        }
         if (method === 'artifact.reveal') {
           const path = await rpc.call('artifact.resolve', args);
           shell.showItemInFolder(path);
@@ -463,12 +500,13 @@ app
           async (method, args) => {
             if (method === 'conversation.message') {
               const event =
-                args?.job && args?.checkpoint ? (assertReductionOutput(args), args) :
-                args?.kind === 'conversation.archive.snapshot'
-                  ? archiveEvent(args)
-                  : args?.kind === 'conversation.thread.snapshot'
-                    ? threadEvent(args)
-                    : conversationEvent(args);
+                args?.job && args?.checkpoint
+                  ? (assertReductionOutput(args), args)
+                  : args?.kind === 'conversation.archive.snapshot'
+                    ? archiveEvent(args)
+                    : args?.kind === 'conversation.thread.snapshot'
+                      ? threadEvent(args)
+                      : conversationEvent(args);
               if (win && !win.isDestroyed() && !win.webContents.isDestroyed())
                 win.webContents.send('flowark:conversation', event);
               return true;

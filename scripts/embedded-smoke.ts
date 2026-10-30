@@ -1,13 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
 import { formLabFlow, formBrowser, formText, formExpected } from './fixtures/platform-flow';
 
-const data = await mkdtemp(join(tmpdir(), 'flowark-embedded-desktop-'));
+const data = await mkdtemp('flowark-embedded-desktop-');
 const lab = await startFormLab();
 await writeFile(join(data, 'fictional.txt'), formText);
 const app = await electron.launch({
@@ -65,12 +65,12 @@ try {
   );
   await page.waitForTimeout(500);
   assert.ok((await call('browser.embedded.status')).url.startsWith(lab.url));
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   const panelImage = await app.evaluate(async ({ BrowserWindow }) =>
     (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
   );
-  await writeFile('test-results/embedded-panel.png', Buffer.from(panelImage, 'base64'));
-  evidence.screenshots.push('test-results/embedded-panel.png');
+  await writeFile(`${debugEvidenceRoot()}/embedded-panel.png`, Buffer.from(panelImage, 'base64'));
+  evidence.screenshots.push(`${debugEvidenceRoot()}/embedded-panel.png`);
   const browser = (await call('bootstrap')).browsers.find((b: any) => b.product === 'embedded');
   assert.equal(browser.product, 'embedded');
   const record = await call('flow.create');
@@ -160,8 +160,8 @@ try {
     JSON.stringify(formExpected.fullName),
   );
   assert.equal(lab.state.attempts, 0);
-  await mkdir('test-results', { recursive: true });
-  const pausedShot = 'test-results/embedded-paused.png';
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  const pausedShot = `${debugEvidenceRoot()}/embedded-paused.png`;
   await page.screenshot({ path: pausedShot, fullPage: true });
   evidence.screenshots.push(pausedShot);
   await page.getByRole('button', { name: '继续', exact: true }).click();
@@ -328,7 +328,10 @@ try {
   clearTimeout(timer);
   evidence.exit = status;
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/embedded-desktop.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/embedded-desktop.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   assert.deepEqual(status, { code: 0, signal: null });
 }

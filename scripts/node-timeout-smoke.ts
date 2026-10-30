@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Run, Step } from '../src/shared/types';
@@ -11,7 +12,7 @@ import { formBrowser } from './fixtures/platform-flow';
 
 // Actual host/Worker deadlines and embedded form actions; no clocks, states, or browser
 // results are mocked. The isolated app contains only fictional flows and localhost pages.
-const data = await mkdtemp('/private/tmp/flowark-node-timeout-ui-');
+const data = await mkdtemp('flowark-node-timeout-ui-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -241,9 +242,9 @@ try {
   const row = page.getByRole('row').filter({ hasText: evidence.runs[0].id.slice(0, 8) });
   await row.getByRole('button', { name: '查看', exact: true }).click();
   await page.locator('.alert.error').filter({ hasText: 'wait（1500 毫秒）' }).waitFor();
-  await mkdir('test-results', { recursive: true });
-  await page.screenshot({ path: 'test-results/node-timeout-history.png' });
-  evidence.historyScreenshot = 'test-results/node-timeout-history.png';
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/node-timeout-history.png` });
+  evidence.historyScreenshot = `${debugEvidenceRoot()}/node-timeout-history.png`;
   assert.equal(lab.state.attempts, 0);
   evidence.passed = true;
 } catch (error) {
@@ -284,8 +285,8 @@ try {
     clearTimeout(timeout);
   }
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/node-timeout.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/node-timeout.json`, JSON.stringify(evidence, null, 2));
   console.log(JSON.stringify(evidence));
   assert.deepEqual(evidence.exit, { code: 0, signal: null });
 }

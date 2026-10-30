@@ -838,6 +838,9 @@ export class Templates {
     check();
     return check;
   }
+  waitingForAnswer(id: string) {
+    return this.questions.has(id);
+  }
   async answer(id: string, value: any) {
     const pending = this.questions.get(id);
     if (!pending) throw new Error('该人工请求已失效');

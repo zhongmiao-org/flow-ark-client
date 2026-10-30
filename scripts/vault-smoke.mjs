@@ -1,12 +1,12 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import { desktopElectron as _electron } from './desktop-session.mjs';
 import { killOwnedTree } from '../src/host/processes.ts';
 
-const root = await mkdtemp(join(tmpdir(), 'flowark-vault-test-'));
+const root = await mkdtemp('flowark-vault-test-');
 const bundle = join(root, 'vault.cjs');
 await build({
   stdin: {
@@ -260,7 +260,7 @@ try {
   }
 }
 if (timedOut) result = { ...result, passed: false, timedOut: true };
-await mkdir(resolve('test-results'), { recursive: true });
-await writeFile(resolve('test-results/vault.json'), JSON.stringify(result, null, 2));
+await mkdir(resolve(debugEvidenceRoot()), { recursive: true });
+await writeFile(resolve(`${debugEvidenceRoot()}/vault.json`), JSON.stringify(result, null, 2));
 console.log(JSON.stringify(result, null, 2));
-assert.ok(result?.passed, '系统凭据存储故障验证失败，见 test-results/vault.json');
+assert.ok(result?.passed, `系统凭据存储故障验证失败，见 ${debugEvidenceRoot()}/vault.json`);

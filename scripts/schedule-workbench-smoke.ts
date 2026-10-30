@@ -1,12 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import electronPath from 'electron';
 import type { ElectronApplication, Page } from 'playwright-core';
 import { desktopElectron, readDesktopMains } from './desktop-session.mjs';
-const data = await mkdtemp('/private/tmp/flowark-schedule-workbench-ui-');
-const appPath = await mkdtemp(resolve('test-results/schedule-workbench-app-'));
+const data = await mkdtemp('flowark-schedule-workbench-ui-');
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/schedule-workbench-app-`));
 const modeFile = join(data, 'mode'),
   callsFile = join(data, 'calls');
 const evidence: any = {
@@ -409,9 +410,9 @@ try {
   throw error;
 } finally {
   await close();
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await writeFile(
-    'test-results/figma/schedule-workbench-summary.json',
+    `${debugEvidenceRoot()}/figma/schedule-workbench-summary.json`,
     JSON.stringify(evidence, null, 2),
   );
   console.log(JSON.stringify(evidence));

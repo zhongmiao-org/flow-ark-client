@@ -1,10 +1,11 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-const data = await mkdtemp('/private/tmp/flowark-figma-home-');
+const data = await mkdtemp('flowark-figma-home-');
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
   args: process.env.FLOWARK_TEST_EXECUTABLE ? [] : [resolve('.')],
@@ -51,8 +52,8 @@ try {
     document.querySelector('.window-titlebar')!.textContent = 'FlowArk · 隔离测试（自动退出）';
   });
   await page.evaluate(() => document.fonts.ready);
-  await mkdir('test-results/figma', { recursive: true });
-  await page.screenshot({ path: 'test-results/figma/first-use-1440.png', scale: 'css' });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/first-use-1440.png`, scale: 'css' });
   assert.equal(
     await page.locator('.sidebar').evaluate((e) => e.getBoundingClientRect().width),
     224,
@@ -181,7 +182,7 @@ try {
     assert.equal(layout.searchHeight, 40);
     assert.ok(layout.summaryNotesVisible, '统计说明不得被压缩或裁切');
     evidence.sizes.push(layout);
-    await page.screenshot({ path: `test-results/figma/home-${width}.png`, scale: 'css' });
+    await page.screenshot({ path: `${debugEvidenceRoot()}/figma/home-${width}.png`, scale: 'css' });
   }
   await button('需要处理').count();
   await page.locator('.summary-attention').click();
@@ -248,8 +249,11 @@ try {
     app.process().kill('SIGKILL');
   }
   if (failure) evidence.passed = false;
-  await mkdir('test-results/figma', { recursive: true });
-  await writeFile('test-results/figma/home-summary.json', JSON.stringify(evidence, null, 2));
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/home-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }
 if (failure) throw failure;

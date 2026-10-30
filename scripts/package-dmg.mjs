@@ -1,13 +1,17 @@
-import { mkdtemp, symlink, rm } from 'node:fs/promises';
+import { debugMkdtemp as mkdtemp } from '../src/host/debug-files.mjs';
+import { symlink, rm } from 'node:fs/promises';
 import { verifyBundle } from './verify-bundle.mjs';
-import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
 const exec = promisify(execFile);
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
-const stage = await mkdtemp(join(tmpdir(), 'flowark-dmg-'));
+const stage = await mkdtemp('flowark-dmg-', {
+  retained: false,
+  category: 'temporary',
+  purpose: 'DMG 打包暂存',
+});
 try {
   // ditto preserves framework-relative symlinks when staging a relocatable .app.
   await exec('/usr/bin/ditto', [

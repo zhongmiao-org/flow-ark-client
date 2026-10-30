@@ -1,6 +1,7 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer, type ServerResponse } from 'node:http';
-import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { build } from 'esbuild';
 import electronPath from 'electron';
@@ -16,8 +17,8 @@ const evidence: any = {
   sessions: [],
   provider: 'local HTTP fixture; no real account request',
 };
-const data = await mkdtemp('/private/tmp/flowark-ai-settings-ui-');
-const appPath = await mkdtemp(resolve('test-results/ai-settings-app-'));
+const data = await mkdtemp('flowark-ai-settings-ui-');
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/ai-settings-app-`));
 const requests: { path: string; body: any }[] = [];
 let mode: 'success' | 'hold' | 'authentication' | 'quota' | 'model' | 'output' = 'success';
 let held: ServerResponse | undefined;
@@ -465,8 +466,8 @@ try {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   evidence.dataPath = data;
   evidence.requests = requests;
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/ai-settings.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/ai-settings.json`, JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;
 assert.equal(evidence.passed, true, evidence.closeError);

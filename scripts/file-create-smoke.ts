@@ -1,16 +1,17 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
-const data = await mkdtemp('/private/tmp/flowark-file-create-ui-');
+const data = await mkdtemp('flowark-file-create-ui-');
 const output = join(data, 'output');
 await mkdir(output);
-await mkdir('test-results/figma', { recursive: true });
+await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
 const title = '示例资料页 · 文本归档 💡';
 const server = createServer((_req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -180,7 +181,10 @@ try {
   assert.deepEqual(saved.flow.steps[2].content, { $ref: 'steps.title' });
   assert.equal((await call('bootstrap')).runs.length, 0);
   await page!.evaluate(() => document.fonts.ready);
-  await page!.screenshot({ path: 'test-results/figma/file-create-1440.png', scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/file-create-1440.png`,
+    scale: 'css',
+  });
   evidence.checks.push(
     'operation-switch-undo-redo-invalid-text-blocked-reference-save-capability-no-run',
   );
@@ -244,7 +248,10 @@ try {
   assert.ok(numbered.flow.requiredCapabilities.includes('file-create-numbered-v1'));
   assert.equal((await call('bootstrap')).runs.length, 2);
   await label('已有同名文件时').scrollIntoViewIfNeeded();
-  await page!.screenshot({ path: 'test-results/figma/file-numbered-1440.png', scale: 'css' });
+  await page!.screenshot({
+    path: `${debugEvidenceRoot()}/figma/file-numbered-1440.png`,
+    scale: 'css',
+  });
   await writeFile(join(output, 'title (1).txt'), 'protected existing output');
   const numberedPreview = await call('flow.run.preview', { id: record.id });
   assert.equal(numberedPreview.ready, true, JSON.stringify(numberedPreview.checks));
@@ -298,7 +305,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/file-create-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/file-create-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   await closeOwned().catch((error) => (failure ??= error));
@@ -308,7 +315,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/file-create-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/file-create-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

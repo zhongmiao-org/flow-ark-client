@@ -1,10 +1,11 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
-const data = await mkdtemp('/private/tmp/flowark-viewport-');
+const data = await mkdtemp('flowark-viewport-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -164,18 +165,21 @@ try {
   assert.equal(navigated.value, '');
   await click('#fullName');
   await wait(async () => assert.equal(await site('document.activeElement.id'), 'fullName'));
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   const screenshot = await app.evaluate(async ({ BrowserWindow }) => {
     const wc = (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents;
     return (await wc.capturePage()).toPNG().toString('base64');
   });
-  await writeFile('test-results/browser-viewport.png', Buffer.from(screenshot, 'base64'));
+  await writeFile(`${debugEvidenceRoot()}/browser-viewport.png`, Buffer.from(screenshot, 'base64'));
   assert.equal(lab.state.attempts, 0);
   assert.equal((await call('bootstrap')).runs.length, 0);
   evidence.passed = true;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/browser-viewport.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/browser-viewport.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   await app.close();
   await lab.close();
   console.log(JSON.stringify(evidence));

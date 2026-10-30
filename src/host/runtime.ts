@@ -80,6 +80,8 @@ import { scheduleCreateSchema, scheduleUpdateSchema } from '../shared/schedules'
 import { flowExportSchema, templateContentLimit } from '../shared/flow-export';
 import { listRuns, runOverview } from './run-history';
 import { ArtifactCleanup } from './artifact-cleanup';
+import { AttentionManagement } from './attention-management';
+import { CacheManagement } from './cache-management';
 import { RunRerun, executionVersion } from './run-rerun';
 import { RunReview } from './run-review';
 import { runTargetContext } from './run-target-context';
@@ -196,6 +198,10 @@ export class Runtime {
   private handoffs: EntryHandoffs;
   private artifactFiles: ArtifactFiles;
   private artifactCleanup: ArtifactCleanup;
+  private attentionManagement: AttentionManagement;
+  private cacheManagement: CacheManagement;
+  private compiling = 0;
+  private preparedCompiledPaths = new Set<string>();
   private reruns: RunRerun;
   private runReview: RunReview;
   private pendingCapabilities = new Map<string, number>();
@@ -503,6 +509,21 @@ export class Runtime {
       assertOwner: (owner) => this.assertScriptOwner(owner),
       call: (owner, method, args) => this.scriptRequest(owner, method, args),
     });
+    this.attentionManagement = new AttentionManagement(this.store, (id) =>
+      this.templates.waitingForAnswer(id),
+    );
+    this.cacheManagement = new CacheManagement(
+      dataPath,
+      this.store,
+      () =>
+        !!this.active ||
+        this.compiling > 0 ||
+        this.stopping ||
+        this.store
+          .list<Run>('run')
+          .some((run) => ['QUEUED', 'RUNNING', 'WAITING_INPUT'].includes(run.state)),
+      () => [...this.preparedCompiledPaths],
+    );
     this.artifactCleanup = new ArtifactCleanup(
       dataPath,
       this.store,
@@ -1088,7 +1109,10 @@ export class Runtime {
       runOverview: runOverview(runs),
       browsers: this.store.list('browser'),
       schedules: this.store.list('schedule'),
-      attention: this.store.list<any>('attention').reverse(),
+      attention: this.store
+        .list<any>('attention')
+        .filter((item) => !item.deletedAt)
+        .reverse(),
       templates: this.templates.list(),
       instances: this.templates.instances(),
       credentials,
@@ -1303,13 +1327,21 @@ export class Runtime {
     };
     for (const n of steps)
       if (n.type === 'script') {
-        const bundle = await compileScript({
-          code: n.code,
-          language: n.language,
-          dependencies: n.dependencies,
-          bindings: record.bindings.scriptPackages,
-          directory: join(this.dataPath, 'compiled'),
-        });
+        this.assertAdmitting();
+        this.compiling++;
+        let bundle;
+        try {
+          bundle = await compileScript({
+            code: n.code,
+            language: n.language,
+            dependencies: n.dependencies,
+            bindings: record.bindings.scriptPackages,
+            directory: join(this.dataPath, 'compiled'),
+          });
+          this.preparedCompiledPaths.add(bundle.path);
+        } finally {
+          this.compiling--;
+        }
         prepared.scripts[n.id] = bundle.path;
         prepared.scriptBundles.push({
           nodeId: n.id,
@@ -1402,6 +1434,8 @@ export class Runtime {
     }
   }
   private assertAdmitting() {
+    if (this.cacheManagement?.compilationLocked)
+      throw new Error('正在清理缓存，请等待完成后启动运行');
     const blocked = this.executionBlock();
     if (blocked) throw new Error(blocked);
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
@@ -3508,10 +3542,38 @@ export class Runtime {
         return true;
       }
       case 'attention.read': {
-        const a = this.store.get<any>('attention', args.id);
-        if (a) this.store.put('attention', a.id, { ...a, read: true });
-        return true;
+        return this.attentionManagement.read(args.id);
       }
+      case 'attention.trash.list':
+        return this.attentionManagement.trash();
+      case 'attention.batch.preview':
+        return this.attentionManagement.preview(args.action, args.ids);
+      case 'attention.batch.apply':
+        return this.attentionManagement.apply(args.token);
+      case 'cache.locations':
+        return this.cacheManagement.locations();
+      case 'cache.location':
+        return this.cacheManagement.location(args.path);
+      case 'cache.scan':
+        return this.cacheManagement.scan();
+      case 'cache.adopt':
+        return this.cacheManagement.adopt(
+          args.scanId,
+          args.id,
+          args.purpose,
+          args.category,
+          args.reviewed,
+        );
+      case 'cache.preview':
+        return this.cacheManagement.preview(args.scanId, args.ids);
+      case 'cache.clear':
+        return this.cacheManagement.clear(args.token, args.reviewed);
+      case 'cache.status':
+        return this.cacheManagement.status();
+      case 'cache.reveal':
+        return this.cacheManagement.reveal(args.scanId, args.id);
+      case 'cache.root':
+        return this.cacheManagement.rootPath();
       case 'template.inspect':
         return this.templates.library.inspect(args.path);
       case 'template.cancelImport':

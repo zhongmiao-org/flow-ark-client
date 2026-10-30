@@ -1,14 +1,15 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type Page } from 'playwright-core';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { startFormLab } from './fixtures/platform-page';
 import { formBrowser } from './fixtures/platform-flow';
 import type { Run, Schedule } from '../src/shared/types';
-const data = await mkdtemp('/private/tmp/flowark-schedule-edit-ui-');
+const data = await mkdtemp('flowark-schedule-edit-ui-');
 const lab = await startFormLab();
 const launch = () =>
   electron.launch({
@@ -186,9 +187,9 @@ try {
       }),
     '窄窗口布局',
   );
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await button('保存计划').scrollIntoViewIfNeeded();
-  await page.screenshot({ path: 'test-results/schedule-editing.png', fullPage: true });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/schedule-editing.png`, fullPage: true });
   await button('保存计划').click();
   await edit().waitFor({ state: 'hidden' });
   const adopted = await plan();
@@ -260,7 +261,10 @@ try {
     clearTimeout(timeout);
   }
   await lab.close();
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/schedule-editing.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(
+    `${debugEvidenceRoot()}/schedule-editing.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }

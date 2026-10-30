@@ -743,6 +743,7 @@ export default function AISettingsPage({
                 resources: '凭据与本机资源',
                 scripts: '脚本包配置',
                 appearance: '外观',
+                cache: '缓存与调试文件',
               };
               const destination = key as SettingsDestination;
               go(() => home(destination), destinations[destination]);

@@ -1,14 +1,15 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Runtime } from '../src/host/runtime';
 import type { Flow, Run } from '../src/shared/types';
 import type { EmbeddedReview, RunReviewPreview } from '../src/shared/run-review';
 import { embeddedHarness } from './fixtures/embedded-harness';
 
-const data = await mkdtemp('/private/tmp/flowark-review-browser-');
+const data = await mkdtemp('flowark-review-browser-');
 const server = createServer((req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(
@@ -184,8 +185,11 @@ try {
     }
   } finally {
     await new Promise<void>((done) => server.close(() => done()));
-    await mkdir('test-results', { recursive: true });
-    await writeFile('test-results/run-review-browser.json', JSON.stringify(evidence, null, 2));
+    await mkdir(debugEvidenceRoot(), { recursive: true });
+    await writeFile(
+      `${debugEvidenceRoot()}/run-review-browser.json`,
+      JSON.stringify(evidence, null, 2),
+    );
     console.log(JSON.stringify(evidence, null, 2));
   }
 }

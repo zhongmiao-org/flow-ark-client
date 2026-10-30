@@ -1,13 +1,14 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { startFormLab } from './fixtures/platform-page';
-const data = await mkdtemp('/private/tmp/flowark-resources-');
+const data = await mkdtemp('flowark-resources-');
 const lab = await startFormLab();
 const received: any[] = [];
 const payload = {
@@ -369,9 +370,9 @@ try {
       }),
     ),
   );
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await page.getByRole('table', { name: 'Excel 数据表格' }).scrollIntoViewIfNeeded();
-  await page.screenshot({ path: 'test-results/resource-editor.png' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/resource-editor.png` });
   const detail = await run(true);
   assert.equal(detail.run.state, 'SUCCEEDED', detail.run.error);
   assert.equal(received.length, 2);
@@ -468,8 +469,8 @@ try {
   evidence.passed = true;
   evidence.runId = detail.run.id;
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/resource-editor.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/resource-editor.json`, JSON.stringify(evidence, null, 2));
   await app.close();
   await lab.close();
   server.closeAllConnections();

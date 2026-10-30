@@ -1,10 +1,10 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { startFrameFixture } from './fixtures/frames';
 import { embeddedHarness } from './fixtures/embedded-harness';
-const root = await mkdtemp(join(tmpdir(), 'flowark-native-frames-'));
+const root = await mkdtemp('flowark-native-frames-');
 const frames = await startFrameFixture();
 const browser = await embeddedHarness(root);
 const framePath = ['#outer', '#inner'];
@@ -94,9 +94,9 @@ try {
   await waiting;
   assert.ok(Date.now() - started < 3000);
   checks.push('close-aborts-wait');
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(
-    'test-results/browser.json',
+    `${debugEvidenceRoot()}/browser.json`,
     JSON.stringify(
       { passed: true, browser: browser.binding, driver: 'Electron webContents.debugger', checks },
       null,

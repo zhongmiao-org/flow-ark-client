@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:http';
 import { build } from 'esbuild';
-import { cp, mkdir, mkdtemp, readFile, writeFile, access } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -12,11 +13,11 @@ import type { PlanningInput, PlanningResult, TaskDetail } from '../src/shared/pl
 
 // Renderer/Main/Host/Worker and local page are real. Only provider HTTP is redirected
 // in an ignored private build. This does not validate a live AI provider or account.
-const data = await mkdtemp('/private/tmp/flowark-web-target-ui-');
+const data = await mkdtemp('flowark-web-target-ui-');
 const output = join(data, 'output');
 await mkdir(output);
-await mkdir('test-results/figma', { recursive: true });
-const appPath = await mkdtemp(resolve('test-results/web-target-app-'));
+await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/web-target-app-`));
 const title = '示例资料页 · 网页目标核对';
 const evidence: any = {
   passed: false,
@@ -293,7 +294,10 @@ try {
       assert.equal(layout.columns[1].width, 708);
     }
     evidence.layouts.push(layout);
-    await page!.screenshot({ path: `test-results/figma/web-target-${width}.png`, scale: 'css' });
+    await page!.screenshot({
+      path: `${debugEvidenceRoot()}/figma/web-target-${width}.png`,
+      scale: 'css',
+    });
   }
   await app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 1080));
   await button('使用这个目标').click();
@@ -401,7 +405,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/web-target-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/web-target-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   await closeOwned().catch((error) => {
@@ -413,7 +417,10 @@ try {
   evidence.errors = errors;
   evidence.passed &&= !failure && evidence.closed;
   if (failure) evidence.failure = String(failure);
-  await writeFile('test-results/figma/web-target-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/web-target-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

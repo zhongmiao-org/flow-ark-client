@@ -1,0 +1,30 @@
+.cache-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.cache-settings h2 {
+  margin-top: 0;
+}
+.cache-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.cache-path {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.cache-muted {
+  color: var(--fa-text-secondary);
+}
+.cache-settings .ant-table-wrapper {
+  margin: 16px 0;
+}
+.cache-settings .ant-table-cell {
+  vertical-align: top;
+}
+.cache-settings .ant-table-cell p {
+  margin: 8px 0 0;
+}

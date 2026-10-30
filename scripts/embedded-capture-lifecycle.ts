@@ -1,12 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
 import { startFormLab } from './fixtures/platform-page';
 import { formBrowser, formLabFlow } from './fixtures/platform-flow';
 
-const data = await mkdtemp('/private/tmp/flowark-capture-lifecycle-');
+const data = await mkdtemp('flowark-capture-lifecycle-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -220,9 +221,9 @@ try {
   });
   await app.close();
   await lab.close();
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await writeFile(
-    'test-results/embedded-capture-lifecycle.json',
+    `${debugEvidenceRoot()}/embedded-capture-lifecycle.json`,
     JSON.stringify(evidence, null, 2),
   );
   console.log(JSON.stringify(evidence));

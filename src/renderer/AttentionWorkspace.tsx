@@ -14,6 +14,8 @@ import {
   Button,
   Checkbox,
   Input,
+  Modal,
+  Pagination,
   Tabs,
   Tag,
 } from 'antd';
@@ -27,6 +29,11 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
+import type {
+  AttentionAction,
+  AttentionBatchPreview,
+  AttentionBatchResult,
+} from '../shared/attention-management';
 import type { Attention, Bootstrap, Json } from '../shared/types';
 import type { TemplateHumanReview } from '../shared/contracts.generated';
 import { template_human_review_v1 } from '../shared/node-schema.generated';
@@ -313,9 +320,32 @@ export default function AttentionWorkspace({
   navigation: Dispatch<SetStateAction<AttentionNavigation | undefined>>;
 }) {
   const conversationLeave = useRef<ConversationLeave | undefined>(undefined);
-  const [tab, setTab] = useState<'pending' | 'done'>('pending');
+  const [tab, setTab] = useState<'pending' | 'done' | 'trash'>('pending');
+  const [trash, setTrash] = useState<Attention[]>([]);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [batch, setBatch] = useState<AttentionBatchPreview>();
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    void api('attention.trash.list')
+      .then((items) => {
+        if (!cancelled) setTrash(items);
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(String(reason));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, data.attention]);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('all');
+  useEffect(() => {
+    setChecked(new Set());
+    setPage(1);
+    setBatch(undefined);
+  }, [tab, query, kind]);
   const [selectedId, setSelectedId] = useState('');
   const [continuedThread, setContinuedThread] = useState('');
   useEffect(() => setContinuedThread(''), [selectedId]);
@@ -375,9 +405,9 @@ export default function AttentionWorkspace({
     (item.read && (!human(item) || requestState(item, data, now) === 'expired'));
   const pendingCount = data.attention.filter((item) => !completed(item)).length;
   const doneCount = data.attention.length - pendingCount;
-  const visible = data.attention.filter(
+  const visible = (tab === 'trash' ? trash : data.attention).filter(
     (item) =>
-      (tab === 'done') === Boolean(completed(item)) &&
+      (tab === 'trash' || (tab === 'done') === Boolean(completed(item))) &&
       (kind === 'all' ||
         (kind === 'human'
           ? human(item)
@@ -667,15 +697,106 @@ export default function AttentionWorkspace({
         : '这条提醒未提供可直接打开的运行记录。'}
     </p>
   );
+  const prepareBatch = (action: AttentionAction, ids?: string[]) =>
+    void act(async () => {
+      setBatch(await api('attention.batch.preview', { action, ...(ids ? { ids } : {}) }));
+    });
+  const applyBatch = () => {
+    if (!batch) return;
+    const target = batch;
+    void act(async () => {
+      const result: AttentionBatchResult = await api('attention.batch.apply', {
+        token: target.token,
+      });
+      setBatch(undefined);
+      setChecked(new Set());
+      setTrash(await api('attention.trash.list'));
+      setBatchResult(
+        `已${target.action === 'read' ? '标为已读' : target.action === 'trash' ? '移入回收站' : '恢复'} ${result.changed} 条；跳过 ${result.skipped} 条待回答请求，${result.unchanged} 条状态未变化`,
+      );
+    });
+  };
+  const [batchResult, setBatchResult] = useState('');
+  const shownPage = Math.min(page, Math.max(1, Math.ceil(visible.length / 30)));
   const listContent = (
     <>
+      <div className="attention-bulk-toolbar">
+        <Checkbox
+          checked={visible.length > 0 && visible.every((item) => checked.has(item.id))}
+          indeterminate={checked.size > 0 && !visible.every((item) => checked.has(item.id))}
+          disabled={busy || !visible.length}
+          onChange={(event) =>
+            setChecked(event.target.checked ? new Set(visible.map((item) => item.id)) : new Set())
+          }
+        >
+          全选当前筛选结果
+        </Checkbox>
+        <span role="status">
+          已选 {checked.size} 条 · 当前筛选 {visible.length} 条，跨 {Math.ceil(visible.length / 30)}{' '}
+          页
+        </span>
+        <Button
+          danger={tab !== 'trash'}
+          disabled={busy || !checked.size}
+          onClick={() => prepareBatch(tab === 'trash' ? 'restore' : 'trash', [...checked])}
+        >
+          {tab === 'trash' ? '恢复所选' : '批量删除'}
+        </Button>
+        {tab !== 'trash' && (
+          <Button disabled={busy} onClick={() => prepareBatch('read')}>
+            全部已读
+          </Button>
+        )}
+      </div>
+      <p className="attention-muted">
+        {tab === 'trash'
+          ? '恢复保留原已读状态，失效请求仍然失效。回收站保留记录，不自动永久清空。'
+          : '选择覆盖当前筛选的全部页面，切换筛选清空选择。全部已读覆盖当前工作区的全部未读提醒；待回答请求会跳过。已读或删除不批准请求，也不取消运行。'}
+      </p>
+      {batchResult && (
+        <Alert
+          type="success"
+          showIcon
+          title={batchResult}
+          closable
+          onClose={() => setBatchResult('')}
+        />
+      )}
+      <Modal
+        title={
+          batch?.action === 'read'
+            ? '确认全部已读'
+            : batch?.action === 'trash'
+              ? '确认移入回收站'
+              : '确认恢复提醒'
+        }
+        open={!!batch}
+        onCancel={() => !busy && setBatch(undefined)}
+        onOk={applyBatch}
+        confirmLoading={busy}
+        okText="确认"
+        cancelText="取消"
+        okButtonProps={{ danger: batch?.action === 'trash' }}
+      >
+        <p>
+          已固定 {batch?.targetCount} 条目标，其中 {batch?.skippedCount}{' '}
+          条待回答请求将跳过。新到提醒不受本次操作影响。
+        </p>
+        <p>
+          {batch?.action === 'trash'
+            ? '删除后可在回收站恢复，不影响运行和外发去重记录。'
+            : batch?.action === 'read'
+              ? '标为已读不代表业务结果已经核对或请求已批准。'
+              : '恢复保留原已读状态，不重新激活失效请求。'}
+        </p>
+      </Modal>
       {tab === 'done' && (
         <p className="attention-muted">
           这里保留已读和已回应的提醒。提醒已读不代表外部业务结果已核对。
         </p>
       )}
       <div className="attention-list" id="attention-list">
-        {visible.map((item) => (
+        {visible.slice((shownPage - 1) * 30, shownPage * 30).map((item) => (
           <article
             className={`attention-card is-${tone(item)} ${item.kind === 'unknown-result' ? 'is-expanded' : 'is-compact'}`}
             key={item.id}
@@ -689,6 +810,21 @@ export default function AttentionWorkspace({
                 },
               }}
             >
+              <Checkbox
+                checked={checked.has(item.id)}
+                disabled={busy}
+                aria-label={`选择：${item.title}`}
+                onChange={(event) =>
+                  setChecked((previous) => {
+                    const next = new Set(previous);
+                    if (event.target.checked) next.add(item.id);
+                    else next.delete(item.id);
+                    return next;
+                  })
+                }
+              >
+                {checked.has(item.id) ? '已选择' : '选择提醒'}
+              </Checkbox>
               <div className="attention-card-heading">
                 <Tag
                   className="run-state-tag"
@@ -709,26 +845,34 @@ export default function AttentionWorkspace({
                 </p>
               )}
               <div className="attention-actions">
-                <Button
-                  type={item.kind === 'unknown-result' ? 'primary' : 'default'}
-                  data-attention-open={item.id}
-                  onClick={() => open(item)}
-                >
-                  {item.kind === 'unknown-result'
-                    ? '查看证据并核对'
-                    : human(item) && !completed(item)
-                      ? '查看本次请求'
-                      : '查看详情'}
-                </Button>
-                {sourceId(item) && (
-                  <Button
-                    disabled={busy || undefined}
-                    onClick={(event) =>
-                      viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
-                    }
-                  >
-                    查看运行详情
+                {tab === 'trash' ? (
+                  <Button disabled={busy} onClick={() => prepareBatch('restore', [item.id])}>
+                    恢复此条
                   </Button>
+                ) : (
+                  <>
+                    <Button
+                      type={item.kind === 'unknown-result' ? 'primary' : 'default'}
+                      data-attention-open={item.id}
+                      onClick={() => open(item)}
+                    >
+                      {item.kind === 'unknown-result'
+                        ? '查看证据并核对'
+                        : human(item) && !completed(item)
+                          ? '查看本次请求'
+                          : '查看详情'}
+                    </Button>
+                    {sourceId(item) && (
+                      <Button
+                        disabled={busy || undefined}
+                        onClick={(event) =>
+                          viewRun(sourceId(item)!, event.currentTarget as HTMLButtonElement)
+                        }
+                      >
+                        查看运行详情
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </Card>
@@ -766,6 +910,16 @@ export default function AttentionWorkspace({
           </Card>
         )}
       </div>
+      {visible.length > 30 && (
+        <Pagination
+          current={shownPage}
+          total={visible.length}
+          pageSize={30}
+          showSizeChanger={false}
+          onChange={setPage}
+          showTotal={(count) => `共 ${count} 条`}
+        />
+      )}
     </>
   );
   if (active && typeof selected?.detail?.skillProposalId === 'string')
@@ -863,7 +1017,7 @@ export default function AttentionWorkspace({
             activeKey={tab}
             animated={false}
             destroyOnHidden
-            onChange={(key) => setTab(key as 'pending' | 'done')}
+            onChange={(key) => setTab(key as 'pending' | 'done' | 'trash')}
             tabBarExtraContent={
               <div className="attention-toolbar">
                 <label className="attention-search">
@@ -897,6 +1051,7 @@ export default function AttentionWorkspace({
               [
                 ['pending', '待处理', pendingCount],
                 ['done', '已处理', doneCount],
+                ['trash', '回收站', trash.length],
               ] as const
             ).map(([key, name, count]) => ({
               key,

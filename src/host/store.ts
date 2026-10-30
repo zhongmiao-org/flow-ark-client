@@ -32,6 +32,11 @@ export class Store {
   private key: Buffer;
   private transactionDepth = 0;
   private writeGeneration = 0;
+  private cacheReferenceGeneration = 0;
+  get cacheReferenceRevision() {
+    const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
+    return `${this.cacheReferenceGeneration}:${external.data_version}`;
+  }
   readonly resultLedgers: RunResultLedgerStore;
   fault?: string;
   constructor(path: string, key: Buffer) {
@@ -109,6 +114,7 @@ export class Store {
   put(kind: string, id: string, value: any) {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
+      if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       // Match the actual protected JSON row; optional undefined headers are not persisted.
       const stored = JSON.parse(JSON.stringify(value));
       if (this.resultLedgers.observes(kind))
@@ -139,8 +145,18 @@ export class Store {
         .all(kind) as any[]
     ).map((r) => this.open(r.payload));
   }
+  *cacheReferenceDocuments(): Generator<unknown> {
+    // Stream only on an explicit maintenance scan, without copying the database.
+    for (const row of this.db
+      .prepare(
+        "SELECT payload FROM documents WHERE kind NOT IN ('cache-cleanup','cache-registration')",
+      )
+      .iterate())
+      yield this.open(row.payload as string);
+  }
   remove(kind: string, id: string) {
     return this.atomic(() => {
+      if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
       this.writeGeneration++;

@@ -1,5 +1,6 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { ChildProcess } from 'node:child_process';
 import { desktopElectron as electron } from './desktop-session.mjs';
@@ -7,7 +8,7 @@ import { type ElectronApplication, type Page } from 'playwright-core';
 import electronPath from 'electron';
 import ExcelJS from 'exceljs';
 import example from '../contracts/example.excel-mapping.json';
-const data = await mkdtemp('/private/tmp/flowark-excel-ui-');
+const data = await mkdtemp('flowark-excel-ui-');
 const output = join(data, 'output');
 await mkdir(output);
 const evidence: any = { passed: false, closed: false, data, checks: [], layouts: [] };
@@ -43,7 +44,7 @@ const mappingOptions = async (index: number) => {
     await details.locator('summary').click();
 };
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   app = await electron.launch({
     executablePath: electronPath as unknown as string,
     args: ['.'],
@@ -134,7 +135,10 @@ try {
         [600, 528],
       );
     evidence.layouts.push(layout);
-    await page.screenshot({ path: `test-results/figma/excel-${width}.png`, scale: 'css' });
+    await page.screenshot({
+      path: `${debugEvidenceRoot()}/figma/excel-${width}.png`,
+      scale: 'css',
+    });
   }
   await size(1440, 1080);
   evidence.checks.push('real-static-records-preview-three-of-four-no-run-three-widths');
@@ -282,7 +286,7 @@ try {
 } catch (error) {
   failure = error;
   await page
-    ?.screenshot({ path: 'test-results/figma/excel-failure.png', scale: 'css' })
+    ?.screenshot({ path: `${debugEvidenceRoot()}/figma/excel-failure.png`, scale: 'css' })
     .catch(() => {});
 } finally {
   const watchdog = setTimeout(() => {
@@ -322,7 +326,10 @@ try {
     evidence.passed = false;
     evidence.error = String(failure);
   }
-  await writeFile('test-results/figma/excel-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/excel-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence, null, 2));
 }
 if (failure) throw failure;

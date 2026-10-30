@@ -1,8 +1,9 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, type ChildProcess } from 'node:child_process';
 import { createServer, type ServerResponse } from 'node:http';
 import { build } from 'esbuild';
-import { cp, mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import { type ElectronApplication, type Page } from 'playwright-core';
@@ -13,9 +14,9 @@ import type { PlanningInput, PlanningResult, TaskDetail } from '../src/shared/pl
 // Planning, encrypted Store, schema validation and Worker execution are real.
 // This must never be used as evidence of a real DeepSeek/OpenAI connection.
 const evidence: any = { passed: false, checks: [], layouts: [], provider: 'local HTTP fixture' };
-const data = await mkdtemp('/private/tmp/flowark-figma-task-');
-await mkdir('test-results', { recursive: true });
-const appPath = await mkdtemp(resolve('test-results/figma-task-app-'));
+const data = await mkdtemp('flowark-figma-task-');
+await mkdir(debugEvidenceRoot(), { recursive: true });
+const appPath = await mkdtemp(resolve(`${debugEvidenceRoot()}/figma-task-app-`));
 const requests: PlanningInput[] = [];
 let mode: 'clarify' | 'plan' | 'hold' = 'clarify';
 let value = 'first';
@@ -235,7 +236,7 @@ async function capture(name: string) {
   assert.equal(layout.overflow, false);
   assert.equal(layout.rootOverflow, false);
   evidence.layouts.push({ name, ...layout });
-  await page.screenshot({ path: `test-results/figma/task-${name}.png`, scale: 'css' });
+  await page.screenshot({ path: `${debugEvidenceRoot()}/figma/task-${name}.png`, scale: 'css' });
 }
 async function review() {
   await page.getByRole('checkbox', { name: '我已核对本次内容，将发送给 DeepSeek' }).check();
@@ -249,7 +250,7 @@ async function generated(id: string) {
 }
 let failure: unknown;
 try {
-  await mkdir('test-results/figma', { recursive: true });
+  await mkdir(`${debugEvidenceRoot()}/figma`, { recursive: true });
   await launch();
   await capture('home-1440');
   await page.getByLabel('你想完成的任务').fill('整理我提供的文本，核对并保留结果。');
@@ -459,7 +460,10 @@ try {
   evidence.passed = true;
 } catch (error) {
   failure = error;
-  if (page!) await page.screenshot({ path: 'test-results/figma/task-failure.png' }).catch(() => {});
+  if (page!)
+    await page
+      .screenshot({ path: `${debugEvidenceRoot()}/figma/task-failure.png` })
+      .catch(() => {});
 } finally {
   try {
     await close();
@@ -477,7 +481,10 @@ try {
   evidence.data = data;
   evidence.appPath = appPath;
   evidence.requestCount = requests.length;
-  await writeFile('test-results/figma/task-summary.json', JSON.stringify(evidence, null, 2));
+  await writeFile(
+    `${debugEvidenceRoot()}/figma/task-summary.json`,
+    JSON.stringify(evidence, null, 2),
+  );
   console.log(JSON.stringify(evidence));
 }
 if (failure) throw failure;

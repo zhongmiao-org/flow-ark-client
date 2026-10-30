@@ -1,12 +1,13 @@
+import { debugMkdtemp as mkdtemp, debugEvidenceRoot } from '../src/host/debug-files.mjs';
 import assert from 'node:assert/strict';
 import { desktopElectron as electron } from './desktop-session.mjs';
 import electronPath from 'electron';
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { startFormLab } from './fixtures/platform-page';
 import type { Step } from '../src/shared/types';
 
-const data = await mkdtemp('/private/tmp/flowark-editor-layout-');
+const data = await mkdtemp('flowark-editor-layout-');
 const lab = await startFormLab();
 const app = await electron.launch({
   executablePath: process.env.FLOWARK_TEST_EXECUTABLE || (electronPath as unknown as string),
@@ -619,7 +620,7 @@ try {
   assert.deepEqual(errors, []);
   evidence.selected = selected;
   evidence.condition = condition;
-  await mkdir('test-results', { recursive: true });
+  await mkdir(debugEvidenceRoot(), { recursive: true });
   await page.evaluate(
     () =>
       new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))),
@@ -633,7 +634,7 @@ try {
   const screenshot = await app.evaluate(async ({ BrowserWindow }) =>
     (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
   );
-  await writeFile('test-results/editor-layout.png', Buffer.from(screenshot, 'base64'));
+  await writeFile(`${debugEvidenceRoot()}/editor-layout.png`, Buffer.from(screenshot, 'base64'));
   // The workbench capture does not include the child WebContents surface.
   const webpage = await app.evaluate(async ({ BrowserWindow }) => {
     const wc = (BrowserWindow.getAllWindows()[0].contentView.children[0] as any).webContents;
@@ -645,7 +646,10 @@ try {
     return { png: image.toPNG().toString('base64'), painted };
   });
   assert.ok(webpage.painted > 1000, 'native webpage is not blank');
-  await writeFile('test-results/editor-layout-page.png', Buffer.from(webpage.png, 'base64'));
+  await writeFile(
+    `${debugEvidenceRoot()}/editor-layout-page.png`,
+    Buffer.from(webpage.png, 'base64'),
+  );
   evidence.painted = webpage.painted;
   evidence.passed = true;
   console.log(
@@ -657,8 +661,8 @@ try {
     }),
   );
 } finally {
-  await mkdir('test-results', { recursive: true });
-  await writeFile('test-results/editor-layout.json', JSON.stringify(evidence, null, 2));
+  await mkdir(debugEvidenceRoot(), { recursive: true });
+  await writeFile(`${debugEvidenceRoot()}/editor-layout.json`, JSON.stringify(evidence, null, 2));
   await app.close();
   await lab.close();
 }
