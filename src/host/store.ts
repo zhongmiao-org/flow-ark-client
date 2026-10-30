@@ -33,6 +33,7 @@ export class Store {
   private transactionDepth = 0;
   private writeGeneration = 0;
   private cacheReferenceGeneration = 0;
+  private flowCatalogCache?: { externalVersion: number; rows: unknown[] };
   get cacheReferenceRevision() {
     const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
     return `${this.cacheReferenceGeneration}:${external.data_version}`;
@@ -114,6 +115,7 @@ export class Store {
   put(kind: string, id: string, value: any) {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
+      if (kind === 'flow') this.flowCatalogCache = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       // Match the actual protected JSON row; optional undefined headers are not persisted.
       const stored = JSON.parse(JSON.stringify(value));
@@ -145,6 +147,27 @@ export class Store {
         .all(kind) as any[]
     ).map((r) => this.open(r.payload));
   }
+  /** Bootstrap may reuse an unchanged catalog; execution and preflight keep fresh reads. */
+  flowCatalog<T = any>(): T[] {
+    // Never retain uncommitted rows, including rows from a transaction that later rolls back.
+    if (this.inTransaction) return this.list<T>('flow');
+    const externalVersion = () =>
+      (this.db.prepare('PRAGMA data_version').get() as { data_version: number }).data_version;
+    const before = externalVersion();
+    if (this.flowCatalogCache?.externalVersion === before)
+      return structuredClone(this.flowCatalogCache.rows) as T[];
+    this.flowCatalogCache = undefined;
+    const rows = this.list<T>('flow');
+    // Keep the complete catalog or nothing. Other connections can invalidate it during loading.
+    if (
+      externalVersion() === before &&
+      Buffer.byteLength(JSON.stringify(rows), 'utf8') <= 32 * 1024 * 1024
+    ) {
+      this.flowCatalogCache = { externalVersion: before, rows };
+      return structuredClone(rows);
+    }
+    return rows;
+  }
   *cacheReferenceDocuments(): Generator<unknown> {
     // Stream only on an explicit maintenance scan, without copying the database.
     for (const row of this.db
@@ -156,6 +179,7 @@ export class Store {
   }
   remove(kind: string, id: string) {
     return this.atomic(() => {
+      if (kind === 'flow') this.flowCatalogCache = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       if (this.resultLedgers.observes(kind))
         this.resultLedgers.beforeRemove(kind, id, this.get(kind, id));
