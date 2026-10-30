@@ -35,6 +35,13 @@ export class Store {
   private cacheReferenceGeneration = 0;
   private flowCatalogCache?: { externalVersion: number; rows: unknown[] };
   private attentionKeyIndex?: { externalVersion: number; ids: Map<string, string> };
+  private protectedRows = new Map<string, { payload: string; value: unknown; weight: number }>();
+  private protectedRowsWeight = 0;
+  private dropProtectedRow(key: string) {
+    const row = this.protectedRows.get(key);
+    if (row) this.protectedRowsWeight -= row.weight;
+    this.protectedRows.delete(key);
+  }
   get cacheReferenceRevision() {
     const external = this.db.prepare('PRAGMA data_version').get() as { data_version: number };
     return `${this.cacheReferenceGeneration}:${external.data_version}`;
@@ -116,6 +123,7 @@ export class Store {
   put(kind: string, id: string, value: any) {
     if (this.fault) throw new Error(this.fault);
     return this.atomic(() => {
+      this.dropProtectedRow(`${kind}\0${id}`);
       if (kind === 'flow') this.flowCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
@@ -139,8 +147,34 @@ export class Store {
   get<T = any>(kind: string, id: string): T | undefined {
     const row = this.db
       .prepare('SELECT payload FROM documents WHERE kind=? AND id=?')
-      .get(kind, id) as any;
-    return row ? this.open(row.payload) : undefined;
+      .get(kind, id) as { payload: string } | undefined;
+    const key = `${kind}\0${id}`;
+    if (!row) {
+      this.dropProtectedRow(key);
+      return;
+    }
+    const reusable =
+      !this.inTransaction && ['snapshot', 'flow', 'template-instance'].includes(kind);
+    const cached = reusable ? this.protectedRows.get(key) : undefined;
+    // Always query and compare the complete current ciphertext, including external writes.
+    if (cached?.payload === row.payload) {
+      this.protectedRows.delete(key);
+      this.protectedRows.set(key, cached);
+      return structuredClone(cached.value) as T;
+    }
+    if (reusable) this.dropProtectedRow(key);
+    const value = this.open(row.payload);
+    // Conservative text-size weight, not an exact heap measurement. Small rows stay uncached.
+    const weight = row.payload.length * 6;
+    const budget = 16 * 1024 * 1024;
+    if (reusable && row.payload.length >= 16 * 1024 && weight <= budget) {
+      while (this.protectedRows.size >= 8 || this.protectedRowsWeight + weight > budget)
+        this.dropProtectedRow(this.protectedRows.keys().next().value!);
+      this.protectedRows.set(key, { payload: row.payload, value, weight });
+      this.protectedRowsWeight += weight;
+      return structuredClone(value) as T;
+    }
+    return value;
   }
   list<T = any>(kind: string): T[] {
     return (
@@ -181,6 +215,7 @@ export class Store {
   }
   remove(kind: string, id: string) {
     return this.atomic(() => {
+      this.dropProtectedRow(`${kind}\0${id}`);
       if (kind === 'flow') this.flowCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
@@ -399,6 +434,8 @@ export class Store {
     return item;
   }
   close() {
+    this.protectedRows.clear();
+    this.protectedRowsWeight = 0;
     this.db.close();
     this.key.fill(0);
   }
