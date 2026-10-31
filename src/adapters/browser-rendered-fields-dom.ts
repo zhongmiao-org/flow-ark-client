@@ -396,9 +396,13 @@ export function readBrowserRenderedFields(
       const rect = targetRects.get(element.ownerDocument);
       const clipX = ['hidden', 'clip'].includes(style.overflowX),
         clipY = ['hidden', 'clip'].includes(style.overflowY);
+      // In visible-text selections, an ancestor's other children can overflow while
+      // the selected field remains inside its clipping box. Check that field's
+      // rectangle below; only its own subtree uses whole-content overflow sizes.
+      const inspectOwnOverflow = !visibleText || element === target || descendant;
       if (
-        (clipX && element.scrollWidth > element.clientWidth) ||
-        (clipY && element.scrollHeight > element.clientHeight) ||
+        (inspectOwnOverflow && clipX && element.scrollWidth > element.clientWidth) ||
+        (inspectOwnOverflow && clipY && element.scrollHeight > element.clientHeight) ||
         (!descendant &&
           rect &&
           element !== target &&
