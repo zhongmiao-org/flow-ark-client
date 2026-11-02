@@ -1103,7 +1103,7 @@ export class Runtime {
     const runs = this.store.list<Run>('run').reverse();
     return {
       flows: this.store
-        .flowCatalog<FlowRecord>()
+        .flowCatalogView<FlowRecord>()
         .map((r) => ({ ...r, bindings: normalizeBindings(r.bindings) })),
       runs: runs.slice(0, 200),
       runOverview: runOverview(runs),
@@ -1517,14 +1517,12 @@ export class Runtime {
     else if (method === 'artifact')
       result = await this.workerRequest(owner.runId, 'artifact.create', args);
     else if (method === 'credential') {
-      if (
-        this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)?.authorSdk ||
-        this.store.get<FlowRecord>('snapshot', owner.runId)?.bindings.template
-      )
+      const snapshot = this.store.runSnapshotView<FlowRecord & PreparedScripts>(owner.runId);
+      if (snapshot?.authorSdk || snapshot?.bindings.template)
         throw new Error('模板脚本不能直接读取凭据，请使用绑定的 AI 能力');
       result = await this.workerRequest(owner.runId, 'credential', args);
     } else if (method === 'template') {
-      const snapshot = this.store.get<FlowRecord & PreparedScripts>('snapshot', owner.runId)!;
+      const snapshot = this.store.runSnapshotView<FlowRecord & PreparedScripts>(owner.runId)!;
       let fixedPackage: PackageData | undefined;
       if (!snapshot.authorSdk) {
         fixedPackage = await this.fixedRunTemplatePackage(snapshot, owner.runId);

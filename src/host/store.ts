@@ -11,6 +11,16 @@ import type { AINodeReceipt, Event, Run, RunState } from '../shared/types';
 import { ai_receipt_v1 } from '../shared/node-schema.generated';
 import { RunResultLedgerStore } from './result-ledger';
 
+// Stored documents contain JSON values. Freeze the complete tree before sharing it
+// with a read-only host consumer; ordinary reads still receive mutable copies.
+function freezeDocument<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) freezeDocument(child);
+  }
+  return value;
+}
+
 // Development storage has one current layout; no legacy migration runs at startup.
 export function initializeStore(db: DatabaseSync) {
   const version = (db.prepare('PRAGMA user_version').get() as { user_version: number })
@@ -152,6 +162,13 @@ export class Store {
     });
   }
   get<T = any>(kind: string, id: string): T | undefined {
+    return this.readDocument<T>(kind, id, false);
+  }
+  /** SDK inspection only. Every access still checks the complete current ciphertext. */
+  runSnapshotView<T = any>(id: string): Readonly<T> | undefined {
+    return this.readDocument<T>('snapshot', id, true);
+  }
+  private readDocument<T>(kind: string, id: string, immutable: boolean): T | undefined {
     const row = this.db
       .prepare('SELECT payload FROM documents WHERE kind=? AND id=?')
       .get(kind, id) as { payload: string } | undefined;
@@ -167,7 +184,7 @@ export class Store {
     if (cached?.payload === row.payload) {
       this.protectedRows.delete(key);
       this.protectedRows.set(key, cached);
-      return structuredClone(cached.value) as T;
+      return (immutable ? freezeDocument(cached.value) : structuredClone(cached.value)) as T;
     }
     if (reusable) this.dropProtectedRow(key);
     const value = this.open(row.payload);
@@ -179,9 +196,9 @@ export class Store {
         this.dropProtectedRow(this.protectedRows.keys().next().value!);
       this.protectedRows.set(key, { payload: row.payload, value, weight });
       this.protectedRowsWeight += weight;
-      return structuredClone(value) as T;
+      return (immutable ? freezeDocument(value) : structuredClone(value)) as T;
     }
-    return value;
+    return immutable ? freezeDocument(value) : value;
   }
   list<T = any>(kind: string): T[] {
     return (
@@ -192,13 +209,27 @@ export class Store {
   }
   /** Bootstrap may reuse an unchanged catalog; execution and preflight keep fresh reads. */
   flowCatalog<T = any>(): T[] {
+    return this.readFlowCatalog<T>(false);
+  }
+  /** Bootstrap serializes this immutable tree through IPC instead of cloning it twice. */
+  flowCatalogView<T = any>(): readonly T[] {
+    return this.readFlowCatalog<T>(true);
+  }
+  private readFlowCatalog<T>(immutable: boolean): T[] {
     // Never retain uncommitted rows, including rows from a transaction that later rolls back.
-    if (this.inTransaction) return this.list<T>('flow');
+    if (this.inTransaction) {
+      const rows = this.list<T>('flow');
+      return immutable ? freezeDocument(rows) : rows;
+    }
     const externalVersion = () =>
       (this.db.prepare('PRAGMA data_version').get() as { data_version: number }).data_version;
     const before = externalVersion();
     if (this.flowCatalogCache?.externalVersion === before)
-      return structuredClone(this.flowCatalogCache.rows) as T[];
+      return (
+        immutable
+          ? freezeDocument(this.flowCatalogCache.rows)
+          : structuredClone(this.flowCatalogCache.rows)
+      ) as T[];
     this.flowCatalogCache = undefined;
     const rows = this.list<T>('flow');
     // Keep the complete catalog or nothing. Other connections can invalidate it during loading.
@@ -207,9 +238,9 @@ export class Store {
       Buffer.byteLength(JSON.stringify(rows), 'utf8') <= 32 * 1024 * 1024
     ) {
       this.flowCatalogCache = { externalVersion: before, rows };
-      return structuredClone(rows);
+      return immutable ? freezeDocument(rows) : structuredClone(rows);
     }
-    return rows;
+    return immutable ? freezeDocument(rows) : rows;
   }
   *cacheReferenceDocuments(): Generator<unknown> {
     // Stream only on an explicit maintenance scan, without copying the database.
