@@ -3284,8 +3284,7 @@ export class Runtime {
         const id = args.id;
         const artifacts = await Promise.all(
           this.store
-            .list<any>('artifact')
-            .filter((a) => a.runId === id)
+            .artifactsForRun<any>(id)
             .map(async (a) => ({ ...a, ...(await this.artifactFiles.inspect(a)) })),
         );
         // Artifact inspection may span a Run finishing and the FIFO starting its

@@ -45,6 +45,7 @@ export class Store {
   private cacheReferenceGeneration = 0;
   private templateSourceGeneration = 0;
   private flowCatalogCache?: { externalVersion: number; rows: unknown[] };
+  private artifactCatalogCache?: { externalVersion: number; runs: Map<string, unknown[]> };
   private attentionKeyIndex?: { externalVersion: number; ids: Map<string, string> };
   private protectedRows = new Map<string, { payload: string; value: unknown; weight: number }>();
   private protectedRowsWeight = 0;
@@ -142,6 +143,7 @@ export class Store {
       if (['flow', 'template-instance', 'template-package'].includes(kind))
         this.templateSourceGeneration++;
       if (kind === 'flow') this.flowCatalogCache = undefined;
+      if (kind === 'artifact') this.artifactCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       // Match the actual protected JSON row; optional undefined headers are not persisted.
@@ -207,6 +209,33 @@ export class Store {
         .all(kind) as any[]
     ).map((r) => this.open(r.payload));
   }
+  /** File availability is still inspected live by the caller; only stored metadata is reused. */
+  artifactsForRun<T extends { runId: string }>(runId: string): readonly T[] {
+    if (this.inTransaction)
+      return this.list<T>('artifact').filter((artifact) => artifact.runId === runId);
+    const version = () =>
+      (this.db.prepare('PRAGMA data_version').get() as { data_version: number }).data_version;
+    const before = version();
+    if (this.artifactCatalogCache?.externalVersion === before)
+      return (this.artifactCatalogCache.runs.get(runId) ?? []) as T[];
+    this.artifactCatalogCache = undefined;
+    const rows = this.list<T>('artifact');
+    if (
+      before === version() &&
+      Buffer.byteLength(JSON.stringify(rows), 'utf8') <= 32 * 1024 * 1024
+    ) {
+      const runs = new Map<string, T[]>();
+      for (const row of freezeDocument(rows)) {
+        const run = runs.get(row.runId) ?? [];
+        run.push(row);
+        runs.set(row.runId, run);
+      }
+      for (const run of runs.values()) Object.freeze(run);
+      this.artifactCatalogCache = { externalVersion: before, runs };
+      return runs.get(runId) ?? [];
+    }
+    return rows.filter((artifact) => artifact.runId === runId);
+  }
   /** Bootstrap may reuse an unchanged catalog; execution and preflight keep fresh reads. */
   flowCatalog<T = any>(): T[] {
     return this.readFlowCatalog<T>(false);
@@ -257,6 +286,7 @@ export class Store {
       if (['flow', 'template-instance', 'template-package'].includes(kind))
         this.templateSourceGeneration++;
       if (kind === 'flow') this.flowCatalogCache = undefined;
+      if (kind === 'artifact') this.artifactCatalogCache = undefined;
       if (kind === 'attention') this.attentionKeyIndex = undefined;
       if (!['cache-cleanup', 'cache-registration'].includes(kind)) this.cacheReferenceGeneration++;
       if (this.resultLedgers.observes(kind))
