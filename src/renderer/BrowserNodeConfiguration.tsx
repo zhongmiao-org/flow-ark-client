@@ -626,8 +626,7 @@ export default function BrowserNodeConfiguration({
           !Array.isArray(node.value) &&
           'binding' in node.value &&
           'name' in node.value &&
-          typeof node.value.binding === 'string' &&
-          typeof node.value.name === 'string' ? (
+          typeof node.value.binding === 'string' ? (
             <>
               <label htmlFor={fieldId + 'browser-file-binding'}>文件目录绑定</label>
               <Input
@@ -650,16 +649,13 @@ export default function BrowserNodeConfiguration({
                   })
                 }
               />
-              <label htmlFor={fieldId + 'browser-file-name'}>目录内文件名</label>
-              <Input
-                id={fieldId + 'browser-file-name'}
-                placeholder="sample.txt"
-                value={
-                  typeof node.value === 'object' && node.value && 'name' in node.value
-                    ? String(node.value.name)
-                    : ''
-                }
-                onChange={(e) =>
+              <ValueField
+                compactReference={fieldsOnly}
+                label="上传文件名"
+                value={node.value.name}
+                choices={choices}
+                defaultValue=""
+                change={(name) =>
                   change({
                     ...node,
                     value: {
@@ -667,11 +663,36 @@ export default function BrowserNodeConfiguration({
                         typeof node.value === 'object' && node.value && 'binding' in node.value
                           ? node.value.binding
                           : 'workspace',
-                      name: e.target.value,
+                      name,
                     },
                   })
                 }
-              />
+              >
+                {typeof node.value.name === 'string' ? (
+                  <>
+                    <label htmlFor={fieldId + 'browser-file-name'}>目录内文件名</label>
+                    <Input
+                      id={fieldId + 'browser-file-name'}
+                      placeholder="sample.txt"
+                      value={node.value.name}
+                      onChange={(e) =>
+                        change({
+                          ...node,
+                          value: {
+                            binding:
+                              typeof node.value === 'object' &&
+                              node.value &&
+                              'binding' in node.value
+                                ? node.value.binding
+                                : 'workspace',
+                            name: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </>
+                ) : undefined}
+              </ValueField>
               <p className="note">在“参数与绑定”中选择此绑定对应的本机目录。</p>
             </>
           ) : undefined}
