@@ -36,16 +36,16 @@ jobs:
       SE_OFFLINE: 'true'
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (node24)
         with:
           ref: ${{ inputs.sha }}
           persist-credentials: false
-      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0 (node24)
         with:
           version: 10.14.0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0 (node24)
         with:
-          node-version: 24.3.0
+          node-version: 24.22.2
           cache: pnpm
       - name: Check immutable source and version
         env:
@@ -69,7 +69,7 @@ jobs:
           TARGET_ARCH: ${{ matrix.arch }}
         shell: bash
         run: node scripts/package.mjs "$TARGET_PLATFORM" "$TARGET_ARCH"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (node24)
         with:
           name: ${{ inputs.artifact_prefix }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: release/packages/${{ matrix.platform }}-${{ matrix.arch }}/assets/*
@@ -77,3 +77,4 @@ jobs:
           overwrite: true
           retention-days: 7
           compression-level: 0
+          archive: true
