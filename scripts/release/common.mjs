@@ -147,3 +147,11 @@ export function allArtifactNames(version) {
     ['linux', 'x64'],
   ].flatMap(([p, a]) => artifactNames(version, p, a));
 }
+
+export function findRelease(repo, tag) {
+  // The by-tag REST endpoint only resolves published releases, not pending draft tags.
+  const pages = JSON.parse(
+    run('gh', ['api', '--paginate', '--slurp', `repos/${repo}/releases?per_page=100`]),
+  );
+  return pages.flat().find((release) => release.tag_name === tag) ?? null;
+}
