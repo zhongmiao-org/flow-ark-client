@@ -84,14 +84,19 @@ HTTP 请求体也参与引用保护：删除或移动它引用的来源步骤、
 
 ## 安装与开发
 
-macOS arm64 构建输出在 `release/`。当前应用未签名、未公证，尚无正式发布渠道。
+构建输出在 `release/packages/<平台>-<架构>/`。当前为 0.3.0 开发预览，未配置发行证书、macOS 未公证；Windows/Linux 安装包不代表所有功能已验收。窗口与选区助手仅支持 macOS，Windows 脚本执行暂不可用。
+
+发布入口：Actions → Prepare Release → 输入版本。流水线创建版本 PR、归档中英文更新日志并运行四平台候选打包；检查通过合并后，从准确提交创建 tag 并重新打包，全部成功才公开 GitHub Release。若 GitHub 提示批准机器人 PR 的 workflow，需先批准；失败恢复使用 Actions → Release → 填写已合并版本 PR 编号。产物包含 SHA-256 校验文件。
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm setup:electron
 pnpm check
 pnpm dev
-pnpm package:mac
+pnpm package:mac          # macOS arm64
+pnpm package:mac:x64      # macOS Intel runner
+pnpm package:win          # Windows x64 runner
+pnpm package:linux        # Linux x64 runner
 ```
 
 需要 Node 24.3.0、pnpm 10.14.0。选择应用自带内核或已经安装的本机浏览器，不额外下载自动化浏览器。

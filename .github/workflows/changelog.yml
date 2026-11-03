@@ -1,0 +1,52 @@
+name: Changelog
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
+  workflow_call:
+    inputs:
+      sha:
+        required: true
+        type: string
+      base_sha:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      labels:
+        required: true
+        type: string
+      author:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: changelog-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || inputs.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changelog:
+    name: Changelog Watchdog
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.sha || github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - name: Check bilingual changelogs and release archive
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          PR_BRANCH: ${{ inputs.branch || github.head_ref }}
+          PR_LABELS: ${{ inputs.labels || toJSON(github.event.pull_request.labels.*.name) }}
+          PR_AUTHOR: ${{ inputs.author || github.event.pull_request.user.login }}
+        run: node scripts/release/changelog.mjs check

@@ -7,6 +7,9 @@ import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
 const exec = promisify(execFile);
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
+const arch = process.argv[2] ?? 'arm64';
+if (!['arm64', 'x64'].includes(arch)) throw new Error('Unsupported DMG architecture');
+const outputDir = process.argv[3] ?? 'release';
 const stage = await mkdtemp('flowark-dmg-', {
   retained: false,
   category: 'temporary',
@@ -15,12 +18,12 @@ const stage = await mkdtemp('flowark-dmg-', {
 try {
   // ditto preserves framework-relative symlinks when staging a relocatable .app.
   await exec('/usr/bin/ditto', [
-    resolve('release/mac-arm64/FlowArk.app'),
+    resolve(outputDir, arch === 'arm64' ? 'mac-arm64/FlowArk.app' : 'mac/FlowArk.app'),
     join(stage, 'FlowArk.app'),
   ]);
   await verifyBundle(join(stage, 'FlowArk.app'));
   await symlink('/Applications', join(stage, 'Applications'));
-  const output = resolve(`release/FlowArk-${version}-arm64.dmg`);
+  const output = resolve(outputDir, `FlowArk-${version}-macos-${arch}.dmg`);
   await exec(
     '/usr/bin/hdiutil',
     [

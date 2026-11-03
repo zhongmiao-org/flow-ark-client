@@ -1,6 +1,6 @@
 node_modules/
 dist/
-release/
+/release/
 .DS_Store
 .env*
 *.log
@@ -11,3 +11,4 @@ artifacts/
 browser-profiles/
 credentials/
 test-results/
+/.release/

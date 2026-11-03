@@ -32,7 +32,7 @@
     "test:editor-layout": "node --import tsx scripts/editor-layout-smoke.ts",
     "test:install": "node scripts/install-smoke.mjs",
     "test:vault": "node --import tsx scripts/vault-smoke.mjs",
-    "package:mac": "pnpm build && electron-builder --mac zip --arm64 --publish never --config.electronDist=node_modules/electron/dist && node scripts/package-dmg.mjs",
+    "package:mac": "node scripts/package.mjs macos arm64",
     "test:debug": "node --import tsx scripts/debug-smoke.ts",
     "test:embedded": "node --import tsx scripts/embedded-smoke.ts",
     "test:chrome": "node --import tsx scripts/chrome-smoke.ts",
@@ -84,7 +84,11 @@
     "test:template-ai": "node --import tsx scripts/template-ai-smoke.ts",
     "test:template-instance": "node --import tsx scripts/template-instance-smoke.ts",
     "test:schedule-workbench": "node --import tsx scripts/schedule-workbench-smoke.ts",
-    "test:template-entry": "node --import tsx scripts/template-entry-smoke.ts"
+    "test:template-entry": "node --import tsx scripts/template-entry-smoke.ts",
+    "package:mac:x64": "node scripts/package.mjs macos x64",
+    "package:win": "node scripts/package.mjs windows x64",
+    "package:linux": "node scripts/package.mjs linux x64",
+    "changelog:check": "node scripts/release/changelog.mjs check"
   },
   "build": {
     "appId": "org.zhongmiao.flowark",
@@ -109,10 +113,34 @@
         "dmg",
         "zip"
       ],
-      "identity": null
+      "identity": null,
+      "artifactName": "FlowArk-${version}-macos-${arch}.${ext}"
     },
     "dmg": {
       "title": "FlowArk ${version}"
+    },
+    "artifactName": "FlowArk-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "artifactName": "FlowArk-${version}-windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "executableName": "flowark",
+      "maintainer": "FlowArk <noreply@github.com>",
+      "artifactName": "FlowArk-${version}-linux-${arch}.${ext}"
     }
   },
   "pnpm": {
