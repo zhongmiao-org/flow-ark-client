@@ -338,20 +338,19 @@ app
           authorDialogPending = true;
           try {
             const picked = await dialog.showOpenDialog(win, {
-              title: '选择将随模板公开的 PNG 图片（最多 768 KiB）',
+              title: '选择将随模板公开的图片（最多 768 KiB）',
               properties: ['openFile'],
-              filters: [{ name: 'PNG 图片', extensions: ['png'] }],
+              filters: [{ name: 'PNG / JPEG 图片', extensions: ['png', 'jpg', 'jpeg'] }],
             });
             if (picked.canceled || !picked.filePaths.length) return null;
-            if (picked.filePaths.length !== 1) throw new Error('请一次选择一张 PNG 图片');
+            if (picked.filePaths.length !== 1) throw new Error('请一次选择一张图片');
             const image = await readAttachmentFile(picked.filePaths[0], 'image');
-            if (image.kind !== 'image' || image.mimeType !== 'image/png')
-              throw new Error('公开图片暂只支持 PNG');
-            if (image.size > 768 * 1024) throw new Error('公开 PNG 图片超过 768 KiB，原草稿保留');
+            if (image.kind !== 'image') throw new Error('公开图片只支持 PNG 或 JPEG');
+            if (image.size > 768 * 1024) throw new Error('公开图片超过 768 KiB，原草稿保留');
             if (nativeImage.createFromBuffer(Buffer.from(image.body, 'base64')).isEmpty())
-              throw new Error('PNG 图片无法解码，原草稿保留');
+              throw new Error('图片无法解码，原草稿保留');
             return {
-              path: `assets/image-${image.sha256.slice(0, 16)}.png`,
+              path: `assets/image-${image.sha256.slice(0, 16)}.${image.mimeType === 'image/png' ? 'png' : 'jpg'}`,
               encoding: 'base64',
               body: image.body,
             };

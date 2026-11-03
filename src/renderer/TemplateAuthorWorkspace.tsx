@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } f
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Tabs, Tag } from 'antd';
 import {
   assertAuthorDraft,
-  authorPngPreview,
+  authorImagePreview,
   newAuthorEntry,
   promptMarker,
   type AuthorDefinition,
@@ -317,7 +317,7 @@ export default function TemplateAuthorWorkspace({
   const entry = definition?.entries[entryIndex],
     prompt = definition?.prompts[promptIndex],
     asset = definition?.assets[assetIndex];
-  const assetImage = authorPngPreview(asset);
+  const assetImage = authorImagePreview(asset);
   async function choosePublicImage() {
     const original = draftRef.current,
       draftId = base.current?.id,
@@ -336,7 +336,7 @@ export default function TemplateAuthorWorkspace({
           setNotice('已取消选择公开图片，原草稿保留。');
           return;
         }
-        if (!authorPngPreview(image)) throw Error('公开 PNG 图片核对未通过，原草稿保留');
+        if (!authorImagePreview(image)) throw Error('公开图片核对未通过，原草稿保留');
         const existing = original.assets.findIndex(
           (a) => a.encoding === image.encoding && a.body === image.body,
         );
@@ -1674,7 +1674,7 @@ export default function TemplateAuthorWorkspace({
                         disabled={busy || definition.assets.length >= 100}
                         onClick={() => attempt(choosePublicImage)}
                       >
-                        选择公开PNG图片
+                        选择公开图片
                       </Button>
                       <p>图片将随模板公开。每张最多 768 KiB；先核对没有私人资料或 Key，再保存。</p>
                       {asset && (
@@ -1693,7 +1693,8 @@ export default function TemplateAuthorWorkspace({
                             <figure className="author-public-image">
                               <img src={assetImage.url} alt={`公开图片预览：${asset.path}`} />
                               <figcaption>
-                                PNG · {(assetImage.size / 1024).toFixed(1)} KiB · 保存后随 ZIP 导出
+                                {assetImage.format} · {(assetImage.size / 1024).toFixed(1)} KiB ·
+                                保存后随 ZIP 导出
                               </figcaption>
                             </figure>
                           ) : asset.encoding === 'utf8' ? (
