@@ -138,3 +138,73 @@ jobs:
           EXPECTED_LABELS: ${{ needs.context.outputs.labels }}
           EXPECTED_TITLE: ${{ needs.context.outputs.title }}
         run: node scripts/release/automerge.mjs
+      - name: Delete only the unchanged merged source branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.context.outputs.pr_number }}
+          EXPECTED_HEAD: ${{ needs.context.outputs.sha }}
+          EXPECTED_BRANCH: ${{ needs.context.outputs.branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'A full validated head SHA is required.'
+            exit 1
+          fi
+          git check-ref-format "refs/heads/$EXPECTED_BRANCH"
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+          jq -e --arg repo "$GH_REPO" --arg head "$EXPECTED_HEAD" --arg branch "$EXPECTED_BRANCH" '
+            .merged == true and .state == "closed" and .base.ref == "main" and
+            .head.repo.full_name == $repo and .head.sha == $head and .head.ref == $branch
+          ' <<< "$pr" > /dev/null
+          default_branch=$(gh api "repos/$GH_REPO" --jq '.default_branch')
+          if [[ "$EXPECTED_BRANCH" == "$default_branch" || "$EXPECTED_BRANCH" == main ]]; then
+            echo 'Refusing to delete a default or main branch.'
+            exit 1
+          fi
+          repo_git() {
+            git -c credential.helper= -c 'credential.helper=!gh auth git-credential' "$@"
+          }
+          remote="$GITHUB_SERVER_URL/$GH_REPO.git"
+          ref="refs/heads/$EXPECTED_BRANCH"
+          existing=$(repo_git ls-remote --heads "$remote" "$ref")
+          if [[ -z "$existing" ]]; then
+            echo 'Merged source branch is already absent.'
+            exit 0
+          fi
+          cleanup_dir=$(mktemp -d "$RUNNER_TEMP/flowark-branch-cleanup.XXXXXX")
+          trap 'rm -rf "$cleanup_dir"' EXIT
+          encoded_branch=$(jq -rn --arg branch "$EXPECTED_BRANCH" '$branch | @uri')
+          if ! branch=$(gh api "repos/$GH_REPO/branches/$encoded_branch" 2> "$cleanup_dir/api-error"); then
+            remaining=$(repo_git ls-remote --heads "$remote" "$ref")
+            if [[ -z "$remaining" ]]; then
+              echo 'Merged source branch was already removed.'
+              exit 0
+            fi
+            cat "$cleanup_dir/api-error" >&2
+            exit 1
+          fi
+          jq -e --arg head "$EXPECTED_HEAD" '
+            .protected == false and .commit.sha == $head
+          ' <<< "$branch" > /dev/null
+          open_prs=$(gh api --paginate --slurp "repos/$GH_REPO/pulls?state=open&per_page=100")
+          jq -e --arg repo "$GH_REPO" --arg branch "$EXPECTED_BRANCH" '
+            [ .[][] | select(.base.ref == $branch or
+              (.head.repo.full_name == $repo and .head.ref == $branch)) ] | length == 0
+          ' <<< "$open_prs" > /dev/null
+          git init --bare --quiet "$cleanup_dir/repo.git"
+          if ! repo_git -C "$cleanup_dir/repo.git" push --porcelain \
+            "--force-with-lease=$ref:$EXPECTED_HEAD" "$remote" ":$ref"; then
+            remaining=$(repo_git ls-remote --heads "$remote" "$ref")
+            if [[ -n "$remaining" ]]; then
+              echo 'Branch deletion refused; preserve the current remote ref.'
+              exit 1
+            fi
+          fi
+          remaining=$(repo_git ls-remote --heads "$remote" "$ref")
+          if [[ -n "$remaining" ]]; then
+            echo 'Source branch exists after cleanup; do not retry its deletion.'
+            exit 1
+          fi
+          echo "Deleted merged source branch: $EXPECTED_BRANCH ($EXPECTED_HEAD)."
