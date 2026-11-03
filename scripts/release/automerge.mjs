@@ -27,12 +27,42 @@ for (let attempt = 0; attempt < 40; attempt++) {
   // gh pr checks resolves the PR's current head/merge checks; never reuse a previous commit's success.
   let text;
   try {
-    text = run('gh', ['pr', 'checks', number, '--repo', repo, '--json', 'name,state,bucket']);
+    text = run('gh', [
+      'pr',
+      'checks',
+      number,
+      '--repo',
+      repo,
+      '--json',
+      'name,state,bucket,workflow,link',
+    ]);
   } catch (error) {
     text = String(error.stdout || '');
     if (!text.trim().startsWith('[')) throw error;
   }
-  const checks = JSON.parse(text).filter((check) => !/(^|\/ )Auto Merge$/.test(check.name));
+  const reported = JSON.parse(text).filter((check) => !/(^|\/ )Auto Merge$/.test(check.name));
+  const runId = (check) => /\/actions\/runs\/(\d+)/.exec(check.link ?? '')?.[1];
+  const runs = new Map();
+  for (const id of new Set(reported.map(runId).filter(Boolean))) {
+    const info = api(`repos/${repo}/actions/runs/${id}`);
+    if (info.head_sha !== head) fail('Reported workflow belongs to a different PR head.');
+    runs.set(id, info);
+  }
+  // Opened/labeled events can cancel each other's runs. Ignore only entire cancelled
+  // runs that have a non-cancelled replacement for this same workflow and head.
+  // A failed run, cancelled standalone check or approval-required run still blocks.
+  const checks = reported.filter((check) => {
+    const info = runs.get(runId(check));
+    return (
+      info?.conclusion !== 'cancelled' ||
+      ![...runs.values()].some(
+        (other) =>
+          other.id !== info.id &&
+          other.workflow_id === info.workflow_id &&
+          other.conclusion !== 'cancelled',
+      )
+    );
+  });
   const pending = checks.some((check) => check.bucket === 'pending');
   const invalid = checks.filter(
     (check) =>
