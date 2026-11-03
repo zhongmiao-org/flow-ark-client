@@ -3,6 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Checkbox, Modal, Select } from 'antd';
 import type { Bindings } from '../shared/types';
 import type { SkillRestorePreview } from '../shared/skill';
+const restoreReason = (reason: unknown, fallback: string) =>
+  (reason instanceof Error ? reason.message : fallback).replace(
+    /^Error invoking remote method '[^']+': (?:Error: )?/,
+    '',
+  );
 export type SkillChoice = {
   id: string;
   title: string;
@@ -101,9 +106,7 @@ export default function SkillPicker({
       setRestoreReviewed(false);
     } catch (reason) {
       if (visit === generation.current)
-        setError(
-          (reason instanceof Error ? reason.message : '未读取到完整确认版本') + '；原绑定保留。',
-        );
+        setError(restoreReason(reason, '未读取到完整确认版本') + '；原绑定保留。');
     } finally {
       if (visit === generation.current) setSelecting(false);
     }
@@ -131,7 +134,7 @@ export default function SkillPicker({
       );
     } catch (reason) {
       if (visit === generation.current)
-        setError((reason instanceof Error ? reason.message : '复用结果未核对') + '；原绑定保留。');
+        setError(restoreReason(reason, '复用结果未核对') + '；原绑定保留。');
     } finally {
       if (visit === generation.current) setSelecting(false);
     }
