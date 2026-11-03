@@ -10,6 +10,8 @@
 
 ### Fixed
 
+- Block auto-merge on workflow-level GitHub approval requirements, including runs that have not created check objects yet.
+
 - Validate release branches with the dedicated strict SemVer rule so version dots in release-v0.3.0 are accepted.
 
 - Allow packaging reruns to replace same-run Actions artifacts and verify the version inside the packaged application archive.
