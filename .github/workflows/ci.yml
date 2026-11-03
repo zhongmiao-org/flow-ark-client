@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Optional PR number to validate at its exact current head
+        required: false
+        type: string
+      expected_head:
+        description: Expected full PR head SHA (required by prepare-release)
+        required: false
+        type: string
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled, edited]
@@ -12,12 +21,43 @@ permissions:
   contents: read
 
 concurrency:
-  group: client-ci-${{ github.event.pull_request.number || github.ref }}
+  group: client-ci-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  context:
+    name: PR Context
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      sha: ${{ steps.context.outputs.sha }}
+      base_sha: ${{ steps.context.outputs.base_sha }}
+      pr_number: ${{ steps.context.outputs.pr_number }}
+      branch: ${{ steps.context.outputs.branch }}
+      title: ${{ steps.context.outputs.title }}
+      labels: ${{ steps.context.outputs.labels }}
+      author: ${{ steps.context.outputs.author }}
+      is_release: ${{ steps.context.outputs.is_release }}
+      version: ${{ steps.context.outputs.version }}
+      can_merge: ${{ steps.context.outputs.can_merge }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/context.mjs
+
   validate:
     name: Validate
+    needs: context
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -26,24 +66,9 @@ jobs:
       SE_AVOID_BROWSER_DOWNLOAD: 'true'
       SE_OFFLINE: 'true'
     steps:
-      - name: Check branch and PR title conventions
-        if: github.event_name == 'pull_request'
-        env:
-          PR_BRANCH: ${{ github.head_ref }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! "$PR_BRANCH" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)/[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
-            echo 'Branch must use a type prefix, for example feat/client-initial.'
-            exit 1
-          fi
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
-            echo 'PR title must follow Conventional Commits.'
-            exit 1
-          fi
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: ${{ needs.context.outputs.sha }}
           persist-credentials: false
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
@@ -53,62 +78,63 @@ jobs:
           node-version: 24.3.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # UI/UE phase: defer automated tests until the 186-board implementation is complete.
-      # Keep the existing test suites and commands for the later acceptance phase.
+      # UI/UE phase: existing unit tests remain deferred.
       - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm changelog:check
+
+  changelog:
+    name: Changelog Gate
+    needs: context
+    uses: ./.github/workflows/changelog.yml
+    with:
+      sha: ${{ needs.context.outputs.sha }}
+      base_sha: ${{ needs.context.outputs.base_sha }}
+      branch: ${{ needs.context.outputs.branch }}
+      labels: ${{ needs.context.outputs.labels }}
+      author: ${{ needs.context.outputs.author }}
+
+  candidate:
+    name: Candidate Packages
+    needs: [context, validate, changelog]
+    if: needs.context.outputs.is_release == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      sha: ${{ needs.context.outputs.sha }}
+      version: ${{ needs.context.outputs.version }}
+      artifact_prefix: candidate-${{ needs.context.outputs.sha }}
 
   automerge:
     name: Auto Merge
-    needs: validate
+    needs: [context, validate, changelog, candidate]
     if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      !github.event.pull_request.draft &&
-      contains(github.event.pull_request.labels.*.name, 'automerge')
+      always() && !cancelled() &&
+      needs.context.outputs.can_merge == 'true' &&
+      needs.validate.result == 'success' &&
+      needs.changelog.result == 'success' &&
+      (needs.candidate.result == 'success' ||
+      (needs.context.outputs.is_release == 'false' && needs.candidate.result == 'skipped'))
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       checks: read
       actions: write
       contents: write
       pull-requests: write
     steps:
-      # This job does not check out or execute application code.
-      - name: Recheck PR and merge the validated head
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - name: Merge only the validated head and dispatch follow-up workflows
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
-          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          pr=$(gh pr view "$PR_NUMBER" --repo "$GH_REPO" \
-            --json state,isDraft,labels,headRefOid,baseRefName,baseRefOid,mergeable,title)
-          if ! jq -e --arg head "$EXPECTED_HEAD" --arg base "$EXPECTED_BASE" '
-            .state == "OPEN" and (.isDraft | not) and
-            any(.labels[]; .name == "automerge") and
-            .headRefOid == $head and .baseRefOid == $base and
-            .baseRefName == "main" and .mergeable == "MERGEABLE"
-          ' <<< "$pr" > /dev/null; then
-            echo 'PR changed or is not ready; leave it open for fresh checks.'
-            exit 1
-          fi
-          # Require this run's Validate result and every other reported PR check.
-          jobs=$(gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/jobs")
-          jq -e 'any(.jobs[]; .name == "Validate" and .conclusion == "success")' <<< "$jobs" > /dev/null
-          checks=$(gh pr checks "$PR_NUMBER" --repo "$GH_REPO" --json name,state,bucket)
-          jq -e '[.[] | select(.name != "Auto Merge")] | length > 0 and all(.[]; .bucket == "pass")' <<< "$checks" > /dev/null
-          title=$(jq -r '.title' <<< "$pr")
-          if [[ ! "$title" =~ ^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)(\([a-z0-9-]+\))?\!?:\ .+ ]]; then
-            echo 'PR title must follow Conventional Commits.'
-            exit 1
-          fi
-          gh api --method PUT "repos/$GH_REPO/pulls/$PR_NUMBER/merge" \
-            -f sha="$EXPECTED_HEAD" -f merge_method=squash \
-            -f commit_title="$title (#$PR_NUMBER)" \
-            --jq 'if .merged then .sha else error(.message) end'
-          # GITHUB_TOKEN merges do not trigger push workflows; dispatch main explicitly.
-          gh workflow run ci.yml --ref main
+          PR_NUMBER: ${{ needs.context.outputs.pr_number }}
+          EXPECTED_HEAD: ${{ needs.context.outputs.sha }}
+          EXPECTED_BASE: ${{ needs.context.outputs.base_sha }}
+          IS_RELEASE: ${{ needs.context.outputs.is_release }}
+          EXPECTED_LABELS: ${{ needs.context.outputs.labels }}
+          EXPECTED_TITLE: ${{ needs.context.outputs.title }}
+        run: node scripts/release/automerge.mjs

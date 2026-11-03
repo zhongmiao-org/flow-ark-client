@@ -1,0 +1,88 @@
+name: Release
+run-name: 'Release PR #${{ inputs.pr_number || github.event.pull_request.number }}'
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Merged release PR number to publish or recover
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.pr_number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    name: Release Metadata
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'build/release-v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
+    outputs:
+      sha: ${{ steps.metadata.outputs.sha }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      version: ${{ steps.metadata.outputs.version }}
+      published: ${{ steps.metadata.outputs.published }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
+        run: node scripts/release/metadata.mjs
+
+  packages:
+    name: Release Packages
+    needs: metadata
+    if: needs.metadata.outputs.published == 'false'
+    uses: ./.github/workflows/package.yml
+    with:
+      sha: ${{ needs.metadata.outputs.sha }}
+      version: ${{ needs.metadata.outputs.version }}
+      artifact_prefix: release-${{ needs.metadata.outputs.sha }}
+
+  publish:
+    name: Publish Release
+    needs: [metadata, packages]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.metadata.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: release-${{ needs.metadata.outputs.sha }}-*
+          path: .release/assets
+          merge-multiple: true
+      - name: Verify all assets and publish the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.metadata.outputs.tag }}
+          RELEASE_SHA: ${{ needs.metadata.outputs.sha }}
+        run: node scripts/release/publish.mjs

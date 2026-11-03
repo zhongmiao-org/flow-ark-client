@@ -1,0 +1,50 @@
+name: Prepare Release
+run-name: Prepare Release v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Target version (first release 0.3.0, then increasing SemVer)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare Release PR
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.3.0
+      - name: Prepare version, changelogs, PR and dispatch candidate CI
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: node scripts/release/prepare.mjs
+      - name: Link the candidate PR
+        env:
+          PR_NUMBER: ${{ steps.prepare.outputs.pr_number }}
+          SHA: ${{ steps.prepare.outputs.sha }}
+        run: |
+          echo "Release PR: https://github.com/$GITHUB_REPOSITORY/pull/$PR_NUMBER" >> "$GITHUB_STEP_SUMMARY"
+          echo "Candidate commit: $SHA. Follow its CI for four-platform artifacts and any required workflow approval." >> "$GITHUB_STEP_SUMMARY"

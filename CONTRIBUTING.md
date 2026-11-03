@@ -12,7 +12,9 @@
 - 核对 PR 实际合并状态、CI 结果及合并提交，再从最新默认分支继续开发。CI 失败、冲突、权限不足或自动合并未配置时如实报告，不手工合并或绕过检查。
 - `CI` 工作流在 PR、main 推送及手动触发时执行 `pnpm install --frozen-lockfile`、`pnpm typecheck` 和 `pnpm build`；`Validate` 检查名称保持。分支及 PR 标题检查仅在 PR 执行。主线与 PR 分别控制并发；同仓库非草稿 PR 带有 `automerge` 标签且满足分支规则时，`Auto Merge` 核对已验证的 head/base 后 squash 合并，主线和手动运行不触发合并。外部 fork 的 PR 只运行检查。
 - CI 不下载自动化浏览器，不运行真实网站、AI 或桌面验收；这些验证仍按本地环境和具体变更单独执行。
-- 不额外添加 Husky、commitlint 或自动发布工具；CI 自动合并不代表自动发版或真实业务验收完成。
+- 不额外添加 Husky、commitlint。发布只由 Prepare Release 的版本 PR 触发，普通 PR 自动合并不发版；打包和发布不代表真实业务验收完成。
+- 普通 PR 同时更新 CHANGELOG.md、CHANGELOG_en.md 的 Unreleased；空白/分类标题修改不算更新。已发布章节受保护，确需修正使用 changelog correction。Dependabot 或 skip changelog 仅豁免内容更新，结构/版本仍校验。应用版本只通过 prepare-release 更新；版本分支使用 build/release-v<version>，release 标签不豁免看门狗。
+- Changelog 看门狗独立运行并被 CI 复用；版本 PR 另需四平台候选包通过。CI 核对当前 head/base 及全部检查后合并，并显式触发发布；已公开版本不得覆盖附件或移动 tag。
 - PR 说明具体行为、验证命令及未验证部分；真实外发测试需要明确授权。
 - 本仓库 Markdown 仅保留 README、贡献指南等必要说明，不新增 AGENTS、设计文档、实施计划或验收报告；这些文档归治理仓库。
 
