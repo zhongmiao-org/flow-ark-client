@@ -35,7 +35,7 @@ import { localCredentialId } from '../shared/local-credentials';
 import { ProviderConfigurations } from './provider-configurations';
 import { aiProvider } from '../shared/ai-settings';
 import { validateIPC } from '../shared/ipc';
-import { imageInfo } from '../host/attachment-file';
+import { imageInfo, readAttachmentFile } from '../host/attachment-file';
 import { IMAGE_MAX_BYTES, TEXT_EXTENSIONS } from '../shared/task-attachments';
 import { redactArtifactText, redactedErrorText } from '../shared/utils';
 import type { EmbeddedCleanupFailure, EmbeddedLostNotice } from '../shared/embedded-lifecycle';
@@ -332,6 +332,31 @@ app
             title: args.kind === 'browser' ? '选择本机浏览器应用' : '选择本机资源',
           });
           return r.canceled ? null : r.filePaths[0];
+        }
+        if (method === 'author.asset.choose') {
+          if (authorDialogPending) throw new Error('请先完成已有的模板文件选择窗口');
+          authorDialogPending = true;
+          try {
+            const picked = await dialog.showOpenDialog(win, {
+              title: '选择将随模板公开的图片（最多 768 KiB）',
+              properties: ['openFile'],
+              filters: [{ name: 'PNG / JPEG 图片', extensions: ['png', 'jpg', 'jpeg'] }],
+            });
+            if (picked.canceled || !picked.filePaths.length) return null;
+            if (picked.filePaths.length !== 1) throw new Error('请一次选择一张图片');
+            const image = await readAttachmentFile(picked.filePaths[0], 'image');
+            if (image.kind !== 'image') throw new Error('公开图片只支持 PNG 或 JPEG');
+            if (image.size > 768 * 1024) throw new Error('公开图片超过 768 KiB，原草稿保留');
+            if (nativeImage.createFromBuffer(Buffer.from(image.body, 'base64')).isEmpty())
+              throw new Error('图片无法解码，原草稿保留');
+            return {
+              path: `assets/image-${image.sha256.slice(0, 16)}.${image.mimeType === 'image/png' ? 'png' : 'jpg'}`,
+              encoding: 'base64',
+              body: image.body,
+            };
+          } finally {
+            authorDialogPending = false;
+          }
         }
         if (method === 'clipboard.copy') {
           clipboard.writeText(args.value);

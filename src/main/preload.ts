@@ -60,6 +60,7 @@ const allowed = new Set([
   'author.flow.source',
   'author.preview',
   'author.file',
+  'author.asset.choose',
   'author.export',
   'author.export.inspect',
   'author.export.cancel',

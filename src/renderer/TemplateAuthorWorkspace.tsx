@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } f
 import { Alert, Button, Card, Checkbox, Collapse, Input, Select, Tabs, Tag } from 'antd';
 import {
   assertAuthorDraft,
+  authorImagePreview,
   newAuthorEntry,
   promptMarker,
   type AuthorDefinition,
@@ -316,6 +317,43 @@ export default function TemplateAuthorWorkspace({
   const entry = definition?.entries[entryIndex],
     prompt = definition?.prompts[promptIndex],
     asset = definition?.assets[assetIndex];
+  const assetImage = authorImagePreview(asset);
+  async function choosePublicImage() {
+    const original = draftRef.current,
+      draftId = base.current?.id,
+      visit = generation.current;
+    if (!original || !draftId) throw Error('请先打开制作草稿');
+    await work(
+      () => api('author.asset.choose'),
+      (image: AuthorDefinition['assets'][number] | null) => {
+        if (
+          visit !== generation.current ||
+          base.current?.id !== draftId ||
+          draftRef.current !== original
+        )
+          return;
+        if (!image) {
+          setNotice('已取消选择公开图片，原草稿保留。');
+          return;
+        }
+        if (!authorImagePreview(image)) throw Error('公开图片核对未通过，原草稿保留');
+        const existing = original.assets.findIndex(
+          (a) => a.encoding === image.encoding && a.body === image.body,
+        );
+        if (existing >= 0) {
+          setAssetIndex(existing);
+          setNotice('此图片已在当前草稿中，未重复添加。');
+          return;
+        }
+        if (original.assets.length >= 100) throw Error('公开文件已达到 100 项上限');
+        if (original.assets.some((a) => a.path === image.path))
+          throw Error('同路径已有其他公开文件，未覆盖');
+        edit((d) => d.assets.push(image));
+        setAssetIndex(original.assets.length);
+        setNotice('图片已加入未保存草稿。请核对预览、包内路径和公开内容，再保存并导出。');
+      },
+    );
+  }
   const setEntry = (change: (e: NonNullable<typeof entry>) => void) =>
     edit((d) => {
       if (d.entries[entryIndex]) change(d.entries[entryIndex]);
@@ -1632,6 +1670,13 @@ export default function TemplateAuthorWorkspace({
                       >
                         添加公开文本文件
                       </Button>
+                      <Button
+                        disabled={busy || definition.assets.length >= 100}
+                        onClick={() => attempt(choosePublicImage)}
+                      >
+                        选择公开图片
+                      </Button>
+                      <p>图片将随模板公开。每张最多 768 KiB；先核对没有私人资料或 Key，再保存。</p>
                       {asset && (
                         <>
                           <Input
@@ -1644,19 +1689,30 @@ export default function TemplateAuthorWorkspace({
                               })
                             }
                           />
-                          <p>编码：{asset.encoding} · 原包附加文件保留，不从本机任意路径读取。</p>
-                          <Input.TextArea
-                            aria-label="附加公开文件正文"
-                            disabled={busy || asset.encoding === 'base64'}
-                            value={asset.body}
-                            maxLength={1048576}
-                            autoSize={{ minRows: 8, maxRows: 20 }}
-                            onChange={(e) =>
-                              edit((d) => {
-                                d.assets[assetIndex].body = e.target.value;
-                              })
-                            }
-                          />
+                          {assetImage ? (
+                            <figure className="author-public-image">
+                              <img src={assetImage.url} alt={`公开图片预览：${asset.path}`} />
+                              <figcaption>
+                                {assetImage.format} · {(assetImage.size / 1024).toFixed(1)} KiB ·
+                                保存后随 ZIP 导出
+                              </figcaption>
+                            </figure>
+                          ) : asset.encoding === 'utf8' ? (
+                            <Input.TextArea
+                              aria-label="附加公开文件正文"
+                              disabled={busy}
+                              value={asset.body}
+                              maxLength={1048576}
+                              autoSize={{ minRows: 8, maxRows: 20 }}
+                              onChange={(e) =>
+                                edit((d) => {
+                                  d.assets[assetIndex].body = e.target.value;
+                                })
+                              }
+                            />
+                          ) : (
+                            <p>二进制公开文件保留原字节，不作为文本编辑。</p>
+                          )}
                           <Button
                             danger
                             disabled={busy}

@@ -10,6 +10,66 @@ export type AuthorDraft = NonNullable<FlowArkP1['TemplateAuthorDraft']>;
 export type AuthorEntry = AuthorDefinition['entries'][number];
 export type AuthorCheckout = NonNullable<FlowArkP1['TemplateAuthorCheckout']>;
 export type AuthorReceipt = NonNullable<FlowArkP1['TemplateAuthorExportReceipt']>;
+export function authorImagePreview(asset?: AuthorDefinition['assets'][number]) {
+  if (
+    asset?.encoding !== 'base64' ||
+    !/\.(png|jpe?g)$/i.test(asset.path) ||
+    asset.body.length > 1048576 ||
+    asset.body.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(asset.body)
+  )
+    return;
+  const size =
+    (asset.body.length / 4) * 3 -
+    (asset.body.endsWith('==') ? 2 : asset.body.endsWith('=') ? 1 : 0);
+  if (size > 768 * 1024) return;
+  try {
+    const bytes = Uint8Array.from(atob(asset.body), (c) => c.charCodeAt(0)),
+      data = new DataView(bytes.buffer);
+    let width = 0,
+      height = 0,
+      mimeType = '';
+    if (
+      bytes.length >= 33 &&
+      bytes.slice(0, 8).every((v, i) => v === [137, 80, 78, 71, 13, 10, 26, 10][i]) &&
+      data.getUint32(8) === 13 &&
+      String.fromCharCode(...bytes.slice(12, 16)) === 'IHDR' &&
+      /\.png$/i.test(asset.path)
+    ) {
+      mimeType = 'image/png';
+      width = data.getUint32(16);
+      height = data.getUint32(20);
+    } else if (bytes[0] === 255 && bytes[1] === 216 && /\.jpe?g$/i.test(asset.path)) {
+      mimeType = 'image/jpeg';
+      let p = 2;
+      while (p + 3 < bytes.length) {
+        if (bytes[p++] !== 255) return;
+        while (bytes[p] === 255) p++;
+        const marker = bytes[p++];
+        if (marker === 218 || marker === 217) break;
+        if (marker === 1 || (marker >= 208 && marker <= 215)) continue;
+        if (p + 2 > bytes.length) return;
+        const length = data.getUint16(p);
+        if (length < 2 || p + length > bytes.length) return;
+        if ([192, 193, 194].includes(marker)) {
+          if (length < 8) return;
+          height = data.getUint16(p + 3);
+          width = data.getUint16(p + 5);
+          break;
+        }
+        p += length;
+      }
+    }
+    if (!width || !height || width > 8192 || height > 8192 || width * height > 16000000) return;
+    return {
+      url: 'data:' + mimeType + ';base64,' + asset.body,
+      size,
+      format: mimeType === 'image/png' ? 'PNG' : 'JPEG',
+    };
+  } catch {
+    return;
+  }
+}
 export const promptMarker = (id: string) => '@author:prompt/' + id;
 export function assertAuthorDefinition(v: unknown): asserts v is AuthorDefinition {
   if (!author_definition_v1(v)) throw Error('模板制作定义无效，请核对字段与入口');
@@ -29,6 +89,7 @@ const id = z.string().min(1).max(100),
 const token = z.string().regex(/^[a-f0-9]{64}$/),
   packageKey = z.string().min(1).max(240);
 export const authorMethods = {
+  'author.asset.choose': z.object({}).strict(),
   'author.schema.check': z.object({ schema: z.unknown(), form: z.boolean() }).strict(),
   'author.sdk.result': z.object({ runId: id }).strict(),
   'author.list': z.object({}).strict(),
