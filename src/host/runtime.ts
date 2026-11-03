@@ -2996,6 +2996,10 @@ export class Runtime {
       if (method === 'skill.rebase') return this.skills.rebase(v);
       if (method === 'skill.fork') return this.skills.fork(v.id);
       if (method === 'skill.relocate') return this.skills.relocate(v.id, v.path);
+      if (method === 'skill.restore.preview') return this.skills.restorePreview(v.path);
+      if (method === 'skill.restore.confirm')
+        return this.skills.restoreConfirm(v.token, v.requestId);
+      if (method === 'skill.restore.cancel') return this.skills.restoreCancel(v.token);
     }
     if (method.startsWith('reduction.')) {
       const rule = reductionMethods[method as keyof typeof reductionMethods];

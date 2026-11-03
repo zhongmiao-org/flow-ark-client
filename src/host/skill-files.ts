@@ -1,6 +1,6 @@
 import { constants } from 'node:fs';
 import { open, realpath, lstat, mkdir, link, unlink } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import { canonical, digest } from '../shared/utils';
 import {
@@ -146,6 +146,25 @@ export async function readSkillFiles(w: Workspace, ref: SkillVersionRef): Promis
     if (e instanceof SkillFileError) throw e;
     return fail('Skill版本不可读取或格式无效；原历史快照保留');
   }
+}
+/** Explicitly selected original manifest only; never discover or rewrite user files. */
+export async function inspectSavedSkill(path: string) {
+  if (basename(path) !== 'manifest.json') fail('请选择已保存版本的 manifest.json');
+  const versionId = basename(dirname(path)),
+    key = basename(dirname(dirname(path))),
+    root = dirname(dirname(dirname(path)));
+  if (basename(root) !== 'flowark-skills' || !/^sv_[a-f0-9]{32}$/.test(versionId))
+    fail('请选择 flowark-skills 中完整确认版本的 manifest.json');
+  skillKey(key);
+  const w = await workspace(dirname(root)),
+    c = await chain(w, key, versionId);
+  const manifest = JSON.parse(decode(await bounded(join(c.path, 'manifest.json'))));
+  assertSkillManifest(manifest);
+  await c.check();
+  if (manifest.key !== key || manifest.versionId !== versionId)
+    fail('Skill清单与所选版本目录不一致');
+  const ref = { key, versionId, sha256: digest(manifest) };
+  return { workspace: w, version: await readSkillFiles(w, ref) };
 }
 export async function observeSkill(w: Workspace, ref: SkillVersionRef) {
   await rootCheck(w);

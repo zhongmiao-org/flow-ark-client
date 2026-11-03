@@ -55,6 +55,7 @@ import {
   readSkillFiles,
   writeSkillFiles,
   observeSkill,
+  inspectSavedSkill,
   byteDigest,
   type Workspace,
 } from './skill-files';
@@ -69,8 +70,8 @@ type Registered = {
   id: string;
   workspace: Workspace;
   version: SkillVersion;
-  sourceFlowId: string;
-  sourceNodeId: string;
+  sourceFlowId?: string;
+  sourceNodeId?: string;
 };
 type Operation = {
   id: string;
@@ -87,6 +88,15 @@ const same = (a: unknown, b: unknown) => canonical(a) === canonical(b);
 const headKey = (w: Workspace, key: string) => digest({ workspace: w, key });
 const versionKey = (w: Workspace, ref: SkillVersionRef) => digest({ workspace: w, ref });
 export class Skills {
+  private restorationPreviews = new Map<
+    string,
+    {
+      workspace: Workspace;
+      version: SkillVersion;
+      head: SkillVersionRef | null;
+      expires: number;
+    }
+  >();
   private queues = new Map<string, Promise<unknown>>();
   private jobs = new Set<Promise<unknown>>();
   private previews = new Map<
@@ -1182,8 +1192,8 @@ export class Skills {
       revision: 1,
       key: v.ref.key,
       workspaceBinding: 'workspace',
-      sourceFlowId: original.sourceFlowId,
-      sourceNodeId: original.sourceNodeId,
+      sourceFlowId: original.sourceFlowId ?? 'manual-restored-skill',
+      sourceNodeId: original.sourceNodeId ?? v.ref.versionId,
       sourceFingerprint: digest({ fork: id, nonce: uid() }),
       base: v.ref,
       status: 'draft',
@@ -1208,6 +1218,102 @@ export class Skills {
       if (!head) this.store.put('skill-head', headKey(w, actual.ref.key), { ref: actual.ref });
     });
     return record.id;
+  }
+  async restorePreview(path: string): Promise<import('../shared/skill').SkillRestorePreview> {
+    this.available();
+    const checked = await inspectSavedSkill(path);
+    this.available();
+    const { workspace: w, version } = checked,
+      existing = this.store.get<Registered>('skill-version', versionKey(w, version.ref));
+    if (existing && (!same(existing.workspace, w) || !same(existing.version, version)))
+      throw Error('此版本已有不一致登记，请先核对原记录');
+    const head = this.head(w, version.ref.key),
+      token = randomBytes(32).toString('hex');
+    for (const [key, p] of this.restorationPreviews)
+      if (p.expires <= Date.now()) this.restorationPreviews.delete(key);
+    if (this.restorationPreviews.size >= 20) throw Error('待核对版本过多，请先取消原核对');
+    this.restorationPreviews.set(token, { ...checked, head, expires: Date.now() + 600000 });
+    return {
+      token,
+      workspace: w.path,
+      version,
+      alreadyRegistered: !!existing,
+      headPreserved: !!head,
+    };
+  }
+  restoreCancel(token: string) {
+    this.restorationPreviews.delete(token);
+    return { cancelled: true };
+  }
+  async restoreConfirm(
+    token: string,
+    requestId: string,
+  ): Promise<{
+    binding: { path: string; skill: SkillVersionRef };
+    alreadyRegistered: boolean;
+  }> {
+    this.available();
+    type Receipt = {
+      tokenSha256: string;
+      workspace: Workspace;
+      ref: SkillVersionRef;
+      registeredId: string;
+      confirmedAt: string;
+    };
+    const previous = this.store.get<Receipt>('skill-restoration', requestId);
+    if (previous) {
+      if (previous.tokenSha256 !== digest(token)) throw Error('复用请求已用于其他核对');
+      await this.read(previous.workspace.path, previous.ref);
+      return {
+        binding: { path: previous.workspace.path, skill: previous.ref },
+        alreadyRegistered: true,
+      };
+    }
+    const p = this.restorationPreviews.get(token);
+    if (!p || p.expires <= Date.now()) throw Error('核对已过期，请重新选择已保存版本');
+    return this.exclusive(headKey(p.workspace, p.version.ref.key), async () => {
+      this.available();
+      if (this.store.get('skill-restoration', requestId))
+        return this.restoreConfirm(token, requestId);
+      if (this.restorationPreviews.get(token) !== p || p.expires <= Date.now())
+        throw Error('核对已取消或过期，请重新选择');
+      const w = await workspace(p.workspace.path),
+        actual = await readSkillFiles(w, p.version.ref);
+      this.available();
+      if (
+        this.restorationPreviews.get(token) !== p ||
+        p.expires <= Date.now() ||
+        !same(w, p.workspace) ||
+        !same(actual, p.version) ||
+        !same(this.head(w, actual.ref.key), p.head)
+      )
+        throw Error('文件、工作区或当前版本已变化，请重新核对；原绑定保留');
+      const id = versionKey(w, actual.ref),
+        old = this.store.get<Registered>('skill-version', id);
+      if (old && (!same(old.workspace, w) || !same(old.version, actual)))
+        throw Error('版本登记冲突，原记录保留');
+      if (this.store.get('skill-restoration', requestId))
+        return this.restoreConfirm(token, requestId);
+      this.store.tx(() => {
+        if (!old)
+          this.store.put('skill-version', id, {
+            id,
+            workspace: w,
+            version: actual,
+            restoration: { requestId, source: 'user-reviewed-confirmed-files' },
+          });
+        if (!p.head) this.store.put('skill-head', headKey(w, actual.ref.key), { ref: actual.ref });
+        this.store.put('skill-restoration', requestId, {
+          tokenSha256: digest(token),
+          workspace: w,
+          ref: actual.ref,
+          registeredId: id,
+          confirmedAt: now(),
+        } satisfies Receipt);
+      });
+      this.restorationPreviews.delete(token);
+      return { binding: { path: w.path, skill: actual.ref }, alreadyRegistered: !!old };
+    });
   }
   async stop() {
     let timer: ReturnType<typeof setTimeout>;
