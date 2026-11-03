@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import {
   api,
-  optionalApi,
+  findRelease,
   fail,
   run,
   git,
@@ -41,7 +41,48 @@ if (git('tag', '--list', tag)) {
 mkdirSync('.release', { recursive: true });
 const notes = `${logs[1][1].body}\n\n---\n\n${logs[0][1].body}\n`;
 writeFileSync('.release/notes.md', notes);
-const existing = optionalApi(`repos/${repo}/releases/tags/${tag}`);
+const existing = findRelease(repo, tag);
+const artifactRun = process.env.ARTIFACT_RUN_ID || '';
+if (artifactRun && !existing?.draft && !existing)
+  fail('Artifact recovery requires an existing release.');
+if (artifactRun && existing?.draft) {
+  if (!/^[1-9]\d*$/.test(artifactRun)) fail('Invalid artifact_run_id.');
+  const previous = api(`repos/${repo}/actions/runs/${artifactRun}`);
+  if (
+    previous.path !== '.github/workflows/release.yml' ||
+    previous.head_repository.full_name !== repo
+  )
+    fail('Recovery artifacts must come from this repository Release workflow.');
+  const jobs = JSON.parse(
+    run('gh', [
+      'api',
+      '--paginate',
+      '--slurp',
+      `repos/${repo}/actions/runs/${artifactRun}/jobs?per_page=100`,
+    ]),
+  ).flatMap((page) => page.jobs);
+  for (const platform of ['macos-arm64', 'macos-x64', 'windows-x64', 'linux-x64']) {
+    if (
+      !jobs.some(
+        (job) =>
+          job.name === `Release Packages / Package (${platform})` && job.conclusion === 'success',
+      )
+    )
+      fail(`Recovery requires a successful native package job: ${platform}`);
+  }
+  const artifacts = api(
+    `repos/${repo}/actions/runs/${artifactRun}/artifacts?per_page=100`,
+  ).artifacts;
+  for (const platform of ['macos-arm64', 'macos-x64', 'windows-x64', 'linux-x64']) {
+    if (
+      !artifacts.some(
+        (artifact) => artifact.name === `release-${sha}-${platform}` && !artifact.expired,
+      )
+    )
+      fail(`Recovery artifact missing or source SHA mismatch: ${platform}`);
+  }
+}
+output({ artifact_run_id: artifactRun });
 if (existing && !existing.draft) {
   const names = existing.assets.map((asset) => asset.name).sort();
   if (JSON.stringify(names) !== JSON.stringify(allArtifactNames(version).sort()))

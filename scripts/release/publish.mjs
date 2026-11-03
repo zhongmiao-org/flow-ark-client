@@ -1,6 +1,15 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { api, fail, run, git, assertSha, allArtifactNames, compareVersions } from './common.mjs';
+import {
+  findRelease,
+  api,
+  fail,
+  run,
+  git,
+  assertSha,
+  allArtifactNames,
+  compareVersions,
+} from './common.mjs';
 const repo = process.env.GITHUB_REPOSITORY;
 const tag = process.env.TAG;
 const version = tag?.replace(/^v/, '');
@@ -24,7 +33,9 @@ for (const name of expected.filter((n) => n.endsWith('-SHA256SUMS.txt'))) {
   const wanted = siblings.map((n) => `${digests.get(n)}  ${n}`).sort();
   if (JSON.stringify(lines.sort()) !== JSON.stringify(wanted)) fail(`Checksum mismatch: ${name}`);
 }
-let release = api(`repos/${repo}/releases/tags/${tag}`);
+let release = findRelease(repo, tag);
+if (!release) fail('Release draft is missing.');
+const releaseId = release.id;
 if (!release.draft) fail('Release is already public; refusing to overwrite assets.');
 for (const asset of release.assets) {
   if (!expected.includes(asset.name))
@@ -39,7 +50,7 @@ run('gh', [
   '--clobber',
   ...expected.map((name) => `.release/assets/${name}`),
 ]);
-release = api(`repos/${repo}/releases/tags/${tag}`);
+release = api(`repos/${repo}/releases/${releaseId}`);
 if (
   !release.draft ||
   JSON.stringify(release.assets.map((a) => a.name).sort()) !== JSON.stringify(expected)
@@ -61,6 +72,6 @@ const newer = pages
       compareVersions(r.tag_name.slice(1), version) >= 0,
   );
 run('gh', ['release', 'edit', tag, '--repo', repo, '--draft=false', `--latest=${!newer}`]);
-const published = api(`repos/${repo}/releases/tags/${tag}`);
+const published = api(`repos/${repo}/releases/${releaseId}`);
 if (published.draft) fail('Release was not published.');
 console.log(`Published ${published.html_url} (${sha}), ${expected.length} verified assets.`);

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolve draft releases correctly and recover uploads from a verified same-source Release run with all four native packages successful, without moving tags.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added
@@ -24,4 +28,3 @@
 
 - This is a development preview. Packages do not certify full platform functionality or real business acceptance. Distribution certificates are not configured and macOS packages are not notarized.
 - Application window and selection helpers are macOS-only; script execution is currently unavailable on Windows. Websites, browsers and AI providers retain their individual acceptance limits.
-
