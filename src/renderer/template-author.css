@@ -1,6 +1,20 @@
 .template-author-root {
   min-width: 0;
 }
+.author-public-image {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.author-public-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+}
+.author-public-image figcaption {
+  color: var(--fa-text-secondary);
+}
 .author-export-files {
   display: flex;
   align-items: center;

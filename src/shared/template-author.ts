@@ -10,6 +10,40 @@ export type AuthorDraft = NonNullable<FlowArkP1['TemplateAuthorDraft']>;
 export type AuthorEntry = AuthorDefinition['entries'][number];
 export type AuthorCheckout = NonNullable<FlowArkP1['TemplateAuthorCheckout']>;
 export type AuthorReceipt = NonNullable<FlowArkP1['TemplateAuthorExportReceipt']>;
+export function authorPngPreview(asset?: AuthorDefinition['assets'][number]) {
+  if (
+    asset?.encoding !== 'base64' ||
+    !/\.png$/i.test(asset.path) ||
+    !asset.body.startsWith('iVBORw0KGgo') ||
+    asset.body.length > 1048576 ||
+    asset.body.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(asset.body)
+  )
+    return;
+  const size =
+    (asset.body.length / 4) * 3 -
+    (asset.body.endsWith('==') ? 2 : asset.body.endsWith('=') ? 1 : 0);
+  if (size > 768 * 1024) return;
+  try {
+    const header = Uint8Array.from(atob(asset.body.slice(0, 44)), (c) => c.charCodeAt(0));
+    if (header.length < 33 || String.fromCharCode(...header.slice(12, 16)) !== 'IHDR') return;
+    const data = new DataView(header.buffer),
+      width = data.getUint32(16),
+      height = data.getUint32(20);
+    if (
+      data.getUint32(8) !== 13 ||
+      !width ||
+      !height ||
+      width > 8192 ||
+      height > 8192 ||
+      width * height > 16000000
+    )
+      return;
+    return { url: 'data:image/png;base64,' + asset.body, size };
+  } catch {
+    return;
+  }
+}
 export const promptMarker = (id: string) => '@author:prompt/' + id;
 export function assertAuthorDefinition(v: unknown): asserts v is AuthorDefinition {
   if (!author_definition_v1(v)) throw Error('模板制作定义无效，请核对字段与入口');
@@ -29,6 +63,7 @@ const id = z.string().min(1).max(100),
 const token = z.string().regex(/^[a-f0-9]{64}$/),
   packageKey = z.string().min(1).max(240);
 export const authorMethods = {
+  'author.asset.choose': z.object({}).strict(),
   'author.schema.check': z.object({ schema: z.unknown(), form: z.boolean() }).strict(),
   'author.sdk.result': z.object({ runId: id }).strict(),
   'author.list': z.object({}).strict(),
