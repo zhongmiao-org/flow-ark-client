@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Explicitly verify and delete source branches after CI auto-merges, preserving new commits, protected branches and references from other open PRs when native automatic deletion leaves branches behind.
+
 - Upgrade all JavaScript Actions used by CI and packaging to Node 24 runtimes, removing Node 20 deprecation warnings; use Node 24.22.2 LTS for builds.
 
 - Resolve draft releases correctly and recover uploads from a verified same-source Release run with all four native packages successful, without moving tags.
