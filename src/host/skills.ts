@@ -70,8 +70,8 @@ type Registered = {
   id: string;
   workspace: Workspace;
   version: SkillVersion;
-  sourceFlowId: string;
-  sourceNodeId: string;
+  sourceFlowId?: string;
+  sourceNodeId?: string;
 };
 type Operation = {
   id: string;
@@ -1192,8 +1192,8 @@ export class Skills {
       revision: 1,
       key: v.ref.key,
       workspaceBinding: 'workspace',
-      sourceFlowId: original.sourceFlowId,
-      sourceNodeId: original.sourceNodeId,
+      sourceFlowId: original.sourceFlowId ?? 'manual-restored-skill',
+      sourceNodeId: original.sourceNodeId ?? v.ref.versionId,
       sourceFingerprint: digest({ fork: id, nonce: uid() }),
       base: v.ref,
       status: 'draft',
@@ -1300,8 +1300,6 @@ export class Skills {
             id,
             workspace: w,
             version: actual,
-            sourceFlowId: 'external-skill-restoration',
-            sourceNodeId: actual.ref.versionId,
             restoration: { requestId, source: 'user-reviewed-confirmed-files' },
           });
         if (!p.head) this.store.put('skill-head', headKey(w, actual.ref.key), { ref: actual.ref });

@@ -221,6 +221,7 @@ export default function SkillPicker({
         title="核对已有 Skill"
         open={!!restore}
         width={960}
+        styles={{ body: { maxHeight: 'calc(100vh - 260px)', overflowY: 'auto' } }}
         closable={!selecting}
         maskClosable={!selecting}
         keyboard={!selecting}
@@ -260,7 +261,13 @@ export default function SkillPicker({
               type="info"
               title="请本人核对文件来源和完整内容。文件摘要只证明一致性，不是作者身份签名。"
             />
-            <div style={{ maxHeight: '60vh', overflow: 'auto', overflowWrap: 'anywhere' }}>
+            <div
+              style={{
+                maxHeight: 'min(45vh, calc(100vh - 420px))',
+                overflow: 'auto',
+                overflowWrap: 'anywhere',
+              }}
+            >
               <p>
                 {restore.version.title} · 确认于 {recordTime(restore.version.confirmedAt)}
               </p>
