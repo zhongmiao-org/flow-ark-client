@@ -25,6 +25,7 @@ if (!number) {
   const branch = pr.head.ref;
   const title = pr.title;
   if (
+    !branch.startsWith('build/release-v') &&
     !/^(feat|fix|docs|chore|refactor|perf|test|style|build|revert|ci)\/[a-z0-9]+(-[a-z0-9]+)*$/.test(
       branch,
     )
