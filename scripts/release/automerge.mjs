@@ -21,9 +21,12 @@ function ready(pr) {
       JSON.stringify(JSON.parse(process.env.EXPECTED_LABELS).sort())
   );
 }
-const approvals = api(`repos/${repo}/actions/runs?head_sha=${head}&per_page=100`).workflow_runs;
-if (approvals.some((workflow) => workflow.conclusion === 'action_required'))
-  fail('GitHub requires approval for a workflow on this head; approve it before merging.');
+function requireWorkflowApprovals() {
+  const approvals = api(`repos/${repo}/actions/runs?head_sha=${head}&per_page=100`).workflow_runs;
+  if (approvals.some((workflow) => workflow.conclusion === 'action_required'))
+    fail('GitHub requires approval for a workflow on this head; approve it before merging.');
+}
+requireWorkflowApprovals();
 let pr = api(`repos/${repo}/pulls/${number}`);
 if (!ready(pr)) fail('PR head/base, labels or mergeability changed; fresh checks are required.');
 for (let attempt = 0; attempt < 40; attempt++) {
@@ -92,6 +95,7 @@ if (
   )
 )
   fail('Invalid PR title.');
+requireWorkflowApprovals();
 const result = api(
   `repos/${repo}/pulls/${number}/merge`,
   '--method',
