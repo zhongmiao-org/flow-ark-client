@@ -40,7 +40,7 @@ if (platform === 'macos') {
     'Contents/MacOS/FlowArk',
     'Contents/Resources/app.asar.unpacked/dist/native/flowark-window-discovery',
   ])
-    exec('/usr/bin/lipo', ['-verify_arch', arch === 'x64' ? 'x86_64' : 'arm64', join(app, binary)]);
+    exec('/usr/bin/lipo', [join(app, binary), '-verify_arch', arch === 'x64' ? 'x86_64' : 'arm64']);
   const bundledVersion = execFileSync(
     '/usr/bin/plutil',
     ['-extract', 'CFBundleShortVersionString', 'raw', '-o', '-', join(app, 'Contents/Info.plist')],

@@ -140,7 +140,7 @@
       "category": "Utility",
       "executableName": "flowark",
       "maintainer": "FlowArk <noreply@github.com>",
-      "artifactName": "FlowArk-${version}-linux-${arch}.${ext}"
+      "artifactName": "FlowArk-${version}-linux-x64.${ext}"
     }
   },
   "pnpm": {
