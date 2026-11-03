@@ -74,5 +74,6 @@ jobs:
           name: ${{ inputs.artifact_prefix }}-${{ matrix.platform }}-${{ matrix.arch }}
           path: release/packages/${{ matrix.platform }}-${{ matrix.arch }}/assets/*
           if-no-files-found: error
+          overwrite: true
           retention-days: 7
           compression-level: 0

@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, rmSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { createRequire } from 'node:module';
 import { artifactNames } from './release/common.mjs';
 import { verifyBundle } from './verify-bundle.mjs';
 const [platform = 'macos', arch = 'arm64'] = process.argv.slice(2);
@@ -68,6 +69,23 @@ if (platform === 'macos') {
   )
     throw new Error('Linux executable is not x64 ELF.');
 }
+const require = createRequire(import.meta.url);
+const builderRequire = createRequire(require.resolve('electron-builder'));
+const { extractFile } = createRequire(builderRequire.resolve('app-builder-lib'))('@electron/asar');
+const asarPath =
+  platform === 'macos'
+    ? join(
+        output,
+        arch === 'arm64' ? 'mac-arm64' : 'mac',
+        'FlowArk.app/Contents/Resources/app.asar',
+      )
+    : join(
+        output,
+        platform === 'windows' ? 'win-unpacked' : 'linux-unpacked',
+        'resources/app.asar',
+      );
+if (JSON.parse(extractFile(asarPath, 'package.json').toString()).version !== version)
+  throw new Error('Packaged application version mismatch.');
 const assets = join(output, 'assets');
 mkdirSync(assets);
 const sums = [];
