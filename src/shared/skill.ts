@@ -24,6 +24,13 @@ import type {
   SkillProposalSnapshot,
 } from './contracts.generated';
 export type SkillNode = Extract<Step, { type: 'skill' }>;
+export type SkillRestorePreview = {
+  token: string;
+  workspace: string;
+  version: SkillVersion;
+  alreadyRegistered: boolean;
+  headPreserved: boolean;
+};
 export const skillCapability = 'skill-v1';
 export const skillUpdateCapability = 'skill-update-review-v1';
 export const skillBytes = (value: unknown) =>
@@ -104,6 +111,11 @@ export const skillRefSchema = z
   .strict();
 const selection = z.object({ proposalId: id, revision }).strict();
 export const skillMethods = {
+  'skill.restore.preview': z.object({ path: z.string().min(1).max(4096) }).strict(),
+  'skill.restore.confirm': z
+    .object({ token: z.string().regex(/^[a-f0-9]{64}$/), requestId: id, reviewed: z.literal(true) })
+    .strict(),
+  'skill.restore.cancel': z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
   'skill.update.info': selection,
   'skill.update.review': selection,
   'skill.update.apply': z.unknown().transform((v, ctx) => {
