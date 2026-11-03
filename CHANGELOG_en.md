@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-03
+
 ### Fixed
 
 - Explicitly verify and delete source branches after CI auto-merges, preserving new commits, protected branches and references from other open PRs when native automatic deletion leaves branches behind.
