@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Upgrade all JavaScript Actions used by CI and packaging to Node 24 runtimes, removing Node 20 deprecation warnings; use Node 24.22.2 LTS for builds.
+
 - Resolve draft releases correctly and recover uploads from a verified same-source Release run with all four native packages successful, without moving tags.
 
 ## [0.3.0] - 2026-11-03

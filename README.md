@@ -101,7 +101,7 @@ pnpm package:win          # Windows x64 runner
 pnpm package:linux        # Linux x64 runner
 ```
 
-需要 Node 24.3.0、pnpm 10.14.0。选择应用自带内核或已经安装的本机浏览器，不额外下载自动化浏览器。
+CI 与推荐开发环境使用 Node 24.22.2、pnpm 10.14.0。选择应用自带内核或已经安装的本机浏览器，不额外下载自动化浏览器。
 
 贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。详细需求、架构、契约说明和验收资料统一由治理仓库管理，不在客户端复制维护。
 
