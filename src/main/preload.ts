@@ -4,6 +4,12 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'project.review.get', 'project.review.respond',
+  'project.choose', 'project.create', 'project.list', 'project.get', 'project.read',
+  'project.check', 'project.write', 'project.transaction', 'project.rollback',
+  'project.package', 'project.prepare', 'project.instance', 'project.configure',
+  'project.run.history', 'project.run.preview', 'project.run.request', 'project.run.status', 'project.run.control',
+  'project.ai.retryTool', 'project.ai.resume', 'project.ai.get', 'project.ai.save', 'project.ai.start', 'project.ai.detail', 'project.ai.cancel',
   'cache.locations',
   'cache.location',
   'cache.scan',

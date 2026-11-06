@@ -104,6 +104,18 @@ export class RunResultSources {
         }
       : { kind: 'author-draft', id: source.draftId };
   }
+  private retainedOwner(context: ResultOwnerContext, resource: Resource, ref: Ref): { owner: Owner; rebuild?: any } {
+    const target = context.owner;
+    if (ref.source.kind !== 'template' || target.kind !== 'instance' || ref.source.instanceId !== target.id ||
+        !equal(context.resources[resource.id]?.result, ref)) return { owner: target };
+    const source = ref.source;
+    const rebuild = this.store.list<any>('project-instance-rebuild').find(row => row.instanceId === target.id && row.afterPackage === target.packageKey &&
+      (row.retainedResultRefs?.some((r: any) => r.resourceId === resource.id && r.refSha256 === digest(ref)) ||
+        (!row.retainedResultRefs && row.beforePackage === source.packageKey)));
+    const oldPackage = this.store.get<any>('template-package', ref.source.packageKey);
+    return rebuild && oldPackage?.manifest?.contentDigest === ref.source.packageDigest
+      ? { owner: this.ownerFor(ref.source), rebuild } : { owner: target };
+  }
   /** Only called synchronously by the original Run's finalizer with its final known secrets. */
   capture({ run, snapshot, saved, sourceRecord, known }: ReuseCapture) {
     if (this.store.fault || run.state !== 'SUCCEEDED' || !saved.present) return;
@@ -238,12 +250,12 @@ export class RunResultSources {
     runId: string,
     expected?: Ref,
   ) {
-    const kind = scope(context.owner),
-      index = this.store.get<Index>(kind, runId);
+    const retained = expected ? this.retainedOwner(context, context.resource, expected) : { owner: context.owner };
+    const { owner, rebuild } = retained, kind = scope(owner), index = this.store.get<Index>(kind, runId);
     // Scope filtering precedes all full-source I/O and disclosure, even when an ID is guessed.
     if (
       !index ||
-      !equal(index.owner, context.owner) ||
+      !equal(index.owner, owner) ||
       !context.resource.sourceEntries.includes(index.entryId)
     )
       throw Error('source-unavailable');
@@ -253,7 +265,7 @@ export class RunResultSources {
     if (!proof) throw Error('reuse-unavailable');
     if (bytes(proof) > 524288) throw Error('read-limit');
     shape('RunResultProof', proof);
-    verifyProof(proof, context.owner, context.resource);
+    verifyProof(proof, owner, context.resource);
     if (!equal(proof.ref, index.ref) || (expected && !equal(expected, proof.ref)))
       throw Error('reuse-unavailable');
     const fixed = await this.entries.fixedForReuse(runId);
@@ -276,6 +288,7 @@ export class RunResultSources {
       this.deps.available();
       fixed.assertCurrent();
       context.assertCurrent();
+      if (rebuild && !equal(rebuild, this.store.get('project-instance-rebuild', rebuild.operationId))) throw Error('changed-during-read');
       if (
         !equal(proof, this.store.get('run-result-reuse', runId)) ||
         !equal(index, this.store.get(kind, runId))
@@ -283,7 +296,7 @@ export class RunResultSources {
         throw Error('changed-during-read');
     };
     assertCurrent();
-    return { proof, position: this.store.position(kind, runId), assertCurrent };
+    return { proof, owner, position: this.store.position(kind, runId), assertCurrent };
   }
   private protectedResponse<T extends object>(
     body: T,
@@ -482,11 +495,12 @@ export class RunResultSources {
       const resource = context.declarations.find((r) => r.id === binding);
       if (!resource) throw Error('目标没有声明对应的结果资源');
       const ref = this.binding(value);
-      verifyReference(ref, context.owner, resource);
+      const { owner } = this.retainedOwner(context, resource, ref);
+      verifyReference(ref, owner, resource);
       const proof = this.store.get<Proof>('run-result-reuse', ref.run.id);
       if (!proof) throw Error('结果副本已不可核验，原绑定保留');
       shape('RunResultProof', proof);
-      verifyProof(proof, context.owner, resource);
+      verifyProof(proof, owner, resource);
       if (!equal(proof.ref, ref)) throw Error('结果引用已变化，原绑定保留');
       if (equal(context.resources[binding], value)) continue;
       const lease = this.granted(choices[binding], context, binding, 'choice');
@@ -541,7 +555,7 @@ export class RunResultSources {
       prepared[binding] = {
         binding,
         ref,
-        owner: context.owner,
+        owner: loaded.owner,
         proofSha256: loaded.proof.proofSha256,
         registeredPosition: loaded.position,
       };
@@ -572,7 +586,7 @@ export class RunResultSources {
     const context = await this.context(target, binding);
     if (
       !equal(context.resources[binding], { result: fixed.ref }) ||
-      !equal(context.owner, fixed.owner)
+      !equal(this.retainedOwner(context, context.resource, fixed.ref).owner, fixed.owner)
     )
       throw Error('结果绑定已撤回或变化，已停止新读取');
     const loaded = await this.load(context, fixed.ref.run.id, fixed.ref),
@@ -593,7 +607,7 @@ export class RunResultSources {
       labelsComplete: p.labelsComplete,
     };
     shape('RunResultRead', result);
-    verifyRead(result, context.owner, context.resource);
+    verifyRead(result, loaded.owner, context.resource);
     return result;
   }
 }

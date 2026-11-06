@@ -1,4 +1,5 @@
 import { assertReductionOutput } from '../shared/source-reduction';
+import { ProjectBridge } from './project-bridge';
 import { conversationEvent } from '../shared/conversation';
 import { threadEvent } from '../shared/conversation-thread';
 import { archiveEvent } from '../shared/conversation-archive';
@@ -22,7 +23,7 @@ import { selectionReference } from '../shared/desktop-windows';
 import { DesktopWindows } from './desktop-windows';
 import { desktopNativeMethods } from '../shared/desktop-run';
 import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { templateFilename, zipExportPath } from '../shared/template-filename';
 import { pathToFileURL } from 'node:url';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -48,6 +49,7 @@ let outputDialogPending = false;
 const authorExports = new Map<string, Promise<unknown>>();
 let authorDialogPending = false;
 let rpc: Rpc;
+let projectBridge: ProjectBridge | undefined;
 let host: Electron.UtilityProcess;
 let startupError = '';
 let embedded: EmbeddedBrowser;
@@ -145,6 +147,7 @@ async function quit() {
       }
     }
     quitting = true;
+    projectBridge?.close();
     try {
       await rpc.call('shutdown', {}, 15000);
     } catch {}
@@ -280,6 +283,9 @@ app
     app.on('before-quit', () => desktopWindows.stop());
     powerMonitor.on('suspend', () => desktopWindows.stop());
     powerMonitor.on('lock-screen', () => desktopWindows.stop());
+    let projectReview: { id: string; readStamp: string; detail: string; configuring: boolean; expiresAt: number; finish: (approved: boolean) => void } | undefined;
+    win.on('closed', () => projectReview?.finish(false));
+    app.on('before-quit', () => projectReview?.finish(false));
     let ready: Promise<any>;
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
@@ -314,6 +320,33 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (method === 'project.review.get') return projectReview ? { id: projectReview.id, readStamp: projectReview.readStamp, detail: projectReview.detail, configuring: projectReview.configuring, expiresAt: projectReview.expiresAt } : null;
+        if (method === 'project.review.respond') {
+          const pending = projectReview;
+          if (!pending || pending.id !== args.reviewId || pending.readStamp !== args.readStamp || Date.now() >= pending.expiresAt) throw Error('工程核对已过期，不执行');
+          pending.finish(args.approved); return { accepted: true };
+        }
+        if (method === 'project.choose' || method === 'project.create') {
+          const chosen = await dialog.showOpenDialog(win, { title: method === 'project.create' ? '选择新工程的存放目录' : '打开本地流程工程', properties: ['openDirectory', 'createDirectory'] });
+          if (chosen.canceled) return null;
+          await ready;
+          const projectName = 'flowark-project-' + randomUUID().slice(0, 8);
+          const info = method === 'project.create'
+            ? await rpc.call('project.createAt', { destination: join(chosen.filePaths[0], projectName), projectId: projectName, name: args.name }, 10 * 60 * 1000)
+            : await rpc.call('project.attach', { root: chosen.filePaths[0] });
+          if (!projectBridge) {
+            projectBridge = new ProjectBridge(app.getPath('userData'), (method, args) => rpc.call(method, args, 10 * 60 * 1000));
+            await projectBridge.start();
+          }
+          await projectBridge.pair(info.id, info.root);
+          return info;
+        }
+        if (method === 'project.package') {
+          const chosen = await dialog.showSaveDialog(win, { title: '导出完整工程模板ZIP', defaultPath: 'flowark-project.flowark-template.zip', filters: [{ name: 'FlowArk 模板', extensions: ['zip'] }] });
+          if (chosen.canceled || !chosen.filePath) return null;
+          await ready;
+          return rpc.call('project.export', { ...args, destination: chosen.filePath }, 10 * 60 * 1000);
+        }
         if (method === 'desktop.windows.list') return desktopWindows.list(args.requestId);
         if (method === 'desktop.windows.release') return desktopWindows.release(args.observationId);
         if (method === 'desktop.selection.preview') return desktopWindows.preview(args);
@@ -523,6 +556,21 @@ app
         rpc = new Rpc(
           (m) => host.postMessage(m),
           async (method, args) => {
+            if (method === 'project.run.confirm') {
+              const configuring = ['project-configuration', 'project-rebuild'].includes(args.review?.kind);
+              const detail = JSON.stringify(args.review, null, 2);
+              if (Buffer.byteLength(detail) > 256 * 1024) throw Error('工程核对超过256KiB，未执行');
+              if (projectReview || quitting || hostStopped) throw Error('已有核对请求或宿主不可用');
+              win.show();
+              return new Promise<boolean>(resolve => {
+                const id = randomUUID(), readStamp = createHash('sha256').update(detail).digest('hex');
+                const timer = setTimeout(() => projectReview?.id === id && projectReview.finish(false), 60000);
+                projectReview = { id, readStamp, detail, configuring, expiresAt: Date.now() + 60000, finish: approved => {
+                  if (projectReview?.id !== id) return;
+                  clearTimeout(timer); projectReview = undefined; resolve(approved);
+                } };
+              });
+            }
             if (method === 'conversation.message') {
               const event =
                 args?.job && args?.checkpoint

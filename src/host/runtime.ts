@@ -10,6 +10,10 @@ import {
 } from '../shared/browser-target';
 import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
+import { ProjectWorkspace } from './project-workspace';
+import { ProjectAI } from './project-ai';
+import { createProject } from '../projects/project';
+import { projectMethods } from '../shared/project';
 import { EntryResults } from './entry-results';
 import { EntryBatches, type BatchDefinition } from './entry-batches';
 import { batchMethods, type BatchSessionView } from '../shared/entry-batches';
@@ -175,6 +179,8 @@ import { AISettings } from './ai-settings';
 import { LocalCredentialSettings } from './local-credentials';
 
 export class Runtime {
+  readonly projects: ProjectWorkspace;
+  readonly projectAI: ProjectAI;
   readonly store: Store;
   readonly sessions: Sessions;
   readonly scripts: ScriptProcesses;
@@ -242,6 +248,14 @@ export class Runtime {
     this.artifactFiles = new ArtifactFiles(dataPath);
     this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
+    this.projects = new ProjectWorkspace(this.store, () => this.templates, dataPath,
+      (method, args) => this.request(method, args),
+      async review => (await this.system('project.run.confirm', { review })) === true, id => this.assertResourceExtensionIdle(id));
+    this.projectAI = new ProjectAI(this.store, async (method, args) => {
+      const value = await this.system(method, args);
+      if (method === 'credentials.get' && typeof value === 'string') this.secrets.push(value);
+      return value;
+    }, id => this.projects.request('project.get', { id }), (method, args) => this.projects.request(method, args));
     this.typedResults = new TypedResults(
       this.store,
       (record, node, value) => this.sources.verifyResult(record, node, value),
@@ -326,6 +340,7 @@ export class Runtime {
         if (this.store.fault) throw new Error(this.store.fault);
       },
       inUse: (provider) =>
+        this.projectAI?.usesProvider(provider) ||
         this.planning?.usesProvider(provider) ||
         this.desktopPlanning?.usesProvider(provider) ||
         this.conversations?.usesProvider(provider) ||
@@ -2806,6 +2821,7 @@ export class Runtime {
       this.desktopRuns.cancelAll();
       this.planning.cancelAll();
       await Promise.all([
+        this.projectAI.stopAll(),
         this.conversations.cancelAll(),
         this.threads.cancelAll(),
         this.archives.stop(),
@@ -2873,6 +2889,36 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'project.createAt') {
+      await this.ready;
+      if (typeof args.destination !== 'string' || args.destination.length > 4096) throw Error('无效工程目录');
+      await createProject(args.destination, args.projectId, args.name);
+      return this.projects.attach(args.destination);
+    }
+    if (method.startsWith('project.ai.')) {
+      await this.ready;
+      const rule = projectMethods[method as keyof typeof projectMethods];
+      if (!rule) throw Error('未知工程AI操作');
+      const value = rule.parse(args) as any;
+      await this.projects.request('project.get', { id: value.id });
+      if (method === 'project.ai.get') return this.projectAI.get(value.id);
+      if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
+      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.maxRequests, value.durationMs, value.reviewedCost);
+      if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
+      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, value.maxRequests, value.durationMs, value.reviewedCost);
+      const task = this.projectAI.detail(value.id, value.taskId);
+      return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
+    }
+    if (method === 'project.attach') {
+      await this.ready;
+      if (typeof args.root !== 'string' || args.root.length > 4096) throw Error('无效工程目录');
+      return this.projects.attach(args.root);
+    }
+    if (method === 'project.export') {
+      await this.ready;
+      return this.projects.export(args.id, args.revision, args.destination);
+    }
+    if (method.startsWith('project.')) { await this.ready; return this.projects.request(method, args); }
     if (method.startsWith('run.batch.')) {
       await this.ready;
       const rule = batchMethods[method as keyof typeof batchMethods];
@@ -3252,6 +3298,14 @@ export class Runtime {
           execution: this.observeExecution(),
           fault: this.store.fault,
         }));
+      case 'flow.project.preview':
+        await this.ready;
+        return this.runReview.projectPreview(args.selection, args.permitId);
+      case 'flow.project.confirm': {
+        const epoch = this.admissionEpoch;
+        const pending = this.admissions.then(async () => { await this.ready; return this.runReview.projectConfirm(args.selection, args.permitId, () => this.assertAdmission(epoch)); });
+        this.admissions = pending.then(() => {}, () => {}); return pending;
+      }
       case 'flow.run.preview':
         await this.ready;
         return this.runReview.preview(args);
@@ -3658,6 +3712,7 @@ export class Runtime {
     }
   }
   async shutdown() {
+    await this.projectAI.stopAll();
     this.stopping = true;
     this.batches.invalidate('application-exit');
     const toolErrors: unknown[] = [];

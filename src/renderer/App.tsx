@@ -1,3 +1,4 @@
+import ProjectReviewDialog from './ProjectReviewDialog';
 import { saveFlowResultDraft } from './result-save-recovery';
 import RunResultNodeConfiguration from './RunResultNodeConfiguration';
 import EffectConfigurationWorkspace from './EffectConfigurationWorkspace';
@@ -1231,6 +1232,7 @@ function WorkspaceApp() {
   };
   return (
     <div className="application-shell">
+      <ProjectReviewDialog />
       {editorLeave && edit && (
         <EditorLeaveDialog
           name={edit.flow.name}

@@ -163,3 +163,26 @@ pnpm exec electron scripts/maintenance/prune-local-work.cjs restore --data /abso
 应用会话诊断、崩溃文件以及后续验证副本、截图、日志和采样统一登记在“~/FlowArk/调试文件”，可在设置中改到用户主目录下的本机专用文件夹；不使用文稿、桌面或 iCloud 目录。开发调试用 `node scripts/debug-launch.mjs /path/to/FlowArk [arguments...]` 收集日志；统一启动器登记用途和所属进程，成功任务的纯临时目录自动回收，保留证据等待显式清理。
 
 需要我处理支持跨页多选和“全选当前筛选结果”；切换筛选清空选择。批量删除移入回收站，支持单条及批量恢复，保留原已读状态和去重键。“全部已读”固定当前工作区全部未读目标，不受分页或搜索限制，新提醒保持未读。正在等待回答的人工请求会跳过；已读、删除和恢复均不批准请求、不取消运行，也不重新激活失效请求。
+
+### 本地工程开发（macOS 预览）
+
+模板库中的「本地流程工程」可创建/打开工程，编辑 Mermaid 与稳定区块绑定、检查并保存修订，创建调试实例后使用已有资源配置和运行核对。磁盘冲突不会自动覆盖当前编辑。开发能力尚在验收，静态检查成功不代表目标业务完成。
+
+安装包内 CLI：
+
+```sh
+"$HOME/Applications/FlowArk.app/Contents/Resources/bin/flowark-project" help
+"$HOME/Applications/FlowArk.app/Contents/Resources/bin/flowark-project" mcp /绝对路径/已批准的工作目录
+```
+
+外部 Agent 将第二条命令配置为 stdio MCP Server。先读取 `flowark://project/v1/guide`、`manifest-schema`、`node-schema` 和 `script-sdk`，再用工具生成工程；不需要克隆客户端源码。工程在客户端通过目录选择连接后，才能请求运行宿主。MCP 的目录参数限定可读写范围，不授予资源和外发权限。取消 MCP 等待不代表已提交 Run 被取消；请用运行控制工具显式取消并核对状态。
+
+CLI 的非 MCP 命令从一个 JSON 请求文件读取参数：`init/open/read/write/validate/build/configuration/from-zip/package/history/configure/prepare/instance/preview/run/status/control`。参数与对应工具的 `inputSchema` 相同。`help` 不调用模型。公开 ZIP 仅包含清单文件；`.flowark/`、真实 env、私人绑定、凭据及运行历史不导出。
+
+工程 AI 页面支持既有 AI 服务或明确选择的兼容 Base URL、协议与模型。Key 只保存到受保护存储，不能填入需求、源码、JSON 或 env。默认每任务最多 20 次请求、10 分钟；API Key 产生的费用由用户自行承担。付费调用失败保留进度，不自动付费重试。外部 Agent 自行管理自己的模型 Key。
+
+开发运行的 `profile`、`overrides` 和 `input` 只进入本次不可变快照，不保存为实例配置；原生运行核对展示有效值及基础实例差异。`configure` 仅修改本人实例值。环境变量只在显式选择工程 profile 时读取根目录 `.env.local`，不读取系统或父目录 env。
+
+出现磁盘修订冲突时，点「核对磁盘差异」逐文件比较原修订、当前编辑和磁盘版本。确认采用新修订只更新编辑基准，保留本地内容；仍需单独保存。核对期间磁盘再次变化会停止。
+
+AI 参数校验失败且确定未执行的本地打包/复导，可点「重试未执行的打包/复导（不调用模型）」。此操作固定原工具参数，重新核对 Schema 和工程范围，不增加模型请求；未知结果、运行和业务外发不适用。

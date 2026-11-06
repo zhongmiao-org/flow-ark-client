@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Local workflow projects bind stable Mermaid block IDs to JS/TS, schemas, public constants and configuration. Block and source edits share revision checks and preserve conflicting edits.
+- Packaged CLI, paired local stdio MCP and an AI authoring tool loop using protected credentials, explicit compatible endpoints/protocols/models, request budgets and saved progress.
+- Development runs use the existing host and permission review. Profile/env/explicit overrides are fixed per run; private data stays out of public ZIPs. Source ZIP round trips and explicit same-boundary instance rebuilds retain history.
+
+### Fixed
+
+- Preserve already-bound result references, deduplication records and unknown outcomes across project rebuilds. Full reviews use a scrollable dialog and never execute after cancellation or timeout.
+- Inject root context only into tools that declare it. Explicitly retry confirmed-unexecuted local packaging/import validation failures without model requests; never replay runs or unknown external effects.
+- Preserve complete independent author copies while bounding exported code size; script workers inherit only necessary host-selected environment variables.
+
 ## [0.3.1] - 2026-11-03
 
 ### Fixed

@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "projectVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "metadata": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    },
+    "configurationSchema": {
+      "type": "string",
+      "const": "schemas/configuration.json"
+    },
+    "stateSchema": {
+      "type": "string"
+    },
+    "constants": {
+      "type": "string",
+      "const": "config/constants.json"
+    },
+    "defaults": {
+      "type": "string",
+      "const": "config/defaults.json"
+    },
+    "entries": {
+      "minItems": 1,
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,100}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "graph": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "string"
+          },
+          "inputSchema": {
+            "type": "string"
+          },
+          "resultSchema": {
+            "type": "string"
+          },
+          "parameters": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "capabilities": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resourceIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "batching": {},
+          "schedulable": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "graph",
+          "nodes",
+          "inputSchema",
+          "resultSchema",
+          "parameters",
+          "capabilities",
+          "resourceIds",
+          "actionIds",
+          "schedulable"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "default": [],
+      "type": "array",
+      "items": {}
+    },
+    "actions": {
+      "default": [],
+      "type": "array",
+      "items": {}
+    },
+    "prompts": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "promptBindings": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {}
+      }
+    },
+    "dependencies": {
+      "default": [],
+      "type": "array",
+      "items": {}
+    },
+    "environment": {
+      "default": [],
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "variable": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "json"
+            ]
+          }
+        },
+        "required": [
+          "variable",
+          "field",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "publicFiles": {
+      "minItems": 1,
+      "maxItems": 2000,
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "projectVersion",
+    "metadata",
+    "configurationSchema",
+    "stateSchema",
+    "constants",
+    "defaults",
+    "entries",
+    "resources",
+    "actions",
+    "prompts",
+    "promptBindings",
+    "dependencies",
+    "environment",
+    "publicFiles"
+  ],
+  "additionalProperties": false,
+  "$id": "https://flowark.local/contracts/drafts/local-project/project-v1.schema.json",
+  "title": "FlowArk local project v1 draft"
+}

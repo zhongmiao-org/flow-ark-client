@@ -1,3 +1,4 @@
+import { projectDevelopmentRecord, withProjectDevelopment, admitProjectDevelopment, projectDevelopmentBaseMatches } from './project-development';
 import { aiBinding } from '../shared/ai-node';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import { constants } from 'node:fs';
@@ -94,9 +95,13 @@ export class RunReview {
     private deps: Dependencies,
   ) {}
 
+  projectPreview(input: unknown, permitId: string) { return withProjectDevelopment(permitId, () => this.preview(input)); }
+  projectConfirm(input: unknown, permitId: string, assertAdmission: () => void) { return withProjectDevelopment(permitId, () => this.confirmOutcome(input, assertAdmission)); }
+
   private capture(args: RunReviewInput) {
     this.deps.assertAdmitting();
-    const record = this.store.get<FlowRecord>('flow', args.id);
+    const saved = this.store.get<FlowRecord>('flow', args.id);
+    const record = saved && projectDevelopmentRecord(this.store, saved);
     if (!record || record.flow.id !== args.id) throw new Error('已保存流程不存在或标识不一致');
     validateFlow(record.flow);
     if (
@@ -713,6 +718,7 @@ export class RunReview {
             scopeSha256: batchStart.view.scopeSha256,
           };
         }
+        admitProjectDevelopment(this.store, captured.record, next.id);
         this.store.put('snapshot', next.id, {
           ...captured.record,
           ...captured.prepared,
@@ -757,12 +763,18 @@ export class RunReview {
     };
   }
 
+  private checkReviewedBindings(run: Run, snapshot: Snapshot, current: FlowRecord) {
+    if (!snapshot.projectDevelopment) return assertRerunBindings(snapshot.bindings, current.bindings);
+    const live = this.store.get<any>('template-instance', snapshot.bindings.template!.instanceId);
+    if (!live || !projectDevelopmentBaseMatches(this.store, snapshot, live, run.id)) throw Error('开发运行的基础实例或许可已变化');
+    assertRerunBindings({ ...snapshot.bindings, configuration: current.bindings.configuration }, current.bindings);
+  }
   async checkExecution(run: Run, snapshot: Snapshot) {
     if (!run.review) return;
     const current = this.store.get<FlowRecord>('flow', run.flowId);
     if (!current || !snapshot.runReviewAuthorization)
       throw new Error('试运行授权已失效，请重新检查');
-    assertRerunBindings(snapshot.bindings, current.bindings);
+    this.checkReviewedBindings(run, snapshot, current);
     const environment = await this.environment(
       snapshot,
       snapshot.runReviewAuthorization.target,
@@ -770,7 +782,7 @@ export class RunReview {
     );
     const latest = this.store.get<FlowRecord>('flow', run.flowId);
     if (!latest) throw new Error('当前流程已删除，试运行授权失效');
-    assertRerunBindings(snapshot.bindings, latest.bindings);
+    this.checkReviewedBindings(run, snapshot, latest);
     if (digest(snapshot.runReviewAuthorization) !== digest(environment.authorization))
       throw new Error('试运行资源或网页已改变，请重新检查');
   }

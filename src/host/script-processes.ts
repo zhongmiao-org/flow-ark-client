@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import type { Store } from './store';
 import { Rpc } from '../shared/rpc';
+import { workerEnvironment } from '../shared/worker-environment';
 import { uid, now, errorText, distinctErrorLines } from '../shared/utils';
 import {
   SCRIPT_READY_TIMEOUT_MS,
@@ -85,7 +86,7 @@ const nativeSystem: ScriptProcessSystem = {
     fork(entry, [], {
       execPath: executable,
       execArgv: [],
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      env: workerEnvironment(),
       stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
       detached: true,
     }),

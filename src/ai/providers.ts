@@ -55,6 +55,7 @@ export async function generate(
   budget: 'standard' | 'planning' = 'standard',
   structuredOutcome = false,
   generation?: AIGenerationOptions,
+  connection?: { baseUrl: string; protocol: 'responses' | 'chat-completions' },
 ): Promise<AIResult> {
   validateObject('AIRequest', input);
   if (generation !== undefined) assertAIGenerationOptions(generation, input.provider);
@@ -77,7 +78,14 @@ export async function generate(
     if (!structuredOutcome) throw new Error(message);
     throw new AIRequestFailureError(code, metadata, httpStatus, message);
   };
-  const deep = input.provider === 'deepseek';
+  const deep = connection ? connection.protocol === 'chat-completions' : input.provider === 'deepseek';
+  let endpoint = deep ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/responses';
+  if (connection) {
+    const url = new URL(connection.baseUrl);
+    if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) || url.username || url.password || url.search || url.hash)
+      throw new Error('兼容接口须为HTTPS地址或显式本机HTTP地址，不包含凭据、查询或片段');
+    endpoint = url.href.replace(/\/$/, '') + (deep ? '/chat/completions' : '/responses');
+  }
   const maxTokens = generation?.maxOutputTokens ?? (budget === 'planning' ? 16384 : 4096);
   const timeoutMs = budget === 'planning' ? 120000 : 45000;
   let total = 0;
@@ -167,7 +175,7 @@ export async function generate(
     ),
   };
   const pendingResponse = fetcher(
-    deep ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/responses',
+    endpoint,
     requestOptions,
   );
   let response: Response;

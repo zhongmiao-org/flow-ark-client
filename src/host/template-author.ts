@@ -140,7 +140,7 @@ export class TemplateAuthor {
       const id = uid(),
         identity = 'local-' + uid();
       const definition: AuthorDefinition = key
-        ? authorFromPackage(await this.library.load(key), identity)
+        ? await authorFromPackage(await this.library.load(key), identity)
         : {
             version: 1,
             metadata: {
