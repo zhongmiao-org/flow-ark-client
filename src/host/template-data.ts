@@ -27,6 +27,18 @@ import { schemaDefaults } from '../shared/template-config';
 import { digest, uid, now, canonical } from '../shared/utils';
 import { walk } from '../core/validate';
 
+/** Explicit project-only rebuild; caller holds the same Store transaction and an idle instance. */
+export function rebaseProjectDataContext(store: Store, instanceId: string, before: PackageData, next: PackageData) {
+  const rowKey = 'instance:' + instanceId, row = store.get<any>('template-data-context', rowKey);
+  if (!row) return;
+  const schemaSha256 = templateDataSchemaDigest(jsonFile(next.files, next.manifest.configurationSchema), jsonFile(next.files, next.manifest.stateSchema));
+  if (row.packageKey !== before.manifest.id + '@' + before.manifest.version || row.digest !== before.manifest.contentDigest || row.schemaSha256 !== schemaSha256)
+    throw Error('开发重建的数据上下文来源或Schema不一致');
+  if (store.list<any>('template-data-operation').some(op => op.receipt?.contextId === row.id && ['prepared', 'unknown'].includes(op.receipt.status)))
+    throw Error('存在未核对的状态提交，先核对原操作；不迁移或重放');
+  store.put('template-data-context', rowKey, { ...row, packageKey: next.manifest.id + '@' + next.manifest.version, digest: next.manifest.contentDigest });
+}
+
 type Meta = { revision: number; updatedAt: string };
 const maxRevision = Number.MAX_SAFE_INTEGER - 1;
 const stateErrors = {

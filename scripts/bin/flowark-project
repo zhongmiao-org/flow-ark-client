@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+flowark_bin_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+flowark_app_contents="$(CDPATH= cd -- "$flowark_bin_dir/../.." && pwd)"
+case "$(uname -m)" in
+  arm64) flowark_esbuild_arch=darwin-arm64 ;;
+  x86_64) flowark_esbuild_arch=darwin-x64 ;;
+  *) echo "Unsupported installed FlowArk architecture" >&2; exit 1 ;;
+esac
+flowark_esbuild="$flowark_bin_dir/../app.asar.unpacked/node_modules/@esbuild/$flowark_esbuild_arch/bin/esbuild"
+if [ ! -x "$flowark_esbuild" ]; then echo "Bundled FlowArk compiler is missing" >&2; exit 1; fi
+ELECTRON_RUN_AS_NODE=1 ESBUILD_BINARY_PATH="$flowark_esbuild" exec "$flowark_app_contents/MacOS/FlowArk" "$flowark_bin_dir/../app.asar/dist/project.cjs" "$@"

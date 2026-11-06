@@ -1,4 +1,5 @@
 import { threadMethods } from './conversation-thread';
+import { projectMethods } from './project';
 import { batchMethods } from './entry-batches';
 import { fieldsPickMethods } from './browser-field-picking';
 import { renderingInspectionMethods } from './browser-rendering-diagnostics';
@@ -117,6 +118,7 @@ const resourceExtensionApply = resourceExtensionPreview
   .extend({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/) })
   .strict();
 export const methods = {
+  ...projectMethods,
   ...batchMethods,
   ...fieldsPickMethods,
   ...renderingInspectionMethods,

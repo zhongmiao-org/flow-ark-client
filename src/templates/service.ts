@@ -1,5 +1,6 @@
+import { projectDevelopmentBaseMatches } from '../host/project-development';
 import { assertSkillRef } from '../shared/skill';
-import { setInstanceState } from '../host/template-data';
+import { setInstanceState, rebaseProjectDataContext } from '../host/template-data';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateSource } from '../shared/template-source';
 import { join, dirname, resolve, relative } from 'node:path';
@@ -438,10 +439,55 @@ export class Templates {
     });
     return instance;
   }
+  rebuildProjectInstance(id: string, key: string, revision: string, assertIdle: () => void) {
+    return this.exclusive(async () => {
+      assertIdle();
+      const before = this.snapshot(id);
+      if (before.revision !== revision || before.instance.templateResourceExtension) throw Error('调试实例已变化或含额外目录声明，请重新核对');
+      const old = await this.library.load(before.instance.packageKey), next = await this.library.load(key);
+      if (old.manifest.id !== next.manifest.id) throw Error('不能将调试实例改为另一工程');
+      for (const field of ['resources', 'actions'] as const)
+        if (canonical(old.manifest[field]) !== canonical(next.manifest[field])) throw Error('资源或权限声明变化，请新建实例并明确配置');
+      for (const field of ['configurationSchema', 'stateSchema'] as const)
+        if (canonical(jsonFile(old.files, old.manifest[field])) !== canonical(jsonFile(next.files, next.manifest[field]))) throw Error('配置或状态Schema变化，未覆盖调试实例');
+      if (old.manifest.entries.length !== next.manifest.entries.length) throw Error('入口集合变化，请新建实例并核对');
+      const inputs: Record<string, unknown> = {};
+      for (const entry of next.manifest.entries) {
+        const original = old.manifest.entries.find(e => e.id === entry.id), record = before.records[entry.id];
+        if (!original || !record) throw Error('入口或原流程缺失');
+        for (const field of ['resources', 'actions', 'capabilities', 'batching'] as const)
+          if (canonical(original[field] ?? null) !== canonical(entry[field] ?? null)) throw Error('入口资源、动作或连续执行边界变化，请新建实例');
+        for (const field of ['inputSchema', 'resultSchema'] as const)
+          if (canonical(jsonFile(old.files, original[field])) !== canonical(jsonFile(next.files, entry[field]))) throw Error('入口Schema变化，未覆盖');
+        const source = materializeFlow(old, original.id);
+        if (canonical(record.flow.steps) !== canonical(source.steps)) throw Error('客户端已有本地流程编辑，请先合并至工程源码');
+        // Identical input schemas preserve untouched draft values, including unconfigured entries.
+        // The selected entry is fully validated by normal run preparation.
+        inputs[entry.id] = structuredClone(record.flow.parameters);
+      }
+      validateData(jsonFile(next.files, next.manifest.configurationSchema), before.instance.configuration);
+      validateData(jsonFile(next.files, next.manifest.stateSchema), this.store.get('template-state', id));
+      const instance = { ...before.instance, packageKey: key }, operationId = randomUUID();
+      let rebuildReceipt: Record<string, unknown>;
+      this.store.tx(() => {
+        assertIdle();
+        if (this.snapshot(id).revision !== revision) throw Error('重建前实例变化，未覆盖');
+        rebaseProjectDataContext(this.store, id, old, next);
+        this.store.put('template-instance', id, instance);
+        this.writeFlows(next, instance, inputs, true);
+        rebuildReceipt = { version: 1, operationId, instanceId: id, beforeRevision: revision,
+          afterRevision: this.snapshot(id).revision, beforePackage: before.instance.packageKey, afterPackage: key,
+          historyPreserved: true, retainedResultRefs: Object.entries(before.instance.resources).filter(([, binding]) => binding.result).map(([resourceId, binding]) => ({ resourceId, refSha256: sha256(canonical(binding.result)) })), at: new Date().toISOString() };
+        this.store.put('project-instance-rebuild', operationId, rebuildReceipt);
+      });
+      return { ...await this.detail(id), rebuildReceipt: rebuildReceipt! };
+    });
+  }
   private writeFlows(
     pkg: PackageData,
     instance: TemplateInstance,
     inputs: Record<string, unknown> = {},
+    replaceDefinition = false,
   ) {
     const receipt = instance.templateResourceExtension;
     const resources = effectiveResourceDeclarations(pkg, receipt);
@@ -486,7 +532,7 @@ export class Templates {
           revision: instance.configurationRevision ?? 1,
         },
       };
-      const next = { ...(previous?.flow ?? flow), name: flow.name };
+      const next = { ...(replaceDefinition ? flow : previous?.flow ?? flow), name: flow.name };
       if (Object.hasOwn(inputs, entry.id)) {
         next.parameters = structuredClone(inputs[entry.id]) as any;
         validateFlow(next);
@@ -829,8 +875,8 @@ export class Templates {
         !configuration ||
         !Number.isSafeInteger(configuration.revision) ||
         configuration.revision! < 1 ||
-        (live.configurationRevision ?? 1) !== configuration.revision ||
-        canonical(live.configuration) !== canonical(configuration.values) ||
+        (record.projectDevelopment ? !projectDevelopmentBaseMatches(this.store, record, live, runId) :
+          (live.configurationRevision ?? 1) !== configuration.revision || canonical(live.configuration) !== canonical(configuration.values)) ||
         entry.resources.some(
           (id) => canonical(live.resources[id] ?? null) !== canonical(fixed.resources[id] ?? null),
         ) ||

@@ -51,6 +51,7 @@ await build({
     script: 'src/workers/script.ts',
     'script-supervisor': 'src/workers/script-supervisor.ts',
     'document-supervisor': 'src/workers/document-supervisor.ts',
+    project: 'src/projects/cli.ts',
   },
   outdir: 'dist',
   outExtension: { '.js': '.cjs' },

@@ -8,9 +8,13 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "ae862b93948fcd2240afad14180e0c33020bfda3",
+    "governanceBaseline": "4519efe536aa6071a11804c9de8b62bfdde4f52f",
     "contractsVersion": "0.53.2",
-    "contractsTag": "contracts-v0.53.2"
+    "contractsTag": "contracts-v0.53.2",
+    "localProjectFormat": {
+      "version": 1,
+      "status": "draft-unreleased"
+    }
   },
   "packageManager": "pnpm@10.14.0",
   "engines": {
@@ -106,6 +110,12 @@
       "dist/**/*",
       "contracts/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts/bin/flowark-project",
+        "to": "bin/flowark-project"
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",

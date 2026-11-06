@@ -1,6 +1,7 @@
 import { fork, execFile, type ChildProcess } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { Rpc } from '../shared/rpc';
+import { workerEnvironment } from '../shared/worker-environment';
 import {
   SCRIPT_READY_TIMEOUT_MS,
   SCRIPT_EXECUTE_RPC_TIMEOUT_MS,
@@ -79,7 +80,7 @@ const rpc = new Rpc(
     child = fork(join(dirname(process.argv[1]), 'script.cjs'), [], {
       execPath: process.execPath,
       execArgv: [],
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      env: workerEnvironment(),
       detached: false,
       stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
     });

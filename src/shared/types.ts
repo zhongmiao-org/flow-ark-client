@@ -44,6 +44,7 @@ export type Bindings = {
   configuration?: { adapter: string; schema: Json; values: Json; revision?: number };
 };
 export type FlowRecord = {
+  projectDevelopment?: { version: 1; permitId: string };
   templateResourceExtension?: import('./contracts.generated').TemplateResourceExtensionReceipt;
   desktopTarget?: import('./desktop-planning').DesktopTaskTarget;
   toolTargets?: import('./task-mcp-targets').TaskMcpTarget[];

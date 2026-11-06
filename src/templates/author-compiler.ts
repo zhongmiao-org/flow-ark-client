@@ -3,6 +3,7 @@ import {
   validateAuthorDefinition,
   validateAuthorMetadata,
   AUTHOR_METADATA_PATH,
+  AUTHOR_LIMITS,
 } from '../../contracts/template-authoring';
 import {
   canonical,
@@ -187,7 +188,7 @@ export async function compileAuthor(input: AuthorDefinition): Promise<PackageDat
   json('manifest.json', m);
   return validatePackage(files);
 }
-export function authorFromPackage(pkg: PackageData, identity: string): AuthorDefinition {
+export async function authorFromPackage(pkg: PackageData, identity: string): Promise<AuthorDefinition> {
   validatePackage(pkg.files);
   validateAuthorMetadata(pkg.files, pkg.manifest);
   const m = pkg.manifest,
@@ -197,6 +198,9 @@ export function authorFromPackage(pkg: PackageData, identity: string): AuthorDef
       m.configurationSchema,
       m.stateSchema,
       AUTHOR_METADATA_PATH,
+      // Generated source provenance cannot remain valid after author-UI edits.
+      // Opening the source project uses its dedicated importer instead.
+      'assets/project-source-v1.json',
     ]);
   const decode = (bytes: Buffer) =>
     new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
@@ -252,7 +256,7 @@ export function authorFromPackage(pkg: PackageData, identity: string): AuthorDef
         return { path, encoding: 'base64' as const, body: bytes.toString('base64') };
       }
     });
-  return validateAuthorDefinition({
+  const definition = {
     version: 1,
     metadata: {
       id: identity,
@@ -272,5 +276,25 @@ export function authorFromPackage(pkg: PackageData, identity: string): AuthorDef
     readme: pkg.files.has('README.md') ? decode(pkg.files.get('README.md')!) : '',
     assets,
     dependencies: m.dependencies,
-  }) as AuthorDefinition;
+  } as AuthorDefinition;
+  // Package scripts may contain ASCII-escaped Unicode and formatting whose JSON
+  // representation exceeds the author budget. Reprint code only when necessary;
+  // keep the original identifiers and semantics, assets, and the existing limit.
+  if (Buffer.byteLength(JSON.stringify(definition), 'utf8') > AUTHOR_LIMITS.bytes) {
+    for (const entry of definition.entries) {
+      for (const node of walk(entry.flow.steps)) {
+        if (node.type !== 'script') continue;
+        node.code = (await transform(node.code, {
+          loader: node.language,
+          target: 'es2022',
+          charset: 'utf8',
+          minifyWhitespace: true,
+          minifyIdentifiers: false,
+          minifySyntax: false,
+          legalComments: 'inline',
+        })).code;
+      }
+    }
+  }
+  return validateAuthorDefinition(definition) as AuthorDefinition;
 }
