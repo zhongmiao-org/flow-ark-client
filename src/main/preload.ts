@@ -165,6 +165,7 @@ const allowed = new Set([
   'task.reject',
   'task.undo',
   'flow.save',
+  'flow.usage',
   'flow.create',
   'flow.run',
   'flow.run.preview',

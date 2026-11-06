@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Allow standalone flows and authoring copies to be classified as development work without changing their definitions or history; retain the classification when saving.
+
 - Group template entry flows into task cards and separate development instances without deleting history; add Monaco project file models, SDK/schema hints, draft diagnostics, and block navigation.
 
 ### Added

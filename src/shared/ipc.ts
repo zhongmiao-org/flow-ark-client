@@ -142,6 +142,7 @@ export const methods = {
   ...taskMethods,
   ...learningMethods,
   bootstrap: empty,
+  'flow.usage': z.object({ id, expected: z.enum(['task', 'development']).nullable(), usage: z.enum(['task', 'development']) }).strict(),
   'flow.save': z
     .object({
       flow: z.unknown(),

@@ -36,7 +36,7 @@ export function libraryTasks(data: Bootstrap): LibraryTask[] {
   for (const record of data.flows) {
     if (owned.has(record.id)) continue;
     tasks.push({ id: record.id, name: record.flow.name, description: record.flow.description ?? '',
-      updatedAt: record.updatedAt, records: [record], usage: 'task',
+      updatedAt: record.updatedAt, records: [record], usage: record.usage ?? 'task',
       issue: record.bindings.template ? '所属实例或入口关联需检查' : undefined,
       run: data.runOverview.latest.find(r => r.flowId === record.id) });
   }

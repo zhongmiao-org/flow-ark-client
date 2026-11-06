@@ -1069,6 +1069,7 @@ export class Runtime {
       flow = { ...flow, parameters: bindings.configuration.values as any };
     validateFlow(flow);
     const record = {
+      ...(previous?.usage ? { usage: previous.usage } : {}),
       ...(previous?.templateResourceExtension
         ? { templateResourceExtension: structuredClone(previous.templateResourceExtension) }
         : {}),
@@ -3269,6 +3270,14 @@ export class Runtime {
       }
       case 'bootstrap':
         return this.bootstrap();
+      case 'flow.usage':
+        return this.store.tx(() => {
+          const record = this.store.get<FlowRecord>('flow', args.id);
+          if (!record || record.bindings.template) throw Error('模板入口须按所属实例分类；独立流程不存在或关联已变化');
+          if ((record.usage ?? null) !== args.expected) throw Error('流程分类已变化，请刷新后重试');
+          this.store.put('flow', record.id, { ...record, usage: args.usage });
+          return { id: record.id, usage: args.usage };
+        });
       case 'flow.save':
         return this.saveFlowResults(
           args.flow,

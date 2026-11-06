@@ -21,6 +21,7 @@ type Props = {
   showAttention: () => void;
   openInstance: (instance: TemplateInstance) => void;
   showResult: (run: Run) => void;
+  classifyFlow: (record: FlowRecord, usage: 'task' | 'development') => Promise<unknown>;
   classify: (instance: TemplateInstance, usage: 'task' | 'development') => Promise<unknown>;
 };
 export default function FlowLibrary({
@@ -32,7 +33,7 @@ export default function FlowLibrary({
   create,
   open,
   importTemplate,
-  showAttention, openInstance, showResult, classify,
+  showAttention, openInstance, showResult, classify, classifyFlow,
 }: Props) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'recent' | 'template' | 'development' | 'issues'>('all');
@@ -283,7 +284,7 @@ export default function FlowLibrary({
                       </Button>
                     </footer>
                     {(task.latestRun ?? run) && <Button type="link" onClick={() => showResult((task.latestRun ?? run)!)}>查看最近结果</Button>}
-                    {task.instance && <Select aria-label={`任务分类 ${task.name}`} value={task.usage} disabled={busy} style={{ marginTop: 12, width: 160 }} options={[{ value: 'task', label: '普通任务' }, { value: 'development', label: '开发与调试' }]} onChange={usage => { setEntryError(''); void classify(task.instance!, usage).catch(e => setEntryError(e.message)); }} />}
+                    {(task.instance || (record && !record.bindings.template)) && <Select aria-label={`任务分类 ${task.name}`} value={task.usage} disabled={busy} style={{ marginTop: 12, width: 160 }} options={[{ value: 'task', label: '普通任务' }, { value: 'development', label: '开发与调试' }]} onChange={usage => { setEntryError(''); void (task.instance ? classify(task.instance, usage) : classifyFlow(record, usage)).catch(e => setEntryError(e.message)); }} />}
                   </Card>
                 </article>
               );
