@@ -2124,6 +2124,7 @@ function WorkspaceApp() {
               setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'configuration', returnLabel: '我的流程', back: () => { setTemplateInstanceRequest(undefined); setSection('flows'); } });
               setSection('templates');
             })}
+            classifyFlow={(record, usage) => action(async () => { await api('flow.usage', { id: record.id, expected: record.usage ?? null, usage }); })}
             classify={(instance, usage) => action(async () => { await api('template.usage', { id: instance.id, expected: instance.usage ?? null, usage }); })}
             showResult={(run) => void action(async () => { setDetail(await api('run.detail', { id: run.id })); setRunOrigin('flows'); setRunTab('output'); setRunFilter(false); setSection('runs'); })}
             importTemplate={() =>
