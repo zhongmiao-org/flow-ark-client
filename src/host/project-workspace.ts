@@ -10,7 +10,7 @@ import type { Store } from './store';
 import type { Templates } from '../templates/service';
 import { archiveBytes } from '../templates/archive';
 import { compileAuthor } from '../templates/author-compiler';
-import { buildProject, projectRoot, projectInfo, snapshotProject, updateProjectFiles, inspectProjectTransaction, rollbackProjectTransaction, packageProject, configurationForProject } from '../projects/project';
+import { diagnoseProject, buildProject, projectRoot, projectInfo, snapshotProject, updateProjectFiles, inspectProjectTransaction, rollbackProjectTransaction, packageProject, configurationForProject } from '../projects/project';
 import { ProjectDiagnostic } from '../projects/configuration';
 import { templateSaveSchema } from '../shared/ipc';
 import { projectMethods } from '../shared/project';
@@ -54,6 +54,7 @@ export class ProjectWorkspace {
       if (!bytes || bytes.length > 2 * 1024 * 1024) throw new ProjectDiagnostic('project-read', '文件未声明或超过读取范围', args.path);
       return { revision: snapshot.revision, content: new TextDecoder('utf8', { fatal: true }).decode(bytes) };
     }
+    if (method === 'project.diagnose') return diagnoseProject(record.root, args.revision, args.changes);
     if (method === 'project.check') {
       const { snapshot, pkg } = await buildProject(record.root, args.revision);
       return { revision: snapshot.revision, valid: true, contentDigest: pkg.manifest.contentDigest, scriptsExecuted: false };
@@ -87,7 +88,8 @@ export class ProjectWorkspace {
         } else {
           if (args.isolate && !await this.confirm({ kind: 'project-rebuild', project: record.root, operation: '新建隔离调试实例', package: installed.key,
             defaults: '私人绑定为空、权限禁止；既有实例及业务历史保留，不自动复制或恢复' })) throw new ProjectDiagnostic('project-rebuild-cancelled', '未创建隔离实例');
-          instance = await this.templates().create(installed.key); current.instances.push(instance.id);
+          instance = await this.templates().create(installed.key);
+          this.templates().setUsage(instance.id, null, 'development'); current.instances.push(instance.id);
         }
         current.prepared = { revision: snapshot.revision, instanceId: instance.id, compilerDigest };
         this.store.put('local-project', record.id, current);

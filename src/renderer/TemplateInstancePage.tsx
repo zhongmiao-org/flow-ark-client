@@ -97,7 +97,7 @@ export default function TemplateInstancePage({
   adoptedFrom?: TemplateAdoptionOrigin;
   browserControl?: ReactNode;
   initialEntryId?: string;
-  initialTab?: 'resources' | 'entry';
+  initialTab?: 'configuration' | 'resources' | 'entry';
   returnToSource?: () => void;
 }) {
   const [draft, setDraft] = useState(initial),

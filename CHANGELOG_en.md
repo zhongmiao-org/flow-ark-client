@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Group template entry flows into task cards and separate development instances without deleting history; add Monaco project file models, SDK/schema hints, draft diagnostics, and block navigation.
+
 ### Added
 
 - Local workflow projects bind stable Mermaid block IDs to JS/TS, schemas, public constants and configuration. Block and source edits share revision checks and preserve conflicting edits.

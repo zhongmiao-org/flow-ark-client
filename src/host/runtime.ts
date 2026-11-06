@@ -1130,6 +1130,7 @@ export class Runtime {
         .reverse(),
       templates: this.templates.list(),
       instances: this.templates.instances(),
+      projectInstanceIds: [...new Set(this.store.list<{ instances: string[] }>('local-project').flatMap(p => p.instances ?? []))],
       credentials,
       fault: this.store.fault ? redact(this.store.fault, this.secrets) : undefined,
       runtimeBlock: this.executionBlock(),
@@ -3672,6 +3673,8 @@ export class Runtime {
         );
         return pending;
       }
+      case 'template.usage':
+        return this.templates.setUsage(args.id, args.expected, args.usage);
       case 'template.save': {
         const result = await this.templates.save(args);
         this.resultSources.consumeChoices(args.resultSourceChoices);

@@ -1,7 +1,7 @@
 import './generate-node-validator.mjs';
 import { build } from 'esbuild';
 import { build as viteBuild } from 'vite';
-import { rm, mkdir, copyFile } from 'node:fs/promises';
+import { rm, mkdir, copyFile, readdir, readFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 await rm('dist', { recursive: true, force: true });
@@ -33,6 +33,7 @@ for (const font of ['inter', 'noto-sans-sc']) {
 }
 await copyFile('node_modules/pdfjs-dist/LICENSE', 'dist/licenses/pdfjs-dist-LICENSE.txt');
 await copyFile('third-party/saxes-LICENSE.txt', 'dist/licenses/saxes-LICENSE.txt');
+await copyFile('third-party/node-types-LICENSE.txt', 'dist/licenses/node-types-LICENSE.txt');
 for (const [name, license] of [
   ['react-markdown', 'license'],
   ['remark-gfm', 'license'],
@@ -72,7 +73,14 @@ await build({
   packages: 'external',
   sourcemap: true,
 });
+const nodeEditorTypes = {};
+for (const name of await readdir('node_modules/@types/node', { recursive: true })) {
+  if (name.endsWith('.d.ts')) nodeEditorTypes['node_modules/@types/node/' + name] = await readFile('node_modules/@types/node/' + name, 'utf8');
+}
+if (Object.keys(nodeEditorTypes).length < 10) throw Error('Missing bundled Node editor types');
 await viteBuild({
+  plugins: [{ name: 'flowark-node-editor-types', resolveId(id) { if (id === 'virtual:flowark-node-types') return '\0flowark-node-types'; },
+    load(id) { if (id === '\0flowark-node-types') return 'export default ' + JSON.stringify(nodeEditorTypes); } }],
   root: 'src/renderer',
   base: './',
   build: { outDir: '../../dist/renderer', emptyOutDir: false },

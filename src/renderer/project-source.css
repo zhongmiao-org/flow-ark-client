@@ -1,0 +1,6 @@
+.project-source-layout { display:grid; grid-template-columns:minmax(200px, 260px) minmax(0, 1fr); gap:16px; }
+.project-source-layout aside { max-height:750px; overflow:auto; border-inline-end:1px solid var(--ant-color-border-secondary); padding-inline-end:12px; }
+.project-source-main { min-width:0; }
+.project-source-main small { color:var(--ant-color-text-secondary); }
+.entry-all-operations summary { cursor:pointer; margin-bottom:12px; }
+@media (max-width:900px) { .project-source-layout { grid-template-columns:1fr; } .project-source-layout aside { max-height:200px; } }

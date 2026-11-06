@@ -385,7 +385,7 @@ export default function TemplateEntry({
           : '当前入口资源与授权已就绪';
 
   const entrySelector = (
-    <label className="ai-settings-field">
+    <details className="entry-all-operations"><summary>全部操作 · {entry.name}</summary><label className="ai-settings-field">
       <span>操作入口</span>
       <Select<string>
         aria-label="操作入口"
@@ -394,7 +394,7 @@ export default function TemplateEntry({
         onChange={(value) => selectEntry(value)}
         options={[...detail.entries.map((option) => ({ value: option.id, label: option.name }))]}
       />
-    </label>
+    </label></details>
   );
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [handoffOpen, setHandoffOpen] = useState(false);

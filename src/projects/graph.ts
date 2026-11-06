@@ -10,7 +10,7 @@ export function readGraph(source: string, file: string): Graph {
   const stack = ['root']; let header = false;
   for (const [index, raw] of source.split(/\r?\n/).entries()) {
     const line = raw.trim().replace(/;$/, '');
-    const fail = () => new ProjectDiagnostic('graph-syntax', '不支持的编排语法，第' + (index + 1) + '行', file);
+    const fail = () => new ProjectDiagnostic('graph-syntax', '不支持的编排语法，第' + (index + 1) + '行', file, undefined, index + 1, 1);
     if (!line || line.startsWith('%%')) continue;
     if (!header) { if (!/^(flowchart|graph)\s+(TD|TB|LR)$/.test(line)) throw fail(); header = true; continue; }
     let match = new RegExp('^subgraph (' + idPattern + '__' + '(?:then|else|body))\\["([^"<>]*)"\\]$').exec(line);

@@ -5,7 +5,7 @@ import { compileGraph, emitGraph } from '../projects/graph';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
 import JsonTreeEditor from './JsonTreeEditor';
-import CodeEditor from './CodeEditor';
+import ProjectSourceEditor, { type ProjectIssue } from './ProjectSourceEditor';
 const api = (method: string, args: unknown = {}): Promise<any> => window.flowark.request(method, args);
 type Info = { id: string; root: string; revision: string; metadata: { name: string }; entries: { id: string; name: string }[]; files: { path: string; size: number }[] };
 export default function ProjectWorkspace({ back, configure, navigation }: { back: () => void; configure: (detail: any) => void; navigation: MutableRefObject<((next: () => void) => void) | undefined> }) {
@@ -16,6 +16,11 @@ export default function ProjectWorkspace({ back, configure, navigation }: { back
   const [ai, setAi] = useState<any>(), [aiProvider, setAiProvider] = useState('deepseek'), [baseUrl, setBaseUrl] = useState('');
   const [protocol, setProtocol] = useState('chat-completions'), [model, setModel] = useState(''), [credentialId, setCredentialId] = useState('');
   const [keyValue, setKeyValue] = useState(''), [task, setTask] = useState(''), [requests, setRequests] = useState(20), [minutes, setMinutes] = useState(10), [reviewedCost, setReviewedCost] = useState(false);
+  const [tab, setTab] = useState('blocks');
+  const [issues, setIssues] = useState<ProjectIssue[]>([]);
+  const [focusRequest, setFocusRequest] = useState<{ file: string; field?: string; request: number }>();
+  const [recentProjects, setRecentProjects] = useState<{ id: string; root: string }[]>([]);
+  useEffect(() => { void api('project.list').then(setRecentProjects).catch(e => setError(e.message)); }, []);
   const [newName, setNewName] = useState('我的流程工程');
   const localKeyId = useRef('local-' + crypto.randomUUID());
   const state = useRef({ info, edits, busy }); state.current = { info, edits, busy };
@@ -23,9 +28,11 @@ export default function ProjectWorkspace({ back, configure, navigation }: { back
   const perform = async (fn: () => Promise<void>) => { if (state.current.busy) return; state.current.busy = true; setBusy(true); setError(''); try { await fn(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { state.current.busy = false; setBusy(false); } };
   const read = async (p: Info, path: string) => (await api('project.read', { id: p.id, revision: p.revision, path })).content as string;
   const load = async (p: Info, id: string) => {
-    const manifest = JSON.parse(await read(p, 'flowark.project.json')), e = manifest.entries.find((e: any) => e.id === id); if (!e) return;
+    const manifestText = await read(p, 'flowark.project.json'), manifest = JSON.parse(manifestText), e = manifest.entries.find((e: any) => e.id === id); if (!e) return;
     const [graph, nodes] = await Promise.all([read(p, e.graph), read(p, e.nodes)]);
-    setFiles({ 'flowark.project.json': JSON.stringify(manifest, null, 2), [e.graph]: graph, [e.nodes]: nodes });
+    const configuration = await read(p, manifest.configurationSchema);
+    setFiles({ 'flowark.project.json': manifestText, [manifest.configurationSchema]: configuration, [e.graph]: graph, [e.nodes]: nodes });
+    setIssues([]);
     setEdits({}); setConflict(false); setEntry(e); setEntryId(id); setFile(e.graph); setSelected('');
   };
   const leave = (next: () => void) => {
@@ -54,6 +61,16 @@ export default function ProjectWorkspace({ back, configure, navigation }: { back
     const timer = setInterval(refresh, 3000); return () => { live = false; clearInterval(timer); };
   }, [info?.id]);
   const value = (path: string) => edits[path] ?? files[path] ?? '';
+  const chooseFile = (path: string) => {
+    if (files[path] !== undefined) { setFile(path); return; }
+    void perform(async () => {
+    if (!info) return;
+    if (files[path] === undefined) { const content = await read(info, path); setFiles(old => ({ ...old, [path]: content })); }
+    setFile(path);
+    });
+  };
+  const locateSource = (path: string, field?: string) => { chooseFile(path); setTab('source'); setFocusRequest({ file: path, field, request: Date.now() }); };
+
   const projection = useMemo(() => {
     try { if (!entry) return { steps: [] as Step[], bindings: {} as Record<string, any>, error: '' };
       const bindings = JSON.parse(value(entry.nodes));
@@ -97,27 +114,27 @@ export default function ProjectWorkspace({ back, configure, navigation }: { back
   };
   const reload = async () => { if (!info) return; const next = await api('project.get', { id: info.id }); setInfo(next); await load(next, entryId); };
   return <section className="template-workspace" style={{ padding: 24 }}>
-    <Space wrap style={{ marginBottom: 20 }}><Button onClick={() => leave(back)}>返回模板库</Button><Typography.Title level={2} style={{ margin: 0 }}>本地流程工程</Typography.Title>
+    <Space wrap style={{ marginBottom: 20 }}><Button onClick={() => leave(back)}>返回我的流程</Button><Typography.Title level={2} style={{ margin: 0 }}>流程编辑器</Typography.Title>
       <Button disabled={busy} onClick={() => leave(() => void perform(async () => { const next = await api('project.choose'); if (next) { setInfo(next); await load(next, next.entries[0].id); } }))}>打开工程目录</Button>
       {info && <Tag>{info.revision.slice(0, 12)}{dirty ? ' · 未保存' : ' · 已保存'}</Tag>}</Space>
     {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{notice && <Alert type={conflict ? 'warning' : 'info'} showIcon message={notice} style={{ marginBottom: 16 }} />}
-    {!info ? <Card title="代码、区块与 Agent 共用一个工程"><p>打开包含 flowark.project.json 的目录。Mermaid 定义结构，区块绑定参数和 JS/TS；连接不运行流程。</p><p>CLI / MCP 使用安装包内启动器；Key 使用受保护凭据，不写入工程或 env。</p>
+    {!info ? <Card title="代码、区块与 Agent 共用一个工程"><h3>已连接工程</h3>{recentProjects.length ? recentProjects.map(p => <div key={p.id} style={{ marginBottom: 12 }}><Button disabled={busy} onClick={() => void perform(async () => { const next = await api('project.get', { id: p.id }); setInfo(next); await load(next, next.entries[0].id); })}>打开 {p.root.split(/[\\/]/).pop()}</Button><small> {p.root}</small></div>) : <p>还没有工程。可打开目录，或创建第一个工程。</p>}<p>打开包含 flowark.project.json 的目录。Mermaid 定义结构，区块绑定参数和 JS/TS；连接不运行流程。</p><p>CLI / MCP 使用安装包内启动器；Key 使用受保护凭据，不写入工程或 env。</p>
       <Space><Input aria-label="新工程名称" value={newName} onChange={e => setNewName(e.target.value)} /><Button disabled={busy || !newName.trim()} onClick={() => void perform(async () => { const next = await api('project.create', { name: newName }); if (next) { setInfo(next); await load(next, next.entries[0].id); } })}>创建工程</Button></Space>
     </Card> : <>
       <Space wrap style={{ marginBottom: 16 }}><Select aria-label="工程入口" value={entryId} style={{ minWidth: 240 }} options={info.entries.map(e => ({ value: e.id, label: e.name }))} onChange={id => leave(() => void perform(() => load(info, id)))} />
         <Button disabled={busy || !dirty || conflict || pendingField} onClick={() => void perform(async () => { const next = await api('project.write', { id: info.id, revision: info.revision, changes: Object.entries(edits).map(([path, content]) => ({ path, content })) }); const p = { ...next, id: info.id, root: info.root }; setInfo(p); await load(p, entryId); setNotice('工程已保存，界面与磁盘使用同一修订。'); })}>保存工程</Button>
-        <Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => { await api('project.check', { id: info.id, revision: info.revision }); setNotice('静态检查通过，尚未运行或验收。'); })}>检查工程</Button>
+        <Button disabled={busy || conflict || pendingField} onClick={() => void perform(async () => { const result = await api('project.diagnose', { id: info.id, revision: info.revision, changes: Object.entries(edits).map(([path, content]) => ({ path, content })) }); setIssues(result.diagnostics); setNotice(result.valid ? '静态检查通过，尚未运行或验收。' : '静态检查发现问题，内容未写入磁盘。'); setTab('source'); })}>检查工程</Button>
         <Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => configure(await api('project.prepare', { id: info.id, revision: info.revision }))) }>配置调试与运行</Button>
         <Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => configure(await api('project.prepare', { id: info.id, revision: info.revision, isolate: true }))) }>新建隔离调试实例</Button>
         <Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => { const r = await api('project.package', { id: info.id, revision: info.revision }); if (r) setNotice('完整ZIP已保存：' + r.sha256); })}>导出完整ZIP</Button>
         <Button disabled={busy} onClick={() => leave(() => void perform(reload))}>读取磁盘版本</Button>
         {conflict && <Button disabled={busy || pendingField} onClick={() => void perform(reviewDifferences)}>核对磁盘差异</Button>}</Space>
-      <Tabs items={[{ key: 'blocks', label: '区块与参数', children: <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(320px, 1fr)', gap: 16 }}><Card title="流程编排">
+      <Tabs activeKey={tab} onChange={setTab} items={[{ key: 'blocks', label: '区块与参数', children: <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(320px, 1fr)', gap: 16 }}><Card title="流程编排">
         {projection.error ? <Alert type="error" message={projection.error} /> : <><Space wrap><Button disabled={busy} onClick={() => { const id = 'n_' + crypto.randomUUID().slice(0, 8); changeSteps([...projection.steps, { id, type: 'value', version: 1, name: '新数据步骤', value: null }]); setSelected(id); }}>新增数据步骤</Button>
           {(['上移', '下移', '移除'] as const).map((label, action) => <Button key={label} disabled={!selected || busy} onClick={() => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { if (action === 2) list.splice(i, 1); else { const j = i + (action === 0 ? -1 : 1); if (j >= 0 && j < list.length) [list[i], list[j]] = [list[j], list[i]]; } }); changeSteps(steps); if (action === 2) setSelected(''); }}>{label}</Button>)}</Space>
           <div style={{ height: 550 }}><DiagramCanvas nodes={diagram.nodes} edges={diagram.edges} selected={selected} select={setSelected} /></div></>}
-      </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
-        { key: 'source', label: '源码与配置', children: <Card title="工程文件"><Select aria-label="工程文件" value={file} style={{ width: '100%', marginBottom: 12 }} options={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path)).map(f => ({ value: f.path, label: f.path }))} onChange={path => void perform(async () => { if (files[path] === undefined) { const content = await read(info, path); setFiles(old => ({ ...old, [path]: content })); } setFile(path); })} /><CodeEditor label="工程源码" language={file.endsWith('.json') ? 'json' : file.endsWith('.ts') ? 'typescript' : file.endsWith('.js') ? 'javascript' : 'plaintext'} height="550px" value={value(file)} onChange={content => setEdits(old => ({ ...old, [file]: content }))} /></Card> },
+      </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{selected && <Space style={{ marginBottom: 12 }}><Button onClick={() => locateSource(entry.nodes, selected)}>定位节点源码</Button><Button onClick={() => locateSource(entry.graph, selected)}>定位编排源码</Button>{typeof projection.bindings[selected]?.script === 'string' && <Button onClick={() => locateSource(projection.bindings[selected].script)}>定位脚本</Button>}</Space>}{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
+        { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
         { key: 'ai', label: 'AI 开发', children: <Card title="描述需求，由本人 API 驱动工程工具">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Select aria-label="开发AI服务" value={aiProvider} onChange={setAiProvider} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />

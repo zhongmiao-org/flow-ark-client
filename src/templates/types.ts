@@ -1,5 +1,6 @@
 import type { Bindings } from '../shared/types';
 export type TemplateInstance = {
+  usage?: 'task' | 'development';
   id: string;
   packageKey: string;
   name: string;

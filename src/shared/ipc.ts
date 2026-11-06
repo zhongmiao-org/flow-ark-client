@@ -258,6 +258,7 @@ export const methods = {
   'template.remove': z.object({ key: z.string().max(240) }).strict(),
   'template.export': z.object({ key: z.string().max(240) }).strict(),
   'template.create': z.object({ key: z.string().max(240), copyFrom: id.optional() }).strict(),
+  'template.usage': z.object({ id, expected: z.enum(['task', 'development']).nullable(), usage: z.enum(['task', 'development']) }).strict(),
   'template.detail': z.object({ id }).strict(),
   'template.resourceExtension.preview': resourceExtensionPreview,
   'template.resourceExtension.apply': resourceExtensionApply,
