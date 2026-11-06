@@ -8,6 +8,7 @@ export const projectMethods = {
   'project.list': z.object({}).strict(),
   'project.get': z.object({ id }).strict(),
   'project.read': z.object({ id, revision, path: z.string().min(1).max(240) }).strict(),
+  'project.diagnose': z.object({ id, revision, changes: z.array(z.object({ path: z.string().min(1).max(240), content: z.string().max(2 * 1024 * 1024) }).strict()).max(100) }).strict(),
   'project.check': z.object({ id, revision }).strict(),
   'project.write': z.object({ id, revision, changes: z.array(z.object({ path: z.string().min(1).max(240), content: z.string().max(2 * 1024 * 1024) }).strict()).min(1).max(100) }).strict(),
   'project.transaction': z.object({ id }).strict(),

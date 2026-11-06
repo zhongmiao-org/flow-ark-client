@@ -24,7 +24,6 @@ import TemplateManifestOverview, {
   type TemplateManifest,
 } from './TemplateManifestOverview';
 import './template-catalog.css';
-import ProjectWorkspace from './ProjectWorkspace';
 const api = (method: string, args: unknown = {}): Promise<any> =>
   window.flowark.request(method, args);
 type Preview = { token: string; manifest: TemplateManifest; consumed?: boolean };
@@ -33,7 +32,7 @@ export type TemplateOpenRequest = {
   key: string;
   detail: TemplateDetail;
   entryId: string;
-  initialTab: 'resources' | 'entry';
+  initialTab: 'configuration' | 'resources' | 'entry';
   returnLabel: string;
   back: () => void;
 };
@@ -54,7 +53,7 @@ export default function TemplateLibrary({
   homeRequest,
   browserControl,
   instanceRequest,
-  authorOpen,
+  authorOpen, projectOpen,
 }: {
   navigation: MutableRefObject<TemplateNavigation | undefined>;
   showRun: (detail: any, origin: TemplateEntryOrigin, output?: boolean) => void;
@@ -72,9 +71,9 @@ export default function TemplateLibrary({
   browserControl?: ReactNode;
   instanceRequest?: TemplateOpenRequest;
   authorOpen: () => void;
+  projectOpen: () => void;
 }) {
   const [view, setView] = useState<View>('library');
-  const [projectOpen, setProjectOpen] = useState(false);
   const [preview, setPreview] = useState<Preview>();
   const previewRef = useRef<Preview | undefined>(undefined);
   previewRef.current = preview;
@@ -365,10 +364,6 @@ export default function TemplateLibrary({
     },
     active && !detail && view !== 'library',
   );
-  if (projectOpen && !detail)
-    return <ProjectWorkspace navigation={navigation} back={() => setProjectOpen(false)} configure={next => {
-      setDetail(next); setExternalOrigin(undefined);
-    }} />;
   if (detail)
     return (
       <TemplateInstancePage
@@ -476,7 +471,7 @@ export default function TemplateLibrary({
           {view === 'instances' && instancePackage && createButton(instancePackage)}
           {view === 'library' && (
             <div className="author-actions">
-              <Button disabled={!!busy} onClick={() => setProjectOpen(true)}>本地流程工程</Button>
+              <Button disabled={!!busy} onClick={projectOpen}>本地流程工程</Button>
               <Button disabled={!!busy} onClick={authorOpen}>
                 制作模板
               </Button>

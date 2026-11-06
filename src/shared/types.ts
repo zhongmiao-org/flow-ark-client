@@ -117,6 +117,7 @@ export type ExecutionObservation = {
   active: { runId: string; phase: 'executing' | 'closing' } | null;
 };
 export type Bootstrap = {
+  projectInstanceIds?: string[];
   flows: FlowRecord[];
   runs: Run[];
   runOverview: RunOverview;

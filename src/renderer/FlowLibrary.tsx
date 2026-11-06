@@ -1,11 +1,13 @@
 import { runStateColors } from './theme';
-import { Card, Empty, Alert, Button, Input, Segmented, Tag, Badge } from 'antd';
+import { Card, Empty, Alert, Button, Input, Segmented, Tag, Badge, Select } from 'antd';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Folder, Globe, Search, Workflow } from 'lucide-react';
 import type { Bootstrap, FlowRecord, Run } from '../shared/types';
 import { runStateLabels } from '../shared/run-history';
 import { flatten } from './flow-editing';
-import { filterFlows, relativeEditTime } from './flow-library';
+import { relativeEditTime } from './flow-library';
+import { libraryTasks, filterTasks } from './task-library';
+import type { TemplateInstance } from '../templates/types';
 
 type Props = {
   visible: boolean;
@@ -17,6 +19,9 @@ type Props = {
   open: (record: FlowRecord) => void;
   importTemplate: () => void | Promise<unknown>;
   showAttention: () => void;
+  openInstance: (instance: TemplateInstance) => void;
+  showResult: (run: Run) => void;
+  classify: (instance: TemplateInstance, usage: 'task' | 'development') => Promise<unknown>;
 };
 export default function FlowLibrary({
   visible,
@@ -27,10 +32,10 @@ export default function FlowLibrary({
   create,
   open,
   importTemplate,
-  showAttention,
+  showAttention, openInstance, showResult, classify,
 }: Props) {
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'recent' | 'template'>('all');
+  const [filter, setFilter] = useState<'all' | 'recent' | 'template' | 'development' | 'issues'>('all');
   const page = useRef<HTMLElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -86,9 +91,11 @@ export default function FlowLibrary({
     return () => main?.removeEventListener('scroll', rememberScroll);
   }, [visible]);
   const ready = loaded && !data.fault;
-  const first = ready && data.flows.length === 0;
+  const tasks = libraryTasks(data);
+  const first = ready && tasks.length === 0;
+  const normal = tasks.filter(t => t.usage === 'task');
   const now = new Date();
-  const records = filterFlows(data.flows, filter, query, now);
+  const records = filterTasks(tasks, filter, query, now);
   const today = data.runOverview.today;
   const unread = data.attention.filter((a) => !a.read).length;
   return (
@@ -150,9 +157,9 @@ export default function FlowLibrary({
         <>
           <div className="workspace-summary" aria-label="本地工作空间统计">
             <Card size="small">
-              <span>本地流程</span>
-              <strong>{data.flows.length}</strong>
-              <small>{filterFlows(data.flows, 'recent', '', now).length} 个最近编辑</small>
+              <span>{filter === 'development' ? '开发任务' : filter === 'issues' ? '需检查记录' : '本地任务'}</span>
+              <strong>{records.length}</strong>
+              <small>{records.filter(t => Date.parse(t.updatedAt) >= new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6).getTime()).length} 个最近编辑</small>
             </Card>
             <Card size="small">
               <span>今日运行</span>
@@ -188,15 +195,17 @@ export default function FlowLibrary({
             </Card>
           </div>
           <div className="flow-filters">
-            <Segmented<'all' | 'recent' | 'template'>
+            <Segmented<'all' | 'recent' | 'template' | 'development' | 'issues'>
               className="flow-filter-control"
               aria-label="流程筛选"
               value={filter}
               onChange={setFilter}
               options={[
-                { value: 'all', label: `全部流程 ${data.flows.length}` },
+                { value: 'all', label: `全部任务 ${normal.length}` },
                 { value: 'recent', label: <span title="最近七个日历日内编辑">最近编辑</span> },
                 { value: 'template', label: '来自模板' },
+                { value: 'development', label: `开发与调试 ${tasks.filter(t => t.usage === 'development').length}` },
+                { value: 'issues', label: `需检查 ${tasks.filter(t => t.issue).length}` },
               ]}
             />
             <Input
@@ -205,15 +214,16 @@ export default function FlowLibrary({
               ref={(instance) => {
                 search.current = instance?.input ?? null;
               }}
-              aria-label="搜索流程名称"
-              placeholder="搜索流程名称"
+              aria-label="搜索任务或内部入口"
+              placeholder="搜索任务或内部入口"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           <div className="flow-grid">
-            {records.map((record) => {
-              const steps = flatten(record.flow.steps);
+            {records.map((task) => {
+              const record = task.records[0];
+              const steps = task.records.flatMap(r => flatten(r.flow.steps));
               const Icon = steps.some((s) => s.type === 'browser')
                 ? Globe
                 : steps.some((s) => s.type === 'excel')
@@ -221,14 +231,14 @@ export default function FlowLibrary({
                   : steps.some((s) => s.type === 'file')
                     ? Folder
                     : Workflow;
-              const run = data.runOverview.latest.find((r) => r.flowId === record.id);
+              const run = task.run;
               const state = run?.state;
               const historicalActive =
                 run &&
                 ['RUNNING', 'PAUSED', 'WAITING_INPUT', 'CANCELLING'].includes(run.state) &&
                 data.execution?.active?.runId !== run.id;
               return (
-                <article key={record.id} aria-label={record.flow.name}>
+                <article key={task.id} aria-label={task.name}>
                   <Card className="flow-card">
                     <div className="card-top">
                       <Icon size={28} strokeWidth={1.6} aria-hidden="true" />
@@ -253,22 +263,27 @@ export default function FlowLibrary({
                         {historicalActive ? '待核对' : state ? runStateLabels[state] : '未运行'}
                       </Tag>
                     </div>
-                    <h2 title={record.flow.name}>{record.flow.name}</h2>
-                    <p title={record.flow.description}>
-                      {record.flow.description || '你的下一个自动化流程'}
+                    <h2 title={task.name}>{task.name}</h2>
+                    {task.version && <Tag>v{task.version}</Tag>}
+                    {task.readiness && <p>{task.readiness}</p>}
+                    {task.issue && <Alert type="warning" title={task.issue} />}
+                    <p title={task.description}>
+                      {task.instance ? `${task.records.length} 个内部入口 · 打开任务配置和运行` : task.description || '你的下一个自动化流程'}
                     </p>
                     <footer>
-                      <span title={new Date(record.updatedAt).toLocaleString('zh-CN')}>
-                        {steps.length} 个步骤 · {relativeEditTime(record.updatedAt, now)}
+                      <span title={new Date(task.updatedAt).toLocaleString('zh-CN')}>
+                        {task.instance ? `${task.records.length} 个入口` : `${steps.length} 个步骤`} · {relativeEditTime(task.updatedAt, now)}
                       </span>
                       <Button
                         disabled={busy || undefined}
-                        aria-label={`编辑 ${record.flow.name}`}
-                        onClick={() => open(record)}
+                        aria-label={`打开 ${task.name}`}
+                        onClick={() => task.instance ? openInstance(task.instance) : record && open(record)}
                       >
                         打开
                       </Button>
                     </footer>
+                    {(task.latestRun ?? run) && <Button type="link" onClick={() => showResult((task.latestRun ?? run)!)}>查看最近结果</Button>}
+                    {task.instance && <Select aria-label={`任务分类 ${task.name}`} value={task.usage} disabled={busy} style={{ marginTop: 12, width: 160 }} options={[{ value: 'task', label: '普通任务' }, { value: 'development', label: '开发与调试' }]} onChange={usage => { setEntryError(''); void classify(task.instance!, usage).catch(e => setEntryError(e.message)); }} />}
                   </Card>
                 </article>
               );
@@ -281,7 +296,7 @@ export default function FlowLibrary({
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
                   <>
-                    <h2>没有找到匹配的流程</h2>
+                    <h2>没有找到匹配的任务</h2>
                     <p>调整名称或筛选条件后重试。</p>
                   </>
                 }

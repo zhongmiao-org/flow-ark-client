@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react';
+import { Clock, Code2 } from 'lucide-react';
 
 const workflow = new URL('./assets/navigation/workflow.svg?no-inline', import.meta.url).href;
 const workflowActive = new URL('./assets/navigation/workflow-active.svg?no-inline', import.meta.url)
@@ -13,6 +13,7 @@ const bell = new URL('./assets/navigation/bell.svg?no-inline', import.meta.url).
 export type NavigationItem =
   | 'tasks'
   | 'flows'
+  | 'projects'
   | 'tools'
   | 'templates'
   | 'runs'
@@ -27,6 +28,7 @@ export default function NavigationIcon({
   item: NavigationItem;
   active?: boolean;
 }) {
+  if (item === 'projects') return <Code2 size={20} strokeWidth={1.6} aria-hidden="true" />;
   if (item === 'schedules') return <Clock size={20} strokeWidth={1.6} aria-hidden="true" />;
   const source =
     item === 'tasks'

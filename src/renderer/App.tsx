@@ -58,6 +58,7 @@ import {
   Suspense,
 } from 'react';
 import FlowLibrary from './FlowLibrary';
+import ProjectWorkspace from './ProjectWorkspace';
 import AITaskWorkspace, { type TaskOpener } from './AITaskWorkspace';
 import ToolConnectionsPage, { type ToolNavigation } from './ToolConnectionsPage';
 import AISettingsPage, { type AISettingsEntry, type AISettingsNavigation } from './AISettingsPage';
@@ -177,6 +178,7 @@ function WorkspaceApp() {
   const [settingsNavigation, setSettingsNavigation] = useState<SettingsNavigation>();
   const [attentionRequest, setAttentionRequest] = useState<{ id: string }>();
   const [attentionNavigation, setAttentionNavigation] = useState<AttentionNavigation>();
+  const projectNavigation = useRef<((next: () => void) => void) | undefined>(undefined);
   const templateNavigation = useRef<TemplateNavigation | undefined>(undefined);
   const [templateHomeRequest, setTemplateHomeRequest] = useState<string>();
   const [templateInstanceRequest, setTemplateInstanceRequest] = useState<TemplateOpenRequest>();
@@ -299,7 +301,7 @@ function WorkspaceApp() {
       });
   }
   const [runOrigin, setRunOrigin] = useState<
-    'history' | 'editor' | 'task' | 'template' | 'schedule' | 'inbox'
+    'history' | 'editor' | 'task' | 'template' | 'schedule' | 'inbox' | 'flows'
   >('history');
   const [templateOrigin, setTemplateOrigin] = useState<TemplateEntryOrigin>();
   const scheduleNavigation = useRef<TemplateNavigation | undefined>(undefined);
@@ -599,7 +601,8 @@ function WorkspaceApp() {
     else if (linkedDetailSource) void returnRelatedDetail();
     else if (detail) {
       setDetail(null);
-      if (runOrigin === 'inbox') setSection('inbox');
+      if (runOrigin === 'flows') setSection('flows');
+      else if (runOrigin === 'inbox') setSection('inbox');
       else if (runOrigin === 'schedule') returnSchedule();
       else if (runOrigin === 'template') returnTemplate();
       else if (runOrigin === 'editor' && edit) setSection('editor');
@@ -824,6 +827,7 @@ function WorkspaceApp() {
   const nav = [
     ['tasks', '开始任务'],
     ['flows', '我的流程'],
+    ['projects', '流程编辑器'],
     ['tools', '应用与工具'],
     ['templates', '模板库'],
     ['runs', '运行记录'],
@@ -908,6 +912,7 @@ function WorkspaceApp() {
     if (section === 'editor') requestEditorLeave(navigate, label);
     else if (section === 'inbox' && attentionNavigation?.leave)
       attentionNavigation.leave(navigate, label);
+    else if (section === 'projects') projectNavigation.current?.(navigate);
     else if (section === 'tools') toolNavigation.current?.(navigate);
     else if (section === 'ai-settings')
       aiSettingsNavigation.current?.(() => leaveAIContext(navigate, label), label);
@@ -1338,7 +1343,8 @@ function WorkspaceApp() {
                 if (section === 'editor') requestEditorLeave(navigate, '首次教学');
                 else if (section === 'inbox' && attentionNavigation?.leave)
                   attentionNavigation.leave(navigate, '首次教学');
-                else if (section === 'tools') toolNavigation.current?.(navigate);
+                else if (section === 'projects') projectNavigation.current?.(navigate);
+    else if (section === 'tools') toolNavigation.current?.(navigate);
                 else if (section === 'ai-settings')
                   aiSettingsNavigation.current?.(
                     () => leaveAIContext(navigate, '首次教学'),
@@ -1478,6 +1484,7 @@ function WorkspaceApp() {
             className="topbar"
             style={
               nodeSession ||
+              section === 'projects' ||
               section === 'tools' ||
               section === 'templates' ||
               section === 'author' ||
@@ -2112,6 +2119,13 @@ function WorkspaceApp() {
             active={active}
             create={create}
             open={openFlow}
+            openInstance={(instance) => void action(async () => {
+              const detail = await api('template.detail', { id: instance.id });
+              setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'configuration', returnLabel: '我的流程', back: () => { setTemplateInstanceRequest(undefined); setSection('flows'); } });
+              setSection('templates');
+            })}
+            classify={(instance, usage) => action(async () => { await api('template.usage', { id: instance.id, expected: instance.usage ?? null, usage }); })}
+            showResult={(run) => void action(async () => { setDetail(await api('run.detail', { id: run.id })); setRunOrigin('flows'); setRunTab('output'); setRunFilter(false); setSection('runs'); })}
             importTemplate={() =>
               action(async () => {
                 const preview = await api('template.inspect');
@@ -2123,8 +2137,13 @@ function WorkspaceApp() {
             }
             showAttention={() => setSection('inbox')}
           />
+          {section === 'projects' && <ProjectWorkspace navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
+            setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'resources', returnLabel: '流程编辑器', back: () => { setTemplateInstanceRequest(undefined); setSection('projects'); } });
+            setSection('templates');
+          }} />}
           <div hidden={section !== 'templates'}>
             <TemplateLibrary
+              projectOpen={() => setSection('projects')}
               authorOpen={() => {
                 setAuthorRequest({ nonce: crypto.randomUUID() });
                 setSection('author');

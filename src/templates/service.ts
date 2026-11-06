@@ -367,6 +367,14 @@ export class Templates {
   list() {
     return this.store.list<InstalledPackage>('template-package');
   }
+  setUsage(id: string, expected: TemplateInstance['usage'] | null, usage: NonNullable<TemplateInstance['usage']>) {
+    return this.store.tx(() => {
+      const instance = this.store.get<TemplateInstance>('template-instance', id);
+      if (!instance || (instance.usage ?? null) !== expected) throw Error('实例分类已变化，请刷新后重试');
+      this.store.put('template-instance', id, { ...instance, usage });
+      return { id, usage };
+    });
+  }
   instances() {
     return this.store.list<TemplateInstance>('template-instance');
   }

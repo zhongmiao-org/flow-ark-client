@@ -50,7 +50,7 @@ export default function CodeEditor({
   label = '流程配置编辑器',
   theme,
   readOnly = false,
-  location,
+  location, path, keepCurrentModel = false, onValidate,
 }: {
   value: string;
   onChange: (s: string) => void;
@@ -60,6 +60,9 @@ export default function CodeEditor({
   theme?: 'light' | 'vs-dark';
   readOnly?: boolean;
   location?: CodeLocation;
+  path?: string;
+  keepCurrentModel?: boolean;
+  onValidate?: (markers: monaco.editor.IMarker[]) => void;
 }) {
   const { token } = antdTheme.useToken();
   const { resolved } = useAppearance();
@@ -83,6 +86,10 @@ export default function CodeEditor({
   return (
     <Editor
       height={height}
+      path={path}
+      keepCurrentModel={keepCurrentModel}
+      saveViewState
+      onValidate={onValidate}
       language={language}
       value={value}
       theme={editorTheme}

@@ -209,6 +209,40 @@ export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorD
   await compileAuthor(definition);
   return definition;
 }
+/** Compile an in-memory draft using the normative compiler; never writes or runs it. */
+export async function diagnoseProject(path: string, revision: string, changes: { path: string; content: string }[]) {
+  const before = await snapshotProject(path);
+  if (before.revision !== revision) throw new ProjectDiagnostic('project-conflict', '工程已变化，请核对磁盘差异');
+  const candidate = { ...before, files: new Map(before.files) };
+  try {
+    for (const change of changes) {
+      pathName(change.path);
+      if (!before.files.has(change.path)) throw new ProjectDiagnostic('project-unlisted-file', '只检查已声明文件', change.path);
+      candidate.files.set(change.path, Buffer.from(change.content));
+    }
+    candidate.manifest = projectSchema.parse(json(required(candidate, 'flowark.project.json'), 'flowark.project.json'));
+    await compileProject(candidate);
+    if ((await snapshotProject(path)).revision !== revision) throw new ProjectDiagnostic('project-conflict', '检查期间磁盘变化');
+    return { valid: true, revision, draft: changes.length > 0, diagnostics: [] };
+  } catch (error: any) {
+    if (error.code === 'project-conflict') throw error;
+    const diagnostics = error.errors?.map((e: any) => ({ code: 'project-script', message: e.text,
+      file: e.location?.file?.replace(/^project:/, ''), line: e.location?.line, column: e.location ? e.location.column + 1 : undefined })) ??
+      [{ code: error.code ?? 'project-invalid', message: error.message, file: error.file, field: error.field, line: error.line, column: error.column }];
+    for (const d of diagnostics) {
+      const entry = candidate.manifest.entries.find(e => [e.graph, e.nodes, e.inputSchema, e.resultSchema].includes(d.file));
+      if (entry) d.entryId = entry.id;
+      else for (const e of candidate.manifest.entries) {
+        try {
+          const bindings = json(required(candidate, e.nodes), e.nodes);
+          const match = Object.entries(bindings).find(([, value]: [string, any]) => value.script === d.file);
+          if (match) { d.entryId = e.id; d.field ??= match[0]; break; }
+        } catch { /* Preserve the original diagnostic if an unrelated binding is invalid. */ }
+      }
+    }
+    return { valid: false, revision, draft: changes.length > 0, diagnostics };
+  }
+}
 export async function buildProject(path: string, expectedRevision?: string) {
   const snapshot = await snapshotProject(path);
   if (expectedRevision && snapshot.revision !== expectedRevision) throw new ProjectDiagnostic('project-conflict', '工程已变化，请读取差异，不覆盖');

@@ -2,10 +2,10 @@ import Ajv from 'ajv/dist/2020.js';
 import type { Json } from '../shared/types';
 
 export class ProjectDiagnostic extends Error {
-  constructor(public code: string, message: string, public file?: string, public field?: string) {
+  constructor(public code: string, message: string, public file?: string, public field?: string, public line?: number, public column?: number) {
     super(message);
   }
-  toJSON() { return { code: this.code, message: this.message, file: this.file, field: this.field }; }
+  toJSON() { return { code: this.code, message: this.message, file: this.file, field: this.field, line: this.line, column: this.column }; }
 }
 export const object = (v: unknown): v is Record<string, Json> =>
   !!v && typeof v === 'object' && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype;
