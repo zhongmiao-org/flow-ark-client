@@ -88,6 +88,7 @@ export const capabilities = [
   aiGenerationCapability,
   parameterSourceCapability,
   'desktop-selection-v1',
+  'desktop-automation-v1',
   'mcp-tool-v1',
   'value',
   'assert',

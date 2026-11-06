@@ -1,3 +1,4 @@
+import { DesktopAutomation } from './desktop-automation';
 import { assertReductionOutput } from '../shared/source-reduction';
 import { ProjectBridge } from './project-bridge';
 import { conversationEvent } from '../shared/conversation';
@@ -17,6 +18,7 @@ import {
   clipboard,
   shell,
   powerMonitor,
+  systemPreferences,
 } from 'electron';
 import { EmbeddedBrowser } from './embedded-browser';
 import { selectionReference } from '../shared/desktop-windows';
@@ -264,6 +266,10 @@ app
       knownSecrets.add(key),
     );
     const localCredentials = new LocalCredentials(vault, (value) => knownSecrets.add(value));
+    const desktopAutomation = new DesktopAutomation(app.isPackaged ? join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native', 'flowark-desktop-automation') : join(__dirname, 'native', 'flowark-desktop-automation'));
+    app.on('before-quit', () => desktopAutomation.stop());
+    powerMonitor.on('suspend', () => desktopAutomation.stop());
+    powerMonitor.on('lock-screen', () => desktopAutomation.stop());
     const desktopWindows = new DesktopWindows(
       app.isPackaged
         ? join(
@@ -320,6 +326,24 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (method.startsWith('desktop.automation.')) {
+          if (method === 'desktop.automation.settings') {
+            if (args.permission === 'accessibility') systemPreferences.isTrustedAccessibilityClient(true);
+            await desktopAutomation.permission(args.permission);
+            await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?' + (args.permission === 'accessibility' ? 'Privacy_Accessibility' : 'Privacy_ScreenCapture')); return true;
+          }
+          if (method === 'desktop.automation.list') { const value = await desktopAutomation.list(); return { ...value, applicationPermissions: { accessibility: systemPreferences.isTrustedAccessibilityClient(false), screenRecording: systemPreferences.getMediaAccessStatus('screen') } }; }
+          if (method === 'desktop.automation.state') return desktopAutomation.state(args.scopeId);
+          if (method === 'desktop.automation.release') return desktopAutomation.release(args.scopeId);
+          if (method === 'desktop.automation.bind') {
+            await ready; await rpc.call('desktop.automation.scope', { scopeId: args.scopeId });
+            const binding = await desktopAutomation.bind(args);
+            try { await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, maxRequests: args.maxRequests, durationMs: args.durationMs, bindingId: binding!.bindingId }); }
+            catch (error) { desktopAutomation.release(args.scopeId); throw error; }
+            return binding;
+          }
+          throw Error('未知桌面接口');
+        }
         if (method === 'project.review.get') return projectReview ? { id: projectReview.id, readStamp: projectReview.readStamp, detail: projectReview.detail, configuring: projectReview.configuring, expiresAt: projectReview.expiresAt } : null;
         if (method === 'project.review.respond') {
           const pending = projectReview;
@@ -591,6 +615,9 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method === 'desktop.automation.command') return desktopAutomation.command(args.scopeId, args.runId, args.request, args.actionId);
+            if (method === 'desktop.automation.finish') return desktopAutomation.finish(args.runId);
+            if (method === 'desktop.automation.state') return desktopAutomation.state(args.scopeId);
             if (method === 'desktop.selection.inspect')
               return desktopWindows.inspect(selectionReference.parse(args));
             if (method === 'desktop.selection.resolve')

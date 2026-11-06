@@ -166,7 +166,7 @@ pnpm exec electron scripts/maintenance/prune-local-work.cjs restore --data /abso
 
 ### 本地工程开发（macOS 预览）
 
-模板库中的「本地流程工程」可创建/打开工程，编辑 Mermaid 与稳定区块绑定、检查并保存修订，创建调试实例后使用已有资源配置和运行核对。磁盘冲突不会自动覆盖当前编辑。开发能力尚在验收，静态检查成功不代表目标业务完成。
+模板库中的「本地流程工程」可创建/打开工程，编辑 Mermaid 与稳定区块绑定、检查并保存修订，创建调试实例后使用已有资源配置和运行核对。磁盘冲突不会自动覆盖当前编辑。开发能力尚在验收，静态检查成功不代表目标业务完成。内置开发Skill指导需求、节点规划、代码、正式组装、运行和打包；不新增普通任务卡片。同错三次且无有效进展暂停并保留草稿。
 
 安装包内 CLI：
 
@@ -175,9 +175,9 @@ pnpm exec electron scripts/maintenance/prune-local-work.cjs restore --data /abso
 "$HOME/Applications/FlowArk.app/Contents/Resources/bin/flowark-project" mcp /绝对路径/已批准的工作目录
 ```
 
-外部 Agent 将第二条命令配置为 stdio MCP Server。先读取 `flowark://project/v1/guide`、`manifest-schema`、`node-schema` 和 `script-sdk`，再用工具生成工程；不需要克隆客户端源码。工程在客户端通过目录选择连接后，才能请求运行宿主。MCP 的目录参数限定可读写范围，不授予资源和外发权限。取消 MCP 等待不代表已提交 Run 被取消；请用运行控制工具显式取消并核对状态。
+外部 Agent 将第二条命令配置为 stdio MCP Server。先读取内置 `flowark://skills/flowark-project-author/SKILL.md`、工程规范与 SDK，再按规划、逐节点代码、校验组装生成工程；不需要克隆客户端源码。工程在客户端通过目录选择连接后，才能请求运行宿主。MCP 的目录参数限定可读写范围，不授予资源和外发权限。取消 MCP 等待不代表已提交 Run 被取消；请用运行控制工具显式取消并核对状态。
 
-CLI 的非 MCP 命令从一个 JSON 请求文件读取参数：`init/open/read/write/validate/build/configuration/from-zip/package/history/configure/prepare/instance/preview/run/status/control`。参数与对应工具的 `inputSchema` 相同。`help` 不调用模型。公开 ZIP 仅包含清单文件；`.flowark/`、真实 env、私人绑定、凭据及运行历史不导出。
+CLI 的非 MCP 命令从一个 JSON 请求文件读取参数：`init/open/read/write/validate/build/configuration/from-zip/package/plan/draft/code/assemble/node-schema/history/configure/prepare/instance/preview/run/status/control`。参数与对应工具的 `inputSchema` 相同。`help` 不调用模型。公开 ZIP 仅包含清单文件；`.flowark/`、真实 env、私人绑定、凭据及运行历史不导出。
 
 工程 AI 页面支持既有 AI 服务或明确选择的兼容 Base URL、协议与模型。Key 只保存到受保护存储，不能填入需求、源码、JSON 或 env。默认每任务最多 20 次请求、10 分钟；API Key 产生的费用由用户自行承担。付费调用失败保留进度，不自动付费重试。外部 Agent 自行管理自己的模型 Key。
 
@@ -191,4 +191,4 @@ AI 参数校验失败且确定未执行的本地打包/复导，可点「重试�
 
 「我的流程」按模板实例展示：一个实例一张任务卡片，内部操作收在实例的「全部操作」中；Skill是资源，不单独计数。卡片可查看最近结果或调整普通任务/开发与调试分类，分类不改变授权、历史或执行。「需检查」保留归属异常记录，不自动删除。
 
-左侧「流程编辑器」可打开已连接工程、选择目录或新建工程；模板库「本地流程工程」进入相同工作区。源码页使用本地Monaco文件模型，切换文件保留编辑和撤销；JS/TS可从相对路径`../flowark-sdk`导入`FlowArkContext`类型。文件树、JSON Schema提示、Mermaid着色、问题列表和区块源码定位共用原工程修订。检查工程可以验证未保存草稿，不写磁盘或执行脚本；运行和打包要求保存后再核对。外部修改仍通过三方差异处理，离开时核对未保存内容。
+左侧「流程编辑器」可打开已连接工程、选择目录或新建工程；模板库「本地流程工程」进入相同工作区。源码页使用本地Monaco文件模型，切换文件保留编辑和撤销；TS参数可写`ctx: FlowArkContext`，JS可用`@param {FlowArkContext} ctx`标注，使用随包SDK类型与静态编译器。文件树、JSON Schema提示、Mermaid着色、问题列表和区块源码定位共用原工程修订。检查工程可以验证未保存草稿，不写磁盘或执行脚本；运行和打包要求保存后再核对。外部修改仍通过三方差异处理，离开时核对未保存内容。

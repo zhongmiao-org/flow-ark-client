@@ -8,12 +8,13 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "c41701f772916745cee024b51cd924551b2c742b",
+    "governanceBaseline": "a84237ca02f4d7ff9fa4e8912724b6da1d16b473",
     "contractsVersion": "0.53.2",
     "contractsTag": "contracts-v0.53.2",
     "localProjectFormat": {
       "version": 1,
-      "status": "draft-unreleased"
+      "status": "draft-unreleased",
+      "authoringSkillVersion": "1.0.0-draft"
     }
   },
   "packageManager": "pnpm@10.14.0",
@@ -115,6 +116,20 @@
       {
         "from": "scripts/bin/flowark-project",
         "to": "bin/flowark-project"
+      },
+      {
+        "from": "dist/native",
+        "to": "app.asar.unpacked/dist/native",
+        "filter": [
+          "*.d.ts"
+        ]
+      },
+      {
+        "from": "dist/types",
+        "to": "flowark-types",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -123,8 +138,19 @@
         "dmg",
         "zip"
       ],
-      "identity": null,
-      "artifactName": "FlowArk-${version}-macos-${arch}.${ext}"
+      "identity": "-",
+      "artifactName": "FlowArk-${version}-macos-${arch}.${ext}",
+      "hardenedRuntime": false,
+      "strictVerify": true,
+      "binaries": [
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-window-discovery",
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-desktop-automation",
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-typescript"
+      ],
+      "extendInfo": {
+        "NSAccessibilityUsageDescription": "FlowArk仅操作本人明确选择的应用窗口，并在运行前核对操作范围。",
+        "NSScreenCaptureUsageDescription": "FlowArk按需读取本人选定窗口，用于流程定位与结果核验。"
+      }
     },
     "dmg": {
       "title": "FlowArk ${version}"

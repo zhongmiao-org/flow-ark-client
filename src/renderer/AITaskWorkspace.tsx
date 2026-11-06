@@ -94,6 +94,7 @@ export type ConnectionTaskSource = {
 };
 export type TaskOpener = (source: ConnectionTaskSource) => Promise<void>;
 type Props = {
+  openDesktopProject: (task: string) => void;
   openTask: MutableRefObject<TaskOpener | undefined>;
   returnConnection: (id: string) => void;
   configuredAI?: { key: string; provider: 'deepseek' | 'openai-codex'; model: string };
@@ -2118,6 +2119,7 @@ export default function AITaskWorkspace(props: Props) {
                 >
                   开始规划
                 </Button>
+                <Button disabled={busy || !homeText.trim()} onClick={() => props.openDesktopProject(homeText)}>生成桌面流程</Button>
                 <Button
                   disabled={busy || undefined}
                   onClick={() => props.settings(provider, model)}

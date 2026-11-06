@@ -5,6 +5,12 @@ export interface FlowArkContext {
   readonly input: Json;
   readonly constants: Readonly<Record<string, Json>>;
   readonly signal: AbortSignal;
+  desktop: {
+    readSelection(request: {observationId: string}): Promise<Json>;
+    decide(request: {observationId: string; instructions: string; input?: Record<string,Json>; schema: Json; useScreenshot?: boolean}): Promise<Json>;
+    observe(options?: {screenshot?: boolean}): Promise<Json>;
+    act(request: {effectId: string; observationId: string; effectKey: string; command: Json}): Promise<Json>;
+  };
   logger: { info(value: Json): void };
   progress(completed: number, total?: number): void;
   artifact(name: string, content: string): Promise<Json>;
@@ -22,6 +28,8 @@ export interface FlowArkContext {
     result(value: Json): Promise<Json>;
   };
 }
+type InstalledFlowArkContext = FlowArkContext;
+declare global { interface FlowArkContext extends InstalledFlowArkContext {} }
 // export default async function main(ctx: FlowArkContext): Promise<Json> { ... }
 // Parameters of browser/file/AI/effect are checked by the installed normative schema.
 // Runtime authorization is separate; this declaration grants no resource or effect permissions.

@@ -1,3 +1,4 @@
+import { authoringSkill, readAuthoringSkill } from './authoring-skill';
 import { readFile } from 'node:fs/promises';
 import Ajv from 'ajv/dist/2020.js';
 import { callProjectTool, projectGuide, projectTools } from './tools';
@@ -22,6 +23,7 @@ const resources = [{ uri: 'flowark://project/v1/guide', name: 'FlowArk project v
 resources.push({ uri: 'flowark://project/v1/node-schema', name: 'FlowArk installed node schema', description: 'Normative schema and local definitions; use node_schema tool for one type', mimeType: 'application/json' });
 resources.push({ uri: 'flowark://project/v1/manifest-schema', name: 'FlowArk project manifest schema', description: 'Installed project manifest JSON Schema', mimeType: 'application/json' });
 resources.push({ uri: 'flowark://project/v1/script-sdk', name: 'FlowArk script SDK', description: 'Installed worker context declarations and permission boundary', mimeType: 'text/typescript' });
+resources.push({uri:authoringSkill.uri,name:'FlowArk built-in project authoring skill',description:'Versioned staged planning, coding and validation instructions',mimeType:'text/markdown'});
 const resourceText = new Map([[resources[0].uri, projectGuide], [resources[1].uri, JSON.stringify(schema)], [resources[2].uri, JSON.stringify(projectSchema)], [resources[3].uri, scriptSdk]]);
 const prompts = [{ name: 'flowark_create_project', description: 'Create and validate a FlowArk project; request execution only after review', arguments: [{ name: 'task', description: 'User task and confirmed constraints', required: true }] },
   { name: 'flowark_package_project', description: 'Validate exact source revision, package public files, restore into a new directory and compare revisions; never claim business acceptance from compilation', arguments: [{ name: 'root', description: 'Authorized local project', required: true }] },
@@ -55,7 +57,7 @@ export async function runMcp() {
           throw new ProjectDiagnostic('mcp-version', 'Unsupported MCP protocol version');
         initialized = true;
         result = { protocolVersion: m.params.protocolVersion, capabilities: { tools: {}, resources: {}, prompts: {} },
-          serverInfo: { name: 'flowark-project', version: '1.0.0' }, instructions: 'Read flowark_project_help before writing a project. Runtime access requires separate desktop pairing and review.' };
+          serverInfo: { name: 'flowark-project', version: '1.0.0' }, instructions: 'Read flowark://skills/flowark-project-author/SKILL.md and flowark_project_help before writing a project. Follow plan → node code → assembly; static validation remains mandatory. Runtime access requires separate desktop pairing and review.' };
       } else if (m.method === 'ping') result = {};
       else if (!initialized) throw new ProjectDiagnostic('mcp-uninitialized', 'Initialize first');
       else if (m.method === 'tools/list') result = { tools: projectTools };
@@ -67,11 +69,11 @@ export async function runMcp() {
       else if (m.method === 'resources/read') {
         const resource = resources.find(r => r.uri === m.params?.uri);
         if (!resource) throw new ProjectDiagnostic('resource-not-found', 'Unknown resource');
-        result = { contents: [{ uri: resource.uri, mimeType: resource.mimeType, text: resourceText.get(resource.uri) }] };
+        result = { contents: [{ uri: resource.uri, mimeType: resource.mimeType, text: resource.uri === authoringSkill.uri ? (await readAuthoringSkill()).content : resourceText.get(resource.uri) }] };
       } else if (m.method === 'prompts/list') result = { prompts };
       else if (m.method === 'prompts/get') {
         if (!prompts.some(p => p.name === m.params?.name)) throw new ProjectDiagnostic('prompt-not-found', 'Unknown prompt');
-        result = { messages: [{ role: 'user', content: { type: 'text', text: projectGuide + '\nRequest: ' + JSON.stringify(m.params?.arguments ?? {}) } }] };
+        result = { messages: [{ role: 'user', content: { type: 'text', text: (await readAuthoringSkill()).content + '\n' + projectGuide + '\nRequest: ' + JSON.stringify(m.params?.arguments ?? {}) } }] };
       } else { send({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: 'Method not found' } }); return; }
       send({ jsonrpc: '2.0', id: m.id, result });
     } catch (error) { send({ jsonrpc: '2.0', id: m.id, error: { code: -32602, message: JSON.stringify(diagnostic(error)) } }); }
@@ -106,8 +108,9 @@ async function main() {
   if (command === 'mcp') { await runMcp(); return; }
   if (command === 'help') { process.stdout.write(projectGuide); return; }
   const names: Record<string, string> = { init: 'init', open: 'open', read: 'read', write: 'write', validate: 'validate', build: 'validate', configuration: 'configuration', 'from-zip': 'from_zip', package: 'package' };
-  const runtimeName = ['history', 'configure', 'prepare', 'instance', 'preview', 'run', 'status', 'control'].includes(command) ? 'flowark_runtime_' + command : undefined;
-  if ((!names[command] && !runtimeName) || !inputPath) throw new ProjectDiagnostic('cli-arguments', '用法：flowark-project <init|open|read|write|validate|build|configuration|from-zip|package|history|configure|prepare|instance|preview|run|status|control> <request.json>，或 mcp <工作目录>');
+  const authoringNames: Record<string, string> = { plan: 'flowark_authoring_plan', draft: 'flowark_authoring_get', code: 'flowark_authoring_code', assemble: 'flowark_authoring_assemble', 'node-schema': 'flowark_project_node_schema' };
+  const runtimeName = authoringNames[command] ?? (['history', 'configure', 'prepare', 'instance', 'preview', 'run', 'status', 'control'].includes(command) ? 'flowark_runtime_' + command : undefined);
+  if ((!names[command] && !runtimeName) || !inputPath) throw new ProjectDiagnostic('cli-arguments', '用法：flowark-project <init|open|read|write|validate|build|configuration|from-zip|package|plan|draft|code|assemble|node-schema|history|configure|prepare|instance|preview|run|status|control> <request.json>，或 mcp <工作目录>');
   const bytes = await readFile(inputPath);
   if (bytes.length > 2 * 1024 * 1024) throw new ProjectDiagnostic('cli-request-size', '请求超过2MiB');
   const value = await invoke(runtimeName ?? 'flowark_project_' + names[command], JSON.parse(bytes.toString('utf8')));

@@ -1,3 +1,4 @@
+import { DesktopAutomationRuns } from './desktop-automation';
 import {
   assertBrowserScrollInvocation,
   assertBrowserScrollCapabilities,
@@ -255,7 +256,7 @@ export class Runtime {
       const value = await this.system(method, args);
       if (method === 'credentials.get' && typeof value === 'string') this.secrets.push(value);
       return value;
-    }, id => this.projects.request('project.get', { id }), (method, args) => this.projects.request(method, args));
+    }, id => this.projects.request('project.get', { id }), (method, args) => this.projects.request(method, args), projectId => this.desktopAutomationRuns().chargeProject(projectId));
     this.typedResults = new TypedResults(
       this.store,
       (record, node, value) => this.sources.verifyResult(record, node, value),
@@ -673,6 +674,7 @@ export class Runtime {
     this.runReview = new RunReview(this.store, {
       batches: this.batches,
       desktop: this.desktopRuns,
+      automation: record => this.desktopAutomationRuns().binding(record),
       tools: (record) => this.toolTargets.reviewStates(record),
       learnedTrial: (run) => this.learning.trial(run),
       busy: (id) =>
@@ -1144,6 +1146,7 @@ export class Runtime {
     desktopRun?: string | true,
     sourceReview = false,
   ): Promise<PreparedScripts> {
+    const desktopAutomationContext = await this.desktopAutomationRuns().binding(record);
     const checkAI = this.aiSettings.capture([
       ...record.bindings.credentials,
       ...aiProviders(record),
@@ -1155,6 +1158,7 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
+      if (desktopAutomationContext) prepared.desktopAutomationContext = structuredClone(desktopAutomationContext);
       if (record.templateResourceExtension)
         prepared.templateResourceExtension = structuredClone(record.templateResourceExtension);
       // A queued execution is fixed even when its older manual snapshot has no
@@ -1522,6 +1526,8 @@ export class Runtime {
     this.assertActiveRun(runId);
     return pkg;
   }
+  private desktopAutomation?: DesktopAutomationRuns;
+  private desktopAutomationRuns() { return this.desktopAutomation ??= new DesktopAutomationRuns(this.store, async (method, args) => { const value = await this.system(method, args); if (method === 'credentials.get' && typeof value === 'string') this.secrets.push(value); return value; }); }
   private async scriptRequest(owner: ScriptOwner, method: string, args: any) {
     this.assertScriptOwner(owner);
     let result: unknown;
@@ -1540,6 +1546,16 @@ export class Runtime {
       result = await this.workerRequest(owner.runId, 'credential', args);
     } else if (method === 'template') {
       const snapshot = this.store.runSnapshotView<FlowRecord & PreparedScripts>(owner.runId)!;
+      if (args?.operation === 'desktop') {
+        if (args.request?.operation === 'act') {
+          const { entry, ref } = await this.templates.context(snapshot);
+          const effect = this.store.get<any>('template-effect', args.request.effectId);
+          if (!entry.capabilities.includes('effect') || !effect || effect.instanceId !== ref.instanceId || effect.runId !== owner.runId || effect.state !== 'submitting' || !entry.actions.includes(effect.action)) throw Error('桌面动作需要本Run正式预留的模板效果凭据');
+          if (!['auto', 'confirm'].includes(snapshot.bindings.grants?.[effect.action] ?? 'deny')) throw Error('模板桌面动作未授权');
+          await this.templates.canWrite(snapshot, owner.runId, this.active!.abort.signal, () => this.assertScriptOwner(owner));
+        }
+        return this.desktopAutomationRuns().call(snapshot, owner.runId, args.request, () => this.assertScriptOwner(owner), this.active!.abort.signal);
+      }
       let fixedPackage: PackageData | undefined;
       if (!snapshot.authorSdk) {
         fixedPackage = await this.fixedRunTemplatePackage(snapshot, owner.runId);
@@ -1976,6 +1992,7 @@ export class Runtime {
     } finally {
       active.abort.abort(new Error('运行正在收尾'));
       await this.mcpRuns.release(run.id);
+      await this.desktopAutomationRuns().finish(run.id).catch(() => {});
       clearTimeout(active.cancelTimer);
       this.sessions.finishRun(run.id);
       rpc.close();
@@ -2891,6 +2908,19 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'desktop.automation.budget') {
+      await this.ready;
+      if (!Number.isSafeInteger(args.maxRequests) || args.maxRequests < 1 || args.maxRequests > 100 || !Number.isSafeInteger(args.durationMs) || args.durationMs < 10000 || args.durationMs > 3600000) throw Error('桌面任务预算无效');
+      await this.request('desktop.automation.scope', { scopeId: args.scopeId });
+      return this.desktopAutomationRuns().configure(args.scopeId, args.bindingId, args.maxRequests, args.durationMs);
+    }
+    if (method === 'desktop.automation.scope') {
+      await this.ready; this.assertAdmitting();
+      const scopeId = args.scopeId;
+      if (typeof scopeId !== 'string' || (!this.store.get('template-instance', scopeId) && !this.store.get('flow', scopeId))) throw Error('目标实例或流程不存在');
+      this.assertResourceExtensionIdle(scopeId);
+      return true;
+    }
     if (method === 'project.createAt') {
       await this.ready;
       if (typeof args.destination !== 'string' || args.destination.length > 4096) throw Error('无效工程目录');
@@ -2903,7 +2933,7 @@ export class Runtime {
       if (!rule) throw Error('未知工程AI操作');
       const value = rule.parse(args) as any;
       await this.projects.request('project.get', { id: value.id });
-      if (method === 'project.ai.get') return this.projectAI.get(value.id);
+      if (method === 'project.ai.get') return { ...this.projectAI.get(value.id), desktopBudget: this.desktopAutomationRuns().budgetForProject(value.id) };
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
       if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.maxRequests, value.durationMs, value.reviewedCost);
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);

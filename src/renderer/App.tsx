@@ -374,6 +374,7 @@ function WorkspaceApp() {
     window.addEventListener('flowark:open-browser', open);
     return () => window.removeEventListener('flowark:open-browser', open);
   }, []);
+  const [desktopProjectTask, setDesktopProjectTask] = useState('');
   const [data, setData] = useState(initial),
     [section, setSection] = useState('tasks'),
     [detail, setDetail] = useState<any>(null),
@@ -1969,6 +1970,7 @@ function WorkspaceApp() {
           )}
           {loaded && (
             <AITaskWorkspace
+              openDesktopProject={task => { setDesktopProjectTask(task); setSection('projects'); }}
               openTask={taskOpener}
               openAttention={() => {
                 setSection('inbox');
@@ -2138,7 +2140,7 @@ function WorkspaceApp() {
             }
             showAttention={() => setSection('inbox')}
           />
-          {section === 'projects' && <ProjectWorkspace navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
+          {section === 'projects' && <ProjectWorkspace initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
             setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'resources', returnLabel: '流程编辑器', back: () => { setTemplateInstanceRequest(undefined); setSection('projects'); } });
             setSection('templates');
           }} />}

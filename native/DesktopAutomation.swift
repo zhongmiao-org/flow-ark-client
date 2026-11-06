@@ -1,0 +1,284 @@
+import AppKit
+import ApplicationServices
+import ScreenCaptureKit
+import CryptoKit
+import Foundation
+import Darwin
+
+// Private window and AX references never cross the process boundary.
+struct DesktopFault: Error { let message: String }
+struct DesktopWindow {
+    let app: NSRunningApplication
+    let born: Date
+    let window: AXUIElement
+    let title: String
+}
+struct DesktopObservation {
+    let id: String
+    let stamp: String
+    let at: Date
+    let frame: CGRect
+    let elements: [String: AXUIElement]
+    let pointer: CGPoint
+}
+func fault(_ message: String) throws -> Never { throw DesktopFault(message: message) }
+func ax(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
+    var value: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(e, key as CFString, &value) == .success else { return nil }
+    return value
+}
+func str(_ e: AXUIElement, _ key: String) -> String { (ax(e,key) as? String).map { String($0.prefix(4000)) } ?? "" }
+func frame(_ e: AXUIElement) -> CGRect? {
+    guard let pv=ax(e,kAXPositionAttribute), CFGetTypeID(pv)==AXValueGetTypeID(),
+          let sv=ax(e,kAXSizeAttribute), CFGetTypeID(sv)==AXValueGetTypeID() else { return nil }
+    var p=CGPoint.zero, s=CGSize.zero
+    guard AXValueGetValue(pv as! AXValue,.cgPoint,&p), AXValueGetValue(sv as! AXValue,.cgSize,&s), s.width>0,s.height>0 else { return nil }
+    return CGRect(origin:p,size:s)
+}
+func rectJSON(_ f: CGRect) -> [String:Double] { ["x":f.minX,"y":f.minY,"width":f.width,"height":f.height] }
+func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
+
+@main struct DesktopAutomation {
+    static var windows: [String:DesktopWindow]=[:]
+    static var selected: DesktopWindow?
+    static var binding: String?
+    static var observation: DesktopObservation?
+    static var consumed=Set<String>()
+    static var expires=Date.distantPast
+    static func check() throws -> DesktopWindow {
+        guard AXIsProcessTrusted() else { try fault("permission-required") }
+        guard let w=selected, binding != nil, Date()<expires, !w.app.isTerminated,
+              w.app.launchDate==w.born else { try fault("binding-expired") }
+        guard str(w.window,kAXTitleAttribute)==w.title else { try fault("window-context-changed") }
+        let root=AXUIElementCreateApplication(w.app.processIdentifier)
+        guard let ws=ax(root,kAXWindowsAttribute) as? [AXUIElement], ws.contains(where:{same($0,w.window)}),
+              frame(w.window) != nil else { try fault("window-changed") }
+        return w
+    }
+    static func focused(_ w:DesktopWindow) throws {
+        guard NSWorkspace.shared.frontmostApplication?.processIdentifier==w.app.processIdentifier,
+              let f=ax(AXUIElementCreateApplication(w.app.processIdentifier),kAXFocusedWindowAttribute),
+              CFGetTypeID(f)==AXUIElementGetTypeID(), same(f as! AXUIElement,w.window) else { try fault("focus-changed") }
+    }
+    static func tree(_ w:DesktopWindow) throws -> (CGRect,[[String:Any]],[String:AXUIElement],String,Bool) {
+        guard let bounds=frame(w.window) else { try fault("window-changed") }
+        var rows=[[String:Any]](), refs=[String:AXUIElement](), queue:[(AXUIElement,Int)]=[(w.window,0)], cursor=0
+        var truncated=false
+        let deadline=Date().addingTimeInterval(2)
+        while cursor<queue.count && rows.count<800 && Date()<deadline {
+            let (e,depth)=queue[cursor];cursor+=1
+            let role=str(e,kAXRoleAttribute), sub=str(e,kAXSubroleAttribute)
+            let secure=sub==kAXSecureTextFieldSubrole || role=="AXSecureTextField"
+            let id=String(rows.count), box=frame(e)
+            var row:[String:Any]=["id":id,"role":role,"subrole":sub,"title":secure ? "[protected]":str(e,kAXTitleAttribute),"description":secure ? "":str(e,kAXDescriptionAttribute),"value":secure ? "[protected]":str(e,kAXValueAttribute),"depth":depth]
+            if let b=box { row["bounds"]=rectJSON(CGRect(x:b.minX-bounds.minX,y:b.minY-bounds.minY,width:b.width,height:b.height)) }
+            if !secure { refs[id]=e }
+            rows.append(row)
+            if !secure && depth<20, let children=ax(e,kAXChildrenAttribute) as? [AXUIElement] {
+                if children.count>1000-queue.count {truncated=true}
+                for child in children.prefix(1000-queue.count) { queue.append((child,depth+1)) }
+            }
+        }
+        let stampData=try JSONSerialization.data(withJSONObject:["bounds":rectJSON(bounds),"rows":rows],options:[.sortedKeys])
+        let stamp=SHA256.hash(data:stampData).map{String(format:"%02x",$0)}.joined()
+        return (bounds,rows,refs,stamp,truncated || cursor<queue.count)
+    }
+    static func discover() throws -> Any {
+        windows.removeAll(); selected=nil;binding=nil;observation=nil
+        guard AXIsProcessTrusted() else { return ["version":1,"accessibility":"not-granted","screenRecording":CGPreflightScreenCaptureAccess(),"windows":[]] as [String:Any] }
+        var result=[[String:Any]]();let deadline=Date().addingTimeInterval(5)
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app.processIdentifier != getpid() {
+            if Date()>deadline || result.count>=80 { break }
+            guard let born=app.launchDate else { continue }
+            let root=AXUIElementCreateApplication(app.processIdentifier);AXUIElementSetMessagingTimeout(root,0.15)
+            guard let items=ax(root,kAXWindowsAttribute) as? [AXUIElement] else { continue }
+            for window in items.prefix(15) {
+                guard frame(window) != nil else { continue }
+                let title=str(window,kAXTitleAttribute), id=UUID().uuidString
+                windows[id]=DesktopWindow(app:app,born:born,window:window,title:title)
+                result.append(["id":id,"application":app.localizedName ?? "Application","bundleId":app.bundleIdentifier ?? "","title":title,"minimized":(ax(window,kAXMinimizedAttribute) as? Bool) ?? false])
+            }
+        }
+        return ["version":1,"accessibility":"granted","screenRecording":CGPreflightScreenCaptureAccess(),"windows":result] as [String:Any]
+    }
+    static func screenshot(_ w:DesktopWindow,_ expected:CGRect) async throws -> [String:Any] {
+        guard CGPreflightScreenCaptureAccess() else { try fault("screen-recording-required") }
+        if #available(macOS 14.0,*) {
+            let content=try await SCShareableContent.excludingDesktopWindows(true,onScreenWindowsOnly:true)
+            let candidates=content.windows.filter { $0.owningApplication?.processID==w.app.processIdentifier && $0.frame==expected }
+            var matches=candidates.filter { ($0.title ?? "")==str(w.window,kAXTitleAttribute) }
+            if matches.isEmpty {
+                let root=AXUIElementCreateApplication(w.app.processIdentifier)
+                let siblings=(ax(root,kAXWindowsAttribute) as? [AXUIElement] ?? []).filter { frame($0)==expected }
+                if siblings.count==1 && same(siblings[0],w.window) && candidates.count==1 { matches=candidates }
+            }
+            guard matches.count==1 else { try fault("capture-window-ambiguous") }
+            let filter=SCContentFilter(desktopIndependentWindow:matches[0]), config=SCStreamConfiguration()
+            let scale=min(2,1600/max(expected.width,expected.height));config.width=max(1,Int(expected.width*scale));config.height=max(1,Int(expected.height*scale));config.showsCursor=false
+            let cg=try await SCScreenshotManager.captureImage(contentFilter:filter,configuration:config)
+            guard try check().app.processIdentifier==w.app.processIdentifier, frame(w.window)==expected else { try fault("window-changed") }
+            let rep=NSBitmapImageRep(cgImage:cg)
+            guard let data=rep.representation(using:.png,properties:[:]), data.count<=6*1024*1024 else { try fault("image-limit") }
+            return ["mimeType":"image/png","data":data.base64EncodedString(),"width":cg.width,"height":cg.height]
+        }
+        try fault("capture-requires-macos14")
+    }
+    static func observe(_ args:[String:Any]) async throws -> Any {
+        let w=try check();let (bounds,rows,refs,stamp,truncated)=try tree(w)
+        var result:[String:Any]=["version":1,"observationId":UUID().uuidString,"title":str(w.window,kAXTitleAttribute),"application":w.app.localizedName ?? "Application","bounds":rectJSON(bounds),"elements":rows,"truncated":truncated]
+        if args["screenshot"] as? Bool == true { result["image"]=try await screenshot(w,bounds) }
+        let next=try tree(w)
+        guard next.3==stamp else { try fault("observation-changed") }
+        let id=result["observationId"] as! String
+        observation=DesktopObservation(id:id,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero)
+        return result
+    }
+    static func readSelection(_ args:[String:Any]) throws -> Any {
+        let w=try check();try focused(w)
+        guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
+        let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
+        let root=AXUIElementCreateApplication(w.app.processIdentifier)
+        guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID(),str(element as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
+        let board=NSPasteboard.general;var snapshot=[[NSPasteboard.PasteboardType:Data]]();var total=0
+        for item in board.pasteboardItems ?? [] {
+            var values=[NSPasteboard.PasteboardType:Data]()
+            for type in item.types {guard let data=item.data(forType:type) else {try fault("clipboard-unavailable")};total+=data.count;guard total<=1024*1024 else{try fault("clipboard-snapshot-limit")};values[type]=data};snapshot.append(values)
+        }
+        let before=board.changeCount;observation=nil
+        try key(8,.maskCommand)
+        let deadline=Date().addingTimeInterval(1)
+        while board.changeCount==before && Date()<deadline {Thread.sleep(forTimeInterval:0.02)}
+        guard board.changeCount != before else {try fault("copy-not-confirmed")}
+        let ownCount=board.changeCount
+        defer {if board.changeCount==ownCount{board.clearContents();let items=snapshot.map{values -> NSPasteboardItem in let item=NSPasteboardItem();for(type,data)in values{item.setData(data,forType:type)};return item};board.writeObjects(items)}}
+        try focused(w);_ = try check()
+        guard let text=board.string(forType:.string),text.utf8.count<=256*1024,board.changeCount==ownCount else {try fault("selection-read-limit-or-changed")}
+        return ["version":1,"text":text,"source":"bound-window-selection"]
+    }
+    static func point(_ raw:Any?,_ bounds:CGRect) throws -> CGPoint {
+        guard let p=raw as? [String:Any],let x=p["x"] as? Double,let y=p["y"] as? Double,x.isFinite,y.isFinite,x>=0,y>=0,x<bounds.width,y<bounds.height else { try fault("point-outside-window") }
+        return CGPoint(x:bounds.minX+x,y:bounds.minY+y)
+    }
+    static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1) throws {
+        guard let event=CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:p,mouseButton:.left) else { try fault("input-unavailable") }
+        event.setIntegerValueField(.mouseEventClickState,value:Int64(count));event.post(tap:.cghidEventTap)
+    }
+    static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[]) throws {
+        guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
+        down.flags=flags;up.flags=flags;down.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
+    }
+    static func act(_ args:[String:Any]) throws -> Any {
+        let w=try check()
+        guard let actionId=args["actionId"] as? String,UUID(uuidString:actionId) != nil,!consumed.contains(actionId) else { try fault("action-already-consumed") }
+        guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
+        let pointer=CGEvent(source:nil)?.location ?? .zero
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else { try fault("user-intervention") }
+        let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
+        guard let command=args["command"] as? [String:Any],let kind=command["kind"] as? String else { try fault("invalid-command") }
+        if kind != "activate" { try focused(w) }
+        var target:AXUIElement?
+        if let id=command["elementId"] as? String { guard let e=old.elements[id] else { try fault("element-not-found") };target=e }
+        // Consume before the first native event. Any subsequent failure is unknown, never retried.
+        consumed.insert(actionId);observation=nil
+        do {
+            switch kind {
+            case "activate":
+                guard w.app.activate(options:[]), AXUIElementPerformAction(w.window,kAXRaiseAction as CFString) == .success else { try fault("activation-failed") }
+            case "click", "doubleClick":
+                var p:CGPoint
+                if let e=target,let box=frame(e) { p=CGPoint(x:box.midX,y:box.midY);guard old.frame.contains(p) else { try fault("element-outside-window") } }
+                else { p=try point(command["point"],old.frame) }
+                if kind=="click",let e=target {
+                    var actions:CFArray?;AXUIElementCopyActionNames(e,&actions)
+                    if (actions as? [String])?.contains(kAXPressAction)==true { guard AXUIElementPerformAction(e,kAXPressAction as CFString) == .success else { try fault("press-failed") };break }
+                }
+                for i in 1...(kind=="doubleClick" ? 2:1) { try focused(w);try mouse(.leftMouseDown,p,i);try mouse(.leftMouseUp,p,i) }
+            case "input":
+                guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
+                let root=AXUIElementCreateApplication(w.app.processIdentifier)
+                guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID() else { try fault("input-focus-missing") }
+                let e=element as! AXUIElement
+                guard str(e,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-input-denied") }
+                for chunk in unicodeChunks(text) {
+                    try focused(w)
+                    guard let event=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:false) else { try fault("input-unavailable") }
+                    event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);event.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
+                }
+            case "paste":
+                guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
+                let root=AXUIElementCreateApplication(w.app.processIdentifier)
+                guard let focusedElement=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(focusedElement)==AXUIElementGetTypeID(),str(focusedElement as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
+                let board=NSPasteboard.general;var snapshot=[[NSPasteboard.PasteboardType:Data]]();var total=0
+                for item in board.pasteboardItems ?? [] {
+                    var values=[NSPasteboard.PasteboardType:Data]()
+                    for type in item.types {
+                        guard let data=item.data(forType:type) else { try fault("clipboard-unavailable") }
+                        total+=data.count;guard total<=1024*1024 else { try fault("clipboard-snapshot-limit") };values[type]=data
+                    };snapshot.append(values)
+                }
+                let previousCount=board.changeCount
+                guard board.changeCount==previousCount else { try fault("clipboard-changed") }
+                board.clearContents();guard board.setString(text,forType:.string) else { try fault("clipboard-write-failed") }
+                let ownCount=board.changeCount
+                defer {
+                    if board.changeCount==ownCount {
+                        board.clearContents()
+                        let items=snapshot.map { values -> NSPasteboardItem in let item=NSPasteboardItem();for(type,data)in values{item.setData(data,forType:type)};return item }
+                        board.writeObjects(items)
+                    }
+                }
+                try focused(w);try key(9,.maskCommand);Thread.sleep(forTimeInterval:0.2)
+            case "key":
+                guard let name=command["key"] as? String else { try fault("invalid-key") }
+                let codes:[String:CGKeyCode]=["a":0,"s":1,"c":8,"v":9,"x":7,"z":6,"f":3,"Return":36,"Tab":48,"Escape":53,"Backspace":51,"Space":49,"Left":123,"Right":124,"Down":125,"Up":126,"Home":115,"End":119]
+                guard let code=codes[name] else { try fault("unsupported-key") }
+                let modifiers=command["modifiers"] as? [String] ?? []
+                guard modifiers.allSatisfy({["command","shift","option","control"].contains($0)}) else { try fault("unsupported-modifier") }
+                var flags:CGEventFlags=[];for m in modifiers { flags.insert(m=="command" ? .maskCommand:m=="shift" ? .maskShift:m=="option" ? .maskAlternate:.maskControl) };try key(code,flags)
+            case "scroll":
+                let p=try point(command["point"],old.frame);try mouse(.mouseMoved,p)
+                guard let dy=command["deltaY"] as? Int,abs(dy)<=1000,let dx=command["deltaX"] as? Int,abs(dx)<=1000,
+                      let e=CGEvent(scrollWheelEvent2Source:nil,units:.pixel,wheelCount:2,wheel1:Int32(dy),wheel2:Int32(dx),wheel3:0) else { try fault("invalid-scroll") }
+                e.location=p;e.post(tap:.cghidEventTap)
+            case "drag":
+                let from=try point(command["from"],old.frame),to=try point(command["to"],old.frame)
+                try mouse(.leftMouseDown,from)
+                defer { try? mouse(.leftMouseUp,to) }
+                for i in 1...12 { try focused(w);let t=Double(i)/12;try mouse(.leftMouseDragged,CGPoint(x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t));Thread.sleep(forTimeInterval:0.015) }
+            default:try fault("unsupported-command")
+            }
+            return ["status":"performed","actionId":actionId]
+        } catch { return ["status":"unknown","actionId":actionId,"reason":(error as? DesktopFault)?.message ?? "native-action-failed"] }
+    }
+    static func request(_ method:String,_ args:[String:Any]) async throws -> Any {
+        if method=="list" { return try discover() }
+        if method=="permissions" {
+            if args["request"] as? String=="accessibility" { _ = AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String:true] as CFDictionary) }
+            if args["request"] as? String=="screen-recording" { _ = CGRequestScreenCaptureAccess() }
+            return ["accessibility":AXIsProcessTrusted(),"screenRecording":CGPreflightScreenCaptureAccess()] }
+        if method=="bind" {
+            guard let id=args["windowId"] as? String,let w=windows[id],!w.app.isTerminated,w.app.launchDate==w.born else { try fault("window-changed") }
+            selected=w;binding=UUID().uuidString;expires=Date().addingTimeInterval(min(3600,max(10,(args["durationMs"] as? Double ?? 600000)/1000)));observation=nil;consumed.removeAll()
+            return ["bindingId":binding!,"application":w.app.localizedName ?? "Application","title":w.title,"expiresAt":expires.timeIntervalSince1970*1000] as [String:Any]
+        }
+        guard args["bindingId"] as? String==binding,binding != nil else { try fault("binding-mismatch") }
+        if method=="release" {selected=nil;binding=nil;observation=nil;return true}
+        if method=="observe" {return try await observe(args)}
+        if method=="readSelection" {return try readSelection(args)}
+        if method=="act" {return try act(args)}
+        try fault("unsupported-method")
+    }
+    static func main() async {
+        while let line=readLine() {
+            guard line.utf8.count<256*1024,let data=line.data(using:.utf8),let raw=(try? JSONSerialization.jsonObject(with:data)) as? [String:Any],let id=raw["rpc"] as? String,let method=raw["method"] as? String else {break}
+            let result:Any
+            do {result=try await request(method,raw["args"] as? [String:Any] ?? [:])}
+            catch {result=["error":(error as? DesktopFault)?.message ?? "native-unavailable"]}
+            guard let bytes=try? JSONSerialization.data(withJSONObject:["rpc":id,"reply":true,"result":result],options:[.sortedKeys]),let output=String(data:bytes,encoding:.utf8) else {break}
+            print(output);fflush(stdout)
+        }
+    }
+}
+extension Collection {func chunked(_ size:Int)->[[Element]]{var out=[[Element]]();var batch=[Element]();for v in self{batch.append(v);if batch.count==size{out.append(batch);batch=[]}};if !batch.isEmpty{out.append(batch)};return out}}
+
+func unicodeChunks(_ text:String)->[[UInt16]] {var result=[[UInt16]](),part=[UInt16]();for scalar in text.unicodeScalars{let units=Array(String(scalar).utf16);if part.count+units.count>100{result.append(part);part=[]};part+=units};if !part.isEmpty{result.append(part)};return result}
