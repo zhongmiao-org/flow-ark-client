@@ -297,7 +297,10 @@ export async function generate(
     try {
       output = JSON.parse(text);
     } catch (error) {
-      if (error instanceof SyntaxError) fail('invalid-response', 'AI 输出JSON无效');
+      if (error instanceof SyntaxError) {
+        const trimmed=text.trim(),position=/position (\d+)/.exec(error.message)?.[1] ?? 'unknown';
+        fail('invalid-response', `AI 输出JSON无效（字符数=${text.length}，位置=${position}，Markdown封装=${trimmed.startsWith('```')}，对象起始=${trimmed.startsWith('{')}）；未采用正文`);
+      }
       throw error;
     }
     if (!finiteJsonNumbers(output)) fail('invalid-response', '模型返回的数字无效，未采用此结果。');

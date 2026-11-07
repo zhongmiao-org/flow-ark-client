@@ -18,6 +18,7 @@ import type { Step, Json } from '../shared/types';
 import { validateFlow } from '../core/validate';
 import { assertJson, object, ProjectDiagnostic, parseEnvironment, resolveConfiguration } from './configuration';
 import { compileGraph, emitGraph } from './graph';
+import { checkProjectScripts, ScriptDiagnostics } from './script-check';
 
 const env = z.object({ variable: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/), field: z.string().min(1),
   type: z.enum(['string', 'number', 'integer', 'boolean', 'json']) }).strict();
@@ -168,6 +169,7 @@ export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorD
     }
     result.default = value; return result;
   };
+  const scriptEntries: {path:string;entryId:string;nodeId:string}[]=[];
   const entries: AuthorDefinition['entries'] = [];
   for (const entry of m.entries) {
     const bindings = read(entry.nodes);
@@ -181,6 +183,7 @@ export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorD
         throw new ProjectDiagnostic('node-binding', '节点ID不一致或结构应由Mermaid定义', entry.nodes, id);
       if (node.type === 'script') {
         if (typeof value.script !== 'string' || node.code !== undefined) throw new ProjectDiagnostic('node-script', '脚本节点只绑定工程script路径', entry.nodes, id);
+        scriptEntries.push({path:value.script,entryId:entry.id,nodeId:id});
         node.code = await wrapScript(snapshot, value.script, constants); node.language = 'js';
       } else if (value.script !== undefined) throw new ProjectDiagnostic('node-script', '非脚本节点不能绑定script', entry.nodes, id);
       nodes[id] = node;
@@ -193,6 +196,7 @@ export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorD
       ...(entry.batching ? { batching: entry.batching } : {}),
       promptBindings: m.promptBindings[entry.id] ?? [] } as AuthorDefinition['entries'][number]);
   }
+  const typeIssues=await checkProjectScripts(snapshot.files,scriptEntries);if(typeIssues.length)throw new ScriptDiagnostics(typeIssues);
   const consumed = new Set(['flowark.project.json', 'README.md', m.configurationSchema, m.stateSchema, m.constants, m.defaults, '.env.example',
     ...m.entries.flatMap(e => [e.graph, e.nodes, e.inputSchema, e.resultSchema]), ...m.prompts.map(p => p.path)]);
   const assets = [...snapshot.files].filter(([p]) => !consumed.has(p) && !p.startsWith('scripts/')).map(([path, bytes]) => {
@@ -221,6 +225,8 @@ export async function diagnoseProject(path: string, revision: string, changes: {
       candidate.files.set(change.path, Buffer.from(change.content));
     }
     candidate.manifest = projectSchema.parse(json(required(candidate, 'flowark.project.json'), 'flowark.project.json'));
+    const declared = new Set(['flowark.project.json', ...candidate.manifest.publicFiles]);
+    candidate.files = new Map([...candidate.files].filter(([name]) => declared.has(name)));
     await compileProject(candidate);
     if ((await snapshotProject(path)).revision !== revision) throw new ProjectDiagnostic('project-conflict', '检查期间磁盘变化');
     return { valid: true, revision, draft: changes.length > 0, diagnostics: [] };
@@ -394,7 +400,7 @@ export async function configurationForProject(path: string, request: { instance?
   }), layers: ['defaults', ...(request.instance ? ['instance'] : []), ...(request.profile ? ['profile', 'environment'] : []), ...(request.overrides ? ['overrides'] : [])] };
 }
 
-async function localDirectory(root: string) {
+export async function localDirectory(root: string) {
   const path = join(root, '.flowark');
   await mkdir(path, { recursive: true, mode: 0o700 });
   const stat = await lstat(path);
@@ -421,6 +427,8 @@ export async function updateProjectFiles(path: string, revision: string, changes
     for (const change of changes) if (change.path !== 'flowark.project.json' && !candidate.manifest.publicFiles.includes(change.path))
       throw new ProjectDiagnostic('project-unlisted-file', '修改文件须同时列入publicFiles', change.path);
     for (const name of candidate.manifest.publicFiles) { pathName(name); required(candidate, name); }
+    const declared = new Set(['flowark.project.json', ...candidate.manifest.publicFiles]);
+    candidate.files = new Map([...candidate.files].filter(([name]) => declared.has(name)));
     await compileProject(candidate);
     await mkdir(staging, { mode: 0o700 });
     const records: { path: string; before: string | null; after: string }[] = [];

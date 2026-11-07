@@ -151,7 +151,7 @@ export function reviewEffects(flow: Flow): ReviewEffect[] {
       case 'script':
         return effect(
           'unknown',
-          '执行可信脚本或模板代码；静态检查不能穷尽文件、网页、AI 或网络影响，请核对完整代码与资源授权。模板逐动作确认继续生效。',
+          flow.requiredCapabilities.includes('desktop-automation-v1') ? '执行脚本，并可操作本人绑定的桌面窗口（含输入、鼠标和组合键）；先核对目标和完整代码，发送/保存结果须另行观察，unknown不重试。' : '执行可信脚本或模板代码；静态检查不能穷尽文件、网页、AI 或网络影响，请核对完整代码与资源授权。模板逐动作确认继续生效。',
         );
       case 'condition':
         return effect('control', '运行时选择一个分支；此检查同时列出两路可能的影响。');

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+- Remove project AI request/time budgets and cost checkboxes. Show provider-reported cumulative tokens, read selected workbook headers, and attach owned run diagnostics; require confirmation before repairs and execution.
+
+- Provide at least three choices and custom input for assisted decisions; preselection does not submit, corrections do not approve the old plan, and explicit paid retries retain the conversation.
+
+- Add assisted project conversations with explicit plan and node selection, pause after generation or diagnostics, and assemble locally without model calls. Reuse Markdown/Mermaid rendering and retain detailed history in a collapsed view.
+
+- Generate typed desktop observations, receipts, selection and effect SDK declarations from their schemas, and expose the same response shapes through MCP.
+
+- Validate replacement entries against the new public file list, preserve old files, and keep failed assembly revisions monotonic. Recover affected drafts through read-only inspection and a new plan; unrelated edits no longer reset repeated-error stops.
+
+- Add candidate macOS window observations and actions, plus a bundled authoring Skill with staged node planning, SDK type checks, deterministic assembly and no-progress stops. Business acceptance remains separate.
+
 - Allow standalone flows and authoring copies to be classified as development work without changing their definitions or history; retain the classification when saving.
 
 - Group template entry flows into task cards and separate development instances without deleting history; add Monaco project file models, SDK/schema hints, draft diagnostics, and block navigation.

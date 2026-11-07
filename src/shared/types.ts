@@ -11,7 +11,9 @@ export type AIRequestFailure = NonNullable<P1Contracts['AIRequestFailure']>;
 export type AINodeReceipt = NonNullable<P1Contracts['AINodeReceipt']>;
 export type RunState = NonNullable<P1Contracts['RunState']>;
 export type ScriptBundle = NonNullable<P1Contracts['ScriptBundle']>;
+export type DesktopAutomationContext = { bindingId: string; scopeId: string; application: string; title: string; expiresAt: number; screenshotAllowed: boolean; actionsAllowed: boolean };
 export type PreparedScripts = {
+  desktopAutomationContext?: DesktopAutomationContext;
   scripts: Record<string, string>;
   scriptBundles: ScriptBundle[];
   skillSnapshots?: Record<string, import('./skill').SkillVersion>;

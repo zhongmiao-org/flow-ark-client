@@ -57,6 +57,7 @@ type PathIdentity = PathRequirement & {
 type Authorization = {
   tools?: { selectionId: string; connectionRevision: number; capabilityDigest: string }[];
   desktop?: DesktopBinding;
+  automation?: import('../shared/types').DesktopAutomationContext;
   target?: RepairSelection;
   paths: PathIdentity[];
   browsers: BrowserBinding[];
@@ -68,6 +69,7 @@ type RequestRecord = { requestId: string; fingerprint: string; runId: string };
 type Dependencies = {
   batches?: EntryBatches;
   desktop?: DesktopRuns;
+  automation?: (record: FlowRecord) => Promise<import('../shared/types').DesktopAutomationContext | undefined>;
   tools?: (record: FlowRecord) => TaskMcpState[];
   learnedTrial?: (run: Run) => void;
   busy?: (runId: string) => boolean;
@@ -172,6 +174,7 @@ export class RunReview {
     const hasDesktop = walk(record.flow.steps).some((node) => node.type === 'desktop');
     if (hasDesktop && !this.deps.desktop) throw new Error('应用执行服务不可用');
     const desktop = hasDesktop ? await this.deps.desktop!.verify(record, runId) : undefined;
+    const automation = await this.deps.automation?.(record);
     const paths = new Map<string, PathRequirement>();
     const resources: ReviewResource[] = (record.toolTargets ?? []).map((target) => ({
       id: 'mcp:' + target.selectionId,
@@ -180,6 +183,7 @@ export class RunReview {
       access: '本次工具调用',
       detail: target.source + '；实际发送参数和外部影响见下方工具明细。',
     }));
+    if (automation) resources.push({ id: 'desktop-automation:' + automation.bindingId, name: automation.application + ' · ' + automation.title, kind: 'action', access: automation.actionsAllowed ? '窗口读取与桌面动作' : '只读窗口', detail: '固定本人选择窗口；' + (automation.screenshotAllowed ? '允许窗口截图；' : '不读取截图；') + '发送和保存需另行核验，unknown不重试。' });
     if (desktop)
       resources.push({
         id: 'desktop:' + desktop.bindingId,
@@ -445,6 +449,7 @@ export class RunReview {
       resources,
       desktop,
       authorization: {
+        ...(automation ? { automation } : {}),
         ...(record.toolTargets?.length
           ? {
               tools: record.toolTargets.map((target) => ({

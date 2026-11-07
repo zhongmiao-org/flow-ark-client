@@ -1,3 +1,4 @@
+import DesktopAutomationPanel from './DesktopAutomationPanel';
 import { recordTime } from './readable-labels';
 import TechnicalDetails from './TechnicalDetails';
 import { saveTemplateResultDraft } from './result-save-recovery';
@@ -1080,7 +1081,7 @@ export default function TemplateInstancePage({
             label,
             disabled: busy,
             forceRender: true,
-            children: instancePanels[key],
+            children: <>{key === 'resources' && saved.entries.some(e => e.capabilities.includes('desktop-automation-v1')) && <DesktopAutomationPanel scopeId={instance.id} />}{instancePanels[key]}</>,
           }))}
         />
       </section>

@@ -1,18 +1,21 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, rmSync, mkdirSync, copyFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, mkdirSync, copyFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { artifactNames } from './release/common.mjs';
 import { verifyBundle } from './verify-bundle.mjs';
+import { macSigningIdentity, requireMacSigningIdentity, verifyMacSigningIdentity } from './macos-signing.mjs';
 const [platform = 'macos', arch = 'arm64'] = process.argv.slice(2);
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const names = artifactNames(version, platform, arch);
 const host = { darwin: 'macos', win32: 'windows', linux: 'linux' }[process.platform];
 if (platform !== host || arch !== process.arch)
   throw new Error('Package on a native runner matching the target platform and architecture.');
+if (platform === 'macos') requireMacSigningIdentity();
 const exec = (file, args) => execFileSync(file, args, { stdio: 'inherit' });
 // Keep unrelated local release candidates; clean only this invocation's isolated output.
+exec(process.execPath,['node_modules/typescript/bin/tsc','--noEmit']);
 const output = `release/packages/${platform}-${arch}`;
 rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
@@ -31,6 +34,7 @@ const args = [
   'never',
   '--config.electronDist=node_modules/electron/dist',
   `--config.directories.output=${output}`,
+  ...(platform === 'macos' ? [`--config.mac.identity=${macSigningIdentity}`, '--config.forceCodeSigning=true'] : []),
 ];
 exec(process.execPath, args);
 if (platform === 'macos') {
@@ -39,8 +43,17 @@ if (platform === 'macos') {
   for (const binary of [
     'Contents/MacOS/FlowArk',
     'Contents/Resources/app.asar.unpacked/dist/native/flowark-window-discovery',
+    'Contents/Resources/app.asar.unpacked/dist/native/flowark-desktop-automation',
   ])
     exec('/usr/bin/lipo', [join(app, binary), '-verify_arch', arch === 'x64' ? 'x86_64' : 'arm64']);
+  exec('/usr/bin/codesign', ['--verify', '--deep', '--strict', app]);
+  for (const target of [app, ...['flowark-window-discovery', 'flowark-desktop-automation', 'flowark-typescript'].map(name => join(app, 'Contents/Resources/app.asar.unpacked/dist/native', name)),
+    ...readdirSync(join(app, 'Contents/Frameworks')).filter(name => name.endsWith('.app')).map(name => join(app, 'Contents/Frameworks', name))]) verifyMacSigningIdentity(target);
+  exec(join(app,'Contents/Resources/app.asar.unpacked/dist/native/flowark-typescript'),['--version']);
+  // codesign writes display metadata to stderr; query it explicitly below.
+  const { spawnSync } = await import('node:child_process');
+  const metadata = spawnSync('/usr/bin/codesign', ['--display', '--verbose=2', app], { encoding: 'utf8' });
+  if (metadata.status !== 0 || !metadata.stderr.includes('Identifier=org.zhongmiao.flowark\n') || metadata.stderr.includes('Info.plist=not bound')) throw new Error('macOS app signature does not bind the FlowArk identity and Info.plist.');
   const bundledVersion = execFileSync(
     '/usr/bin/plutil',
     ['-extract', 'CFBundleShortVersionString', 'raw', '-o', '-', join(app, 'Contents/Info.plist')],

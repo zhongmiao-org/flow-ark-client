@@ -13,6 +13,12 @@ const rpc = new Rpc(
     const pending: Promise<any>[] = [];
     const result = await module.default({
       input: args.input,
+      desktop: {
+        readSelection: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'readSelection', ...request } }),
+        decide: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'decide', ...request } }, 130000),
+        observe: (options: any = {}) => rpc.call('template', { operation: 'desktop', request: { operation: 'observe', ...options } }),
+        act: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'act', ...request } }),
+      },
       template: {
         configuration: () => rpc.call('template', { operation: 'configuration' }),
         resource: (path: string) => rpc.call('template', { operation: 'resource', path }),
