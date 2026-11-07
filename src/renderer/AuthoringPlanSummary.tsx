@@ -7,7 +7,7 @@ function Steps({ steps, entryId, scripts }: { steps: any[]; entryId: string; scr
 }
 export default function AuthoringPlanSummary({ value }: { value: any }) {
   if (!value?.plan) return null;
-  return <section aria-label="流程节点规划"><p>{value.summary}</p><p>先规划节点，再分别生成代码，最后由工具组装；每次组装按当前SDK重新校验。可在上方通过对话调整；尚未执行任务。</p>
+  return <section aria-label="流程节点规划"><p>{value.summary}</p><p>先规划节点，再分别生成代码，最后由工具组装；每次组装按当前SDK重新校验。可在对话中调整字段和步骤；确认方案不等于允许外发。</p>
     {value.plan.entries.map((entry: any) => <div key={entry.id}><h4>{entry.name}</h4><Steps steps={entry.steps} entryId={entry.id} scripts={value.scripts ?? []} /></div>)}
     <p>资源：{value.plan.resources.map((r: any) => r.name).join('、') || '无'}；声明动作：{value.plan.actions.map((a: any) => a.name).join('、') || '无'}。动作默认禁止，运行前另行核对。</p>
     <Tag color={value.assembledRevision ? 'green' : 'blue'}>{value.assembledRevision ? '已组装并静态编译，业务待验收' : '草稿暂存，不可运行'}</Tag>

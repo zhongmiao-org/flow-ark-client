@@ -1,5 +1,5 @@
 import { readAuthoringSkill, authoringSkill } from '../projects/authoring-skill';
-import { getAuthoring } from '../projects/authoring';
+import { getAuthoring, assembleAuthoring } from '../projects/authoring';
 import { projectAIContext, updatesActiveDraft } from './project-ai-context';
 import { AIRequestFailureError } from '../ai/request-failure';
 import { randomUUID } from 'node:crypto';
@@ -20,7 +20,10 @@ export const projectAIConnection = z.discriminatedUnion('provider', [
     credentialId: z.union([z.string().regex(/^local-[a-f0-9-]{36}$/), z.enum(['deepseek', 'openai-codex'])]) }).strict(),
 ]);
 type Connection = z.infer<typeof projectAIConnection>;
+type AssistedApproval = { draftId: string; planDigest: string; nodes: string[]; completed: string[] };
+type AssistedReview = { kind: 'plan' | 'nodes'; draftId: string; draftRevision: string; stamp: string };
 type Task = { id: string; projectId: string; root: string; task: string; state: 'running' | 'complete' | 'question' | 'failed' | 'cancelled' | 'budget-exhausted' | 'interrupted';
+  assisted?: boolean; revising?: boolean; approval?: AssistedApproval; review?: AssistedReview;
   stage?: string; authoring?: any; connection: Connection; maxRequests: number; durationMs: number; requests: number; at: string; updatedAt: string;
   stall?: { fingerprint: string; count: number; tool?: string }; nextStep?: string; diagnostics?: any[];
   readStall?: { fingerprint: string; count: number; progress: string };
@@ -47,11 +50,47 @@ export class ProjectAI {
     return true;
   }
   private persist(task: Task) { task.updatedAt = new Date().toISOString(); this.store.put('project-ai-task', task.id, task); }
+  private checkpoint(task: Task, kind: AssistedReview['kind']) {
+    const a=task.authoring;
+    task.review={kind,draftId:a.draftId,draftRevision:a.draftRevision,stamp:digest({taskId:task.id,kind,draftId:a.draftId,revision:a.draftRevision})};
+    task.state='question';task.message=kind==='plan'?'方案已准备好，请核对字段与节点；确认前不生成代码。':'本批节点已停止生成，请核对检查结果后选择下一步。';
+    task.nextStep='可以直接对话修改，或确认要生成的节点；组装与运行分别核对。';
+    task.history.push({kind:'assisted-checkpoint',value:{message:task.message,review:task.review}});this.persist(task);
+  }
+  async review(projectId:string,taskId:string,stamp:string,operation:'generate'|'assemble',nodes:string[],maxRequests:number,durationMs:number,reviewedCost:boolean){
+    const task=this.detail(projectId,taskId),review=task.review;
+    if(!review||review.stamp!==stamp||task.state==='running')throw Error('确认内容已变化，请重新读取当前方案');
+    if([...this.active.values()].some(v=>v.task.projectId===projectId))throw Error('请等待当前回复结束');
+    const draft=await getAuthoring(task.root,review.draftId),info=await projectInfo(task.root);
+    if(draft.draftRevision!==review.draftRevision||draft.projectRevision!==info.revision&&draft.assembledRevision!==info.revision)throw Error('草稿或工程已有修改，请重新对话核对');
+    if(operation==='assemble'){
+      if(draft.scripts.some((s:any)=>!s.ready))throw Error('还有节点代码未生成，请先选择节点');
+      const result=await assembleAuthoring(task.root,draft.draftId,draft.draftRevision);
+      task.history.push({kind:'review-decision',value:{message:'确认当前节点并组装检查',review:task.review}});
+      task.history.push({kind:'tool',value:{name:'flowark_authoring_assemble',result}});
+      if('valid' in result&&result.valid===false){task.diagnostics='diagnostics' in result?result.diagnostics:[{message:'组装检查未通过'}];task.authoring=await getAuthoring(task.root,draft.draftId);this.checkpoint(task,'nodes');task.message='组装未通过，请按诊断选择节点修改。';this.persist(task);return this.get(projectId);}
+      task.authoring=await getAuthoring(task.root,draft.draftId);task.review=undefined;task.approval=undefined;task.state='complete';task.message='工程已组装并通过静态检查；尚未运行，外部结果未验收。';this.persist(task);return this.get(projectId);
+    }
+    if(draft.assembledRevision)throw Error('当前方案已组装；请通过对话提出修改并确认新草稿');
+    if(!reviewedCost)throw Error('请核对本批模型调用预算和费用后生成节点');
+    const selected=[...new Set(nodes)],available=new Set(draft.scripts.map((s:any)=>s.entryId+'/'+s.nodeId));
+    if(!selected.length||selected.some(n=>!available.has(n)))throw Error('请选择本方案中要生成或修改的节点');
+    const approval={draftId:draft.draftId,planDigest:digest(draft.plan),nodes:selected,completed:[]};
+    task.history.push({kind:'review-decision',value:{message:'已确认方案及所选节点：'+selected.join('、'),review:task.review}});task.review=undefined;this.persist(task);
+    return this.resume(projectId,taskId,'本人已确认当前方案，仅生成这些节点：'+selected.join('、')+'。保留规划和其他节点，完成本批后停止等待核对。',maxRequests,durationMs,reviewedCost,approval);
+  }
   usesProvider(provider: string) { return [...this.active.values()].some(v => v.task.connection.provider === provider || (v.task.connection.provider === 'compatible' && v.task.connection.credentialId === provider)); }
   async stopAll() { for (const v of this.active.values()) v.abort.abort(); await Promise.allSettled([...this.active.values()].map(v => v.done)); }
   get(projectId: string) {
     return { skill: authoringSkill, connection: this.store.get<Connection>('project-ai-connection', projectId) ?? { provider: 'deepseek' },
-      tasks: this.store.list<Task>('project-ai-task').filter(t => t.projectId === projectId).map(({ history, ...t }) => ({ ...t, retryableTool: this.retryableTool({ ...t, history }), paidRetryRequired: t.paidRetryRequired && !t.message.startsWith('格式无效 (AIRequest)'), steps: history.length })) };
+      tasks: this.store.list<Task>('project-ai-task').filter(t => t.projectId === projectId).map(({ history, ...t }) => ({ ...t, dialogue:[{role:'user',text:t.task},...history.flatMap(h=>{
+        const v=h.value as any;
+        if(h.kind==='user-continuation')return [{role:'user',text:v.answer}];
+        if(h.kind==='assisted-checkpoint')return [{role:'assistant',text:v.message}];
+        if(h.kind==='review-decision')return [{role:'user',text:v.message}];
+        if(h.kind==='model'&&['question','complete'].includes(v.action?.action))return [{role:'assistant',text:v.action.message}];
+        return [];
+      })],retryableTool: this.retryableTool({ ...t, history }), paidRetryRequired: t.paidRetryRequired && !t.message.startsWith('格式无效 (AIRequest)'), steps: history.length })) };
   }
   async save(projectId: string, connection: unknown) {
     await this.project(projectId);
@@ -71,22 +110,22 @@ export class ProjectAI {
     if ([...this.active.values()].some(v => v.task.projectId === projectId)) throw Error('本工程已有AI任务');
     const project = await this.project(projectId), connection = this.get(projectId).connection as Connection;
     const task: Task = { id: randomUUID(), projectId, root: project.root, task: taskText.trim(), connection,
-      state: 'running', requests: 0, maxRequests, durationMs, at: new Date().toISOString(), updatedAt: '', message: '准备读取工程与工具规范', history: [] };
+      assisted: true, state: 'running', requests: 0, maxRequests, durationMs, at: new Date().toISOString(), updatedAt: '', message: '准备读取工程与工具规范', history: [] };
     this.persist(task);
     const abort = new AbortController(), item = { task, abort, done: Promise.resolve() };
     this.active.set(task.id, item); item.done = this.execute(task, abort).finally(() => this.active.delete(task.id));
     return { id: task.id, state: task.state };
   }
-  async resume(projectId: string, taskId: string, answer: string, maxRequests: number, durationMs: number, reviewedCost: boolean) {
+  async resume(projectId: string, taskId: string, answer: string, maxRequests: number, durationMs: number, reviewedCost: boolean, approval?: AssistedApproval) {
     const previous = this.detail(projectId, taskId);
     if (!reviewedCost || !answer.trim() || answer.length > 12000 || !Number.isSafeInteger(maxRequests) || maxRequests < 1 || maxRequests > 100 || durationMs < 10000 || durationMs > 3600000)
       throw Error('请填写补充说明并核对本批调用预算和费用');
-    if (previous.state === 'running' || previous.state === 'complete') throw Error('当前任务无需续接');
-    if (previous.paidRetryRequired && !previous.message.startsWith('格式无效 (AIRequest)')) throw Error('上次模型调用失败；请先核对错误和具体付费重试，不自动续接');
+    if (previous.state === 'running') throw Error('请等待当前回复结束');
+    if (previous.paidRetryRequired && !approval && !previous.message.startsWith('格式无效 (AIRequest)')) throw Error('上次模型调用失败；请先核对错误和具体付费重试，不自动续接');
     if ([...this.active.values()].some(v => v.task.projectId === projectId)) throw Error('本工程已有AI任务');
     if (/\bsk-[a-zA-Z0-9]{24,}|-----BEGIN .*PRIVATE KEY/.test(answer)) throw Error('不要在回答中填写密钥');
     const task: Task = { ...previous, id: randomUUID(), state: 'running', requests: 0, maxRequests, durationMs,
-      paidRetryRequired: false, stall: undefined, readStall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
+      assisted: true, revising: !approval, approval, review: undefined, paidRetryRequired: false, stall: undefined, readStall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
     this.persist(task);
     const abort = new AbortController(), item = { task, abort, done: Promise.resolve() };
     this.active.set(task.id, item); item.done = this.execute(task, abort).finally(() => this.active.delete(task.id));
@@ -154,7 +193,9 @@ export class ProjectAI {
       const context = await callProjectTool('flowark_project_context', { root: task.root });
       task.history.push({ kind: 'initial-project-context', value: { name: 'flowark_project_context', result: context } }); this.persist(task);
       const skill = await readAuthoringSkill();
-      const instruction = skill.content + '\n' + projectGuide + '\nYou are the FlowArk project developer. Follow the bundled Skill as the single stage policy. Use full flowark_authoring_* tool names. Do not handwrite manifest/Mermaid/bindings or use runtime node schemas. The private draft is not an executable project. Use installed schemas before writing nodes. The initial-project-context already contains the public source and SDK; do not read those same files again unless their revision changes. Reuse tool documents and contextDefinition schema references in the input. Return exactly one JSON action. Never claim runtime success without receipts. Read-only tools and edits inside the chosen project are allowed; runtime actions require separate user review. When a requirement needs facts from the user, return question. Do not repeat unknown effects. End when the requested artifact and checks are available. Mode: structured tool instructions (not native function calls).\nTools:\n' + JSON.stringify(projectTools);
+      const assistedPolicy = task.assisted ? '\n协作模式：用中文与本人对话，先补问缺失事实、列出字段映射/节点方案和标准mermaid围栏。方案需本人确认；未经确认不得提交代码。已确认时只生成approval.nodes选定区块，不重新规划、不组装、不运行。每批代码返回后等待本人检查。以latestMessage为本轮请求，不重复已完成的第一步。不要要求本人填写JSON或工具协议。' : '';
+      const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get',task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
+      const instruction = skill.content + '\n' + projectGuide + '\nYou are the FlowArk project developer. Follow the bundled Skill as the single stage policy. Use full flowark_authoring_* tool names. Do not handwrite manifest/Mermaid/bindings or use runtime node schemas. The private draft is not an executable project. Use installed schemas before writing nodes. The initial-project-context already contains the public source and SDK; do not read those same files again unless their revision changes. Reuse tool documents and contextDefinition schema references in the input. Return exactly one JSON action. Never claim runtime success without receipts. Read-only tools and edits inside the chosen project are allowed; runtime actions require separate user review. When a requirement needs facts from the user, return question. Do not repeat unknown effects. End when the requested artifact and checks are available. Mode: structured tool instructions (not native function calls).\nTools:\n' + JSON.stringify(availableTools) + assistedPolicy;
       // Reconstruct the active draft from the immutable audit when resuming older tasks.
       const recovered = Object.values(projectAIContext(task.history).currentDrafts)[0];
       if(recovered) task.authoring = { draftId:recovered.draftId, draftRevision:recovered.draftRevision, stage:recovered.stage, summary:recovered.summary, plan:recovered.plan, scripts:recovered.scripts, assembledRevision:recovered.assembledRevision };
@@ -163,7 +204,7 @@ export class ProjectAI {
         const info = await projectInfo(task.root);
         // Tool responses use the same JSON transport representation as external MCP.
         // Optional undefined properties are absent, never passed as invalid AI JSON.
-        const input = JSON.parse(JSON.stringify({ task: task.task, currentAuthoring: task.authoring, nextStep: task.nextStep, project: { ...info, root: task.root }, context: projectAIContext(task.history) }));
+        const input = JSON.parse(JSON.stringify({ task: task.task, latestMessage: [...task.history].reverse().find(h=>h.kind==='user-continuation')?.value ?? task.task, approval:task.approval, currentAuthoring: task.authoring, nextStep: task.nextStep, project: { ...info, root: task.root }, context: projectAIContext(task.history) }));
         if (Buffer.byteLength(JSON.stringify(input)) > 256 * 1024) { task.state = 'budget-exhausted'; task.message = '去重后的模型上下文达到256KiB范围，完整审计仍保留，未静默裁剪。'; break; }
         this.chargeDesktop(task.projectId);
         task.requests++; task.message = '模型请求 ' + task.requests + '/' + task.maxRequests; this.persist(task);
@@ -202,6 +243,16 @@ export class ProjectAI {
           if (rel.startsWith('..') || rel.startsWith('/')) throw Error('工具目标不属于本人选择的工程');
         }
         abort.signal.throwIfAborted();
+        if(task.assisted){
+          if(action.tool.startsWith('flowark_runtime_')||['flowark_authoring_assemble','flowark_project_write','flowark_project_package','flowark_project_from_zip','flowark_project_init'].includes(action.tool))throw new ProjectDiagnostic('assisted-review-required','本轮协作仅讨论方案或生成本人选定节点；组装和运行使用本人确认按钮');
+          if(action.tool==='flowark_authoring_plan'&&task.approval)throw new ProjectDiagnostic('assisted-plan-locked','方案已确认，修改方案须先与本人讨论并重新确认');
+          if(action.tool==='flowark_authoring_code'){
+            const approved=task.approval,key=args.entryId+'/'+args.nodeId;
+            if(!approved||args.draftId!==approved.draftId||!approved.nodes.includes(key)||approved.completed.includes(key))throw new ProjectDiagnostic('assisted-node-unapproved','此节点未获本人确认，不执行代码写入');
+            const draft=await getAuthoring(task.root,approved.draftId);
+            if(digest(draft.plan)!==approved.planDigest)throw new ProjectDiagnostic('assisted-plan-changed','方案已变化，请重新确认');
+          }
+        }
         task.stage = ({flowark_authoring_plan:'节点规划',flowark_authoring_code:'节点代码',flowark_authoring_assemble:'校验与组装',flowark_project_package:'打包',flowark_runtime_run:'运行'} as Record<string,string>)[action.tool] ?? task.stage;
         task.message = action.tool; this.persist(task);
         let result: any;
@@ -213,6 +264,14 @@ export class ProjectAI {
         } catch (error) { result = { error: error instanceof Error ? error.message : String(error), ...(error instanceof ProjectDiagnostic ? { diagnostic: error.toJSON() } : {}), retryExternalEffects: false, suggestion: '按file/field/line定位修复对应规划或脚本，原工程校验通过不代表未组装的草稿通过。' }; }
         if (action.tool.startsWith('flowark_authoring_') && result?.draftId && updatesActiveDraft(task.authoring?.draftId,action.tool,result.draftId)) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
         task.history.push({ kind: 'tool', value: { name: action.tool, result } });
+        if(task.assisted&&task.authoring?.draftId){
+          if(!task.approval&&result?.plan&&(action.tool==='flowark_authoring_plan'||!task.revising)){this.checkpoint(task,'plan');break;}
+          if(action.tool==='flowark_authoring_code'){
+            if(result.valid===true){const key=args.entryId+'/'+args.nodeId;if(!task.approval!.completed.includes(key))task.approval!.completed.push(key);}
+            else {task.diagnostics=result.diagnostics??[{message:result.error??'节点检查未通过'}];this.checkpoint(task,'nodes');break;}
+            if(task.approval!.nodes.every(key=>task.approval!.completed.includes(key))){this.checkpoint(task,'nodes');break;}
+          }
+        }
         const progress=digest({project:(await projectInfo(task.root)).revision, plan:task.authoring?.plan, scripts:task.authoring?.scripts?.map((s:any)=>({entryId:s.entryId,nodeId:s.nodeId,sha256:s.sha256}))});
         if(task.readStall?.progress!==progress)task.readStall=undefined;
         if(action.tool==='flowark_authoring_get'&&!result?.error){
@@ -224,6 +283,10 @@ export class ProjectAI {
         this.persist(task); if(stopped) break;
         } catch (error) {
           task.history.push({ kind: 'tool-validation', value: { name: action.tool, error: redactedErrorText(error, secret ? [secret] : []), executed: false, allowedRoot: task.root } });
+          if(task.assisted&&error instanceof ProjectDiagnostic&&error.toJSON().code.startsWith('assisted-')){
+            if(task.authoring)this.checkpoint(task,task.approval?'nodes':'plan');else task.state='question';
+            task.message=error.message;this.persist(task);break;
+          }
           const stopped=this.noProgress(task,action.tool,{error:redactedErrorText(error,secret?[secret]:[])},info.revision);
           this.persist(task); if(stopped) break;
         }
@@ -233,6 +296,7 @@ export class ProjectAI {
       if(error instanceof AIRequestFailureError) task.history.push({kind:'request-failure',value:error.failure});
       task.state = abort.signal.aborted ? abort.signal.reason === 'deadline' ? 'budget-exhausted' : 'cancelled' : 'failed';
       task.message = abort.signal.aborted ? '开发任务已停止，已提交操作与记录保留，不自动重试。' : redactedErrorText(error, secret ? [secret] : []);
+      if(task.assisted&&task.approval&&task.authoring){const message=task.message;this.checkpoint(task,'nodes');task.message=message;}
     } finally { clearTimeout(deadline); this.persist(task); }
   }
 }

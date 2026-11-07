@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Add assisted project conversations with explicit plan and node selection, pause after generation or diagnostics, and assemble locally without model calls. Reuse Markdown/Mermaid rendering and retain detailed history in a collapsed view.
+
 - Generate typed desktop observations, receipts, selection and effect SDK declarations from their schemas, and expose the same response shapes through MCP.
 
 - Validate replacement entries against the new public file list, preserve old files, and keep failed assembly revisions monotonic. Recover affected drafts through read-only inspection and a new plan; unrelated edits no longer reset repeated-error stops.

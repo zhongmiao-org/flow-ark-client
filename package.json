@@ -14,7 +14,7 @@
     "localProjectFormat": {
       "version": 1,
       "status": "draft-unreleased",
-      "authoringSkillVersion": "1.0.0-draft"
+      "authoringSkillVersion": "1.1.0-draft"
     }
   },
   "packageManager": "pnpm@10.14.0",

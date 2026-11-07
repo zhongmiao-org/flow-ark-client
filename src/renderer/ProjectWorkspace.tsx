@@ -1,4 +1,4 @@
-import AuthoringPlanSummary from './AuthoringPlanSummary';
+import ProjectAiConversation from './ProjectAiConversation';
 import DesktopAutomationPanel from './DesktopAutomationPanel';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, Button, Card, Select, Space, Tabs, Tag, Modal, Typography, Input, InputNumber, Checkbox } from 'antd';
@@ -138,9 +138,19 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
           <div style={{ height: 550 }}><DiagramCanvas nodes={diagram.nodes} edges={diagram.edges} selected={selected} select={setSelected} /></div></>}
       </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{selected && <Space style={{ marginBottom: 12 }}><Button onClick={() => locateSource(entry.nodes, selected)}>定位节点源码</Button><Button onClick={() => locateSource(entry.graph, selected)}>定位编排源码</Button>{typeof projection.bindings[selected]?.script === 'string' && <Button onClick={() => locateSource(projection.bindings[selected].script)}>定位脚本</Button>}</Space>}{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
         { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
-        { key: 'ai', label: 'AI 开发', children: <Card title="描述需求，由本人 API 驱动工程工具">
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Select aria-label="开发AI服务" value={aiProvider} onChange={setAiProvider} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
+        { key: 'ai', label: 'AI 开发', children: <Card title="一起确认字段和流程节点">
+          <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={reviewedCost}
+            send={current=>void perform(async()=>{
+              if(current&&!current.paidRetryRequired) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:task,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
+              else await api('project.ai.start',{id:info.id,task:current?current.task+'\n本人补充：'+task:task,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
+              setTask('');setAi(await api('project.ai.get',{id:info.id}));
+            })}
+            review={(current,operation,nodes)=>void perform(async()=>{await api('project.ai.review',{id:info.id,taskId:current.id,reviewStamp:current.review.stamp,operation,nodes,maxRequests:requests,durationMs:minutes*60000,reviewedCost:operation==='generate'?reviewedCost:false});setAi(await api('project.ai.get',{id:info.id}));if(operation==='assemble')await reload();})}
+            detail={current=>void perform(async()=>{const detail=await api('project.ai.detail',{id:info.id,taskId:current.id});Modal.info({title:'开发步骤与结果（只读）',width:960,content:<pre tabIndex={0} style={{maxHeight:520,overflow:'auto',whiteSpace:'pre-wrap',userSelect:'text'}}>{JSON.stringify(detail,null,2)}</pre>});})}
+            cancel={current=>void perform(async()=>{await api('project.ai.cancel',{id:info.id,taskId:current.id});setAi(await api('project.ai.get',{id:info.id}));})}
+            cost={<Checkbox checked={reviewedCost} onChange={e=>setReviewedCost(e.target.checked)}>已核对本批调用预算；API Key 产生的费用由用户自行承担</Checkbox>}
+            settings={<Space direction="vertical" style={{width:'100%'}}>
+            <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);setReviewedCost(false);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
             {aiProvider === 'compatible' && <>
               <Input aria-label="兼容接口 Base URL" placeholder="https://example.com/v1" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />
               <Select aria-label="兼容接口协议" value={protocol} onChange={setProtocol} options={[{ value: 'chat-completions', label: 'Chat Completions 兼容' }, { value: 'responses', label: 'Responses 兼容' }]} />
@@ -154,29 +164,8 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
               const connection = aiProvider === 'compatible' ? { provider: aiProvider, baseUrl, protocol, model, credentialId: reference } : { provider: aiProvider };
               setAi(await api('project.ai.save', { id: info.id, connection })); setNotice('开发服务已保存；尚未调用模型。');
             })}>保存开发服务</Button>{ai?.skill && <Tag>内置开发 Skill · {ai.skill.version}</Tag>}{ai?.desktopBudget && <Tag color={ai.desktopBudget.blocked ? "red" : "blue"}>桌面共享预算剩余 {ai.desktopBudget.remaining}/{ai.desktopBudget.maxRequests} 次 · {ai.desktopBudget.model}</Tag>}
-            <Alert type="info" message="当前采用结构化工具指令模式。模型读取本版本规范、调用同一工具服务；代码编辑不等于外发授权。" />
-            <Input.TextArea aria-label="AI开发需求" rows={4} placeholder="例如：读取我选择的 Excel，按客户汇总金额，保留原文件并输出新表格。" value={task} onChange={e => setTask(e.target.value)} />
-            <Space wrap><span>最多模型请求</span><InputNumber aria-label="模型请求预算" min={1} max={100} value={requests} onChange={v => setRequests(v ?? 20)} /><span>最长分钟</span><InputNumber aria-label="AI开发时限" min={1} max={60} value={minutes} onChange={v => setMinutes(v ?? 10)} /></Space>
-            <Checkbox checked={reviewedCost} onChange={e => setReviewedCost(e.target.checked)}>已核对本批调用预算；API Key 产生的费用由用户自行承担</Checkbox>
-            <Button type="primary" disabled={busy || dirty || pendingField || conflict || !reviewedCost || !task.trim() || ai?.tasks?.some((t: any) => t.state === 'running')} onClick={() => void perform(async () => {
-              await api('project.ai.start', { id: info.id, task, maxRequests: requests, durationMs: minutes * 60000, reviewedCost: true }); setAi(await api('project.ai.get', { id: info.id }));
-            })}>开始 AI 开发</Button>
-            {ai?.tasks?.map((t: any) => <Card key={t.id} size="small" title={`${t.state} · ${t.requests}/${t.maxRequests} 次请求`}>
-              <p>{t.stage ? t.stage + ' · ' : ''}{t.message}</p>
-              {t.nextStep && <p>下一步：{t.nextStep}</p>}
-              {t.diagnostics?.length > 0 && <Alert type="warning" message="需要修复的节点" description={<ul>{t.diagnostics.map((d: any, i: number) => <li key={i}>{[d.file, d.entryId, d.nodeId, d.line && `第${d.line}行`].filter(Boolean).join(' · ')}：{d.message}</li>)}</ul>} />}
-              <AuthoringPlanSummary value={t.authoring} /><Button onClick={() => void perform(async () => {
-                const detail = await api('project.ai.detail', { id: info.id, taskId: t.id });
-                Modal.info({ title: '开发步骤与结果（只读）', width: 960, content: <pre style={{ maxHeight: 520, overflow: 'auto', whiteSpace: 'pre-wrap' }}>{JSON.stringify(detail, null, 2)}</pre> });
-              })}>查看开发步骤与结果</Button>{t.paidRetryRequired && <p>失败请求可能已计费，未自动重试。</p>}
-              {['question', 'budget-exhausted', 'cancelled', 'interrupted', 'failed'].includes(t.state) && !t.paidRetryRequired && <Button disabled={busy || !reviewedCost || !task.trim() || ai?.tasks?.some((x: any) => x.state === 'running')} onClick={() => void perform(async () => {
-                await api('project.ai.resume', { id: info.id, taskId: t.id, answer: task, maxRequests: requests, durationMs: minutes * 60000, reviewedCost: true }); setAi(await api('project.ai.get', { id: info.id }));
-              })}>以上方补充说明继续（新预算）</Button>}
-              {t.retryableTool && <Button disabled={busy} onClick={() => void perform(async () => { await api('project.ai.retryTool', { id: info.id, taskId: t.id, reviewed: true }); setAi(await api('project.ai.get', { id: info.id })); setNotice('本地工具重试结束，未新增模型请求；原进度保留。'); })}>重试未执行的打包/复导（不调用模型）</Button>}
-              {t.state === 'complete' && <p>AI开发结束；实际运行与业务验收需另行核对。</p>}
-              {t.state === 'running' && <Button onClick={() => void perform(async () => { await api('project.ai.cancel', { id: info.id, taskId: t.id }); })}>停止本次开发</Button>}
-            </Card>)}
-          </Space>
+            <Space wrap><span>最多模型请求</span><InputNumber aria-label="模型请求预算" min={1} max={100} value={requests} onChange={v => {setRequests(v ?? 20);setReviewedCost(false);}} /><span>最长分钟</span><InputNumber aria-label="AI开发时限" min={1} max={60} value={minutes} onChange={v => {setMinutes(v ?? 10);setReviewedCost(false);}} /></Space>
+            </Space>}/>
         </Card> }]} />
     </>}
   </section>;

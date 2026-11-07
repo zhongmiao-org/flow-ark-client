@@ -28,6 +28,7 @@ export const projectMethods = {
     durationMs: z.number().int().min(10000).max(3600000).default(600000), reviewedCost: z.literal(true) }).strict(),
   'project.ai.resume': z.object({ id, taskId: z.string().uuid(), answer: z.string().min(1).max(12000), maxRequests: z.number().int().min(1).max(100).default(20), durationMs: z.number().int().min(10000).max(3600000).default(600000), reviewedCost: z.literal(true) }).strict(),
   'project.ai.detail': z.object({ id, taskId: z.string().uuid() }).strict(),
+  'project.ai.review': z.object({ id, taskId: z.string().uuid(), reviewStamp: revision, operation: z.enum(['generate','assemble']), nodes: z.array(z.string().min(3).max(200)).max(100).default([]), maxRequests: z.number().int().min(1).max(100).default(20), durationMs: z.number().int().min(10000).max(3600000).default(600000), reviewedCost: z.boolean() }).strict(),
   'project.ai.retryTool': z.object({ id, taskId: z.string().uuid(), reviewed: z.literal(true) }).strict(),
   'project.ai.cancel': z.object({ id, taskId: z.string().uuid() }).strict(),
 };

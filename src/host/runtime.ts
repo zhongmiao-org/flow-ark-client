@@ -2937,6 +2937,7 @@ export class Runtime {
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
       if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.maxRequests, value.durationMs, value.reviewedCost);
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
+      if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes, value.maxRequests, value.durationMs, value.reviewedCost);
       if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, value.maxRequests, value.durationMs, value.reviewedCost);
       const task = this.projectAI.detail(value.id, value.taskId);
       return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
