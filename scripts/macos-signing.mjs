@@ -15,7 +15,7 @@ export function verifyMacSigningIdentity(target) {
   const temporary = mkdtempSync(join(tmpdir(), 'flowark-signature-'));
   try {
     const prefix = join(temporary, 'certificate');
-    execFileSync('/usr/bin/codesign', ['--display', '--extract-certificates', prefix, target], { stdio: ['ignore', 'ignore', 'pipe'] });
+    execFileSync('/usr/bin/codesign', ['--display', '--extract-certificates=' + prefix, target], { stdio: ['ignore', 'ignore', 'pipe'] });
     const fingerprint = createHash('sha1').update(readFileSync(prefix + '0')).digest('hex').toUpperCase();
     if (fingerprint !== macSigningIdentity) throw new Error('签名证书指纹不匹配：' + target);
   } finally { rmSync(temporary, { recursive: true, force: true }); }
