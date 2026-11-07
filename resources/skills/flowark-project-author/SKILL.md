@@ -26,6 +26,7 @@ metadata:
 
 - 查源码节点格式使用 `flowark_project_node_schema`。`flowark_node_schema`是运行格式，不直接复制进源码绑定。
 - 节点引用是 `{"$ref":"steps.readExcel"}`、`params.x`、循环内item/index；不是 `{"$ref":"readExcel"}` 或 `input.rows`。
+- 入口resultSchema校验整个引擎输出对象，其顶层键是已执行的区块ID（如readExcel、summarize），不是最后一个脚本返回值本身。将最终摘要Schema放在对应区块ID属性下，并考虑该入口其他节点输出，不能把摘要字段直接声明成入口顶层必填。
 - 规划条件用then/else、循环用body表达子步骤；组装器生成受支持的Mermaid结构，不生成任意图环。
 - 脚本声明输入。只用安装版本SDK里的方法和字段，不发明浏览器、桌面、文件或AI接口。
 - 资源类型、访问方式及动作由工具格式约束。桌面窗口是本人私有运行绑定，不是名为desktop-window的公开资源类型。

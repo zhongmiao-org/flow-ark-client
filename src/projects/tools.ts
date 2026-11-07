@@ -17,6 +17,7 @@ const desktopDocumentation = { commandSchema: z.toJSONSchema(desktopCommand), sd
 export const projectGuide = `# FlowArk project v1
 Use flowark.project.json to declare metadata, entries, resources, actions, environment and publicFiles.
 Each entry binds graph: flows/<id>.mmd, nodes: nodes/<id>.json, inputSchema and resultSchema.
+The entry resultSchema validates the engine's entire output object keyed by executed block IDs. It does not validate only the last script result. Put final summary fields inside the final block ID property and account for other executed block outputs.
 Mermaid subset: flowchart TD/TB/LR; ID["label"]; A --> B. No arbitrary executable directives or implicit cycles.
 Conditional nodes have explicit subgraph ID__then["then"] and ID__else["else"]. Loop nodes have ID__body["body"].
 Use ID -->|then/else/body| FIRST_CHILD for nonempty branches. next edges within each block form exactly one chain.
