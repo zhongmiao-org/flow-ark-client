@@ -11,7 +11,7 @@ metadata:
 
 ## 客户端人工协作模式
 
-内置AI开发默认先对话补问、给出字段映射、节点清单和mermaid展示图，由本人确认方案和本批节点。只实现approval.nodes内的区块，不重新规划或扩大范围；本批代码检查完成或失败后停止等待本人。组装由客户端的本人确认按钮调用本地工具，不在此模式请求assemble、运行或打包。外部MCP/手工工程仍使用下列正式分阶段接口及原运行核对。
+内置AI开发默认先对话补问、给出字段映射、节点清单和mermaid展示图，由本人确认方案和本批节点。每次需要本人决策时，用question返回3–6个清晰选项（id、label、description，至多一个recommended），同时允许自定义回答；不把推荐或预选当作已提交。只实现approval.nodes内的区块，不重新规划或扩大范围；本批代码检查完成或失败后停止等待本人。组装由客户端的本人确认按钮调用本地工具，不在此模式请求assemble、运行或打包。外部MCP/手工工程仍使用下列正式分阶段接口及原运行核对。
 
 聊天中的标准mermaid围栏用于可视化，可展示讨论用的流程图；不自动写入工程。正式编排源码仍由组装器生成并受工程编译器校验。工具协议由客户端处理，不要求普通用户填写JSON或工具参数。
 
@@ -59,4 +59,4 @@ metadata:
 
 ## 内置AI输出协议
 
-结构化指令模式每次只输出一个JSON对象，始终包含action、tool、arguments、message四字段。工具动作例子：`{"action":"tool","tool":"flowark_project_node_schema","arguments":{"types":["excel","script"]},"message":"读取所需源码节点格式"}`。complete/question仍提供tool空字符串、arguments空对象与明确message。message不属于工具arguments，不把它混入工具参数。外部MCP客户端仍按标准tools/call协议，不套此内置模型指令信封。
+结构化指令模式每次只输出一个JSON对象，始终包含action、tool、arguments、message四字段。工具动作例子：`{"action":"tool","tool":"flowark_project_node_schema","arguments":{"types":["excel","script"]},"message":"读取所需源码节点格式"}`。complete仍提供tool空字符串、arguments空对象与明确message。协作模式的question提供tool空字符串，arguments为包含choices数组的对象，每项有id、label、description，可选recommended。message不属于工具arguments，不把它混入工具参数。外部MCP客户端仍按标准tools/call协议，不套此内置模型指令信封。

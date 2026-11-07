@@ -140,9 +140,10 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
         { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
         { key: 'ai', label: 'AI 开发', children: <Card title="一起确认字段和流程节点">
           <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={reviewedCost}
-            send={current=>void perform(async()=>{
-              if(current&&!current.paidRetryRequired) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:task,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
-              else await api('project.ai.start',{id:info.id,task:current?current.task+'\n本人补充：'+task:task,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
+            send={(current,answer)=>void perform(async()=>{
+              const text=answer??task;
+              if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text,reviewedPaidRetry:!!current.paidRetryRequired,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
+              else await api('project.ai.start',{id:info.id,task:text,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
               setTask('');setAi(await api('project.ai.get',{id:info.id}));
             })}
             review={(current,operation,nodes)=>void perform(async()=>{await api('project.ai.review',{id:info.id,taskId:current.id,reviewStamp:current.review.stamp,operation,nodes,maxRequests:requests,durationMs:minutes*60000,reviewedCost:operation==='generate'?reviewedCost:false});setAi(await api('project.ai.get',{id:info.id}));if(operation==='assemble')await reload();})}

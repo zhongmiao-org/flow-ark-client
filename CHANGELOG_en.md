@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Provide at least three choices and custom input for assisted decisions; preselection does not submit, corrections do not approve the old plan, and explicit paid retries retain the conversation.
+
 - Add assisted project conversations with explicit plan and node selection, pause after generation or diagnostics, and assemble locally without model calls. Reuse Markdown/Mermaid rendering and retain detailed history in a collapsed view.
 
 - Generate typed desktop observations, receipts, selection and effect SDK declarations from their schemas, and expose the same response shapes through MCP.

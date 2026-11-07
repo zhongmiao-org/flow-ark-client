@@ -18,7 +18,8 @@
     "operation": {
       "enum": [
         "generate",
-        "assemble"
+        "assemble",
+        "pause"
       ]
     },
     "nodes": {
