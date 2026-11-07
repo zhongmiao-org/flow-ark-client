@@ -15,6 +15,7 @@ struct DesktopWindow {
 }
 struct DesktopObservation {
     let id: String
+    let title: String
     let stamp: String
     let at: Date
     let frame: CGRect
@@ -57,7 +58,6 @@ func jsonStamp(_ value:Any) throws -> String {
         guard AXIsProcessTrusted() else { try fault("permission-required") }
         guard let w=selected, binding != nil, Date()<expires, !w.app.isTerminated,
               w.app.launchDate==w.born else { try fault("binding-expired") }
-        guard str(w.window,kAXTitleAttribute)==w.title else { try fault("window-context-changed") }
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         guard let ws=ax(root,kAXWindowsAttribute) as? [AXUIElement], ws.contains(where:{same($0,w.window)}),
               frame(w.window) != nil else { try fault("window-changed") }
@@ -173,12 +173,13 @@ func jsonStamp(_ value:Any) throws -> String {
         let id=result["observationId"] as! String
         var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
         let focus=try captureFocus(w)
-        observation=DesktopObservation(id:id,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)})
+        observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)})
         return result
     }
     static func readSelection(_ args:[String:Any]) throws -> Any {
         let w=try check();try focused(w)
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
+        guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
         let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
         try checkFocus(w,old)
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
@@ -215,6 +216,7 @@ func jsonStamp(_ value:Any) throws -> String {
         let w=try check()
         guard let actionId=args["actionId"] as? String,UUID(uuidString:actionId) != nil,!consumed.contains(actionId) else { try fault("action-already-consumed") }
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
+        guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
         let pointer=CGEvent(source:nil)?.location ?? .zero
         guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else { try fault("user-intervention") }
         let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }

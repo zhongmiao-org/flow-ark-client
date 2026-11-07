@@ -35,6 +35,7 @@ metadata:
 ## 桌面脚本
 
 - 先observe，优先控件引用。截图像素坐标须按image与bounds尺寸转换成窗口局部逻辑点，不加全局窗口原点。
+- 窗口绑定固定原生窗口与进程，不等于固定网页、表格或聊天对象。每次外部写入前，按当前观察核对准确页面/会话及业务目标；标题变化后重新观察，不沿用旧目标。
 - `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。
 - 使用SDK确定返回类型，不把观察/回执转成any或Record来绕过字段校验。控件标识是element.id，角色是原生AX角色（如AXCell/AXTextField），可读名称使用title/description/value。act回执读取status，decide读取output；effect.resolve提交{id,state,evidence}。
 - 每个动作前重新观察；act与readSelection都会消费观察，下一动作必须重新observe。unknown不重发、不换键、不换实例规避防重。
