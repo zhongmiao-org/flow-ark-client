@@ -225,6 +225,8 @@ export async function diagnoseProject(path: string, revision: string, changes: {
       candidate.files.set(change.path, Buffer.from(change.content));
     }
     candidate.manifest = projectSchema.parse(json(required(candidate, 'flowark.project.json'), 'flowark.project.json'));
+    const declared = new Set(['flowark.project.json', ...candidate.manifest.publicFiles]);
+    candidate.files = new Map([...candidate.files].filter(([name]) => declared.has(name)));
     await compileProject(candidate);
     if ((await snapshotProject(path)).revision !== revision) throw new ProjectDiagnostic('project-conflict', '检查期间磁盘变化');
     return { valid: true, revision, draft: changes.length > 0, diagnostics: [] };
@@ -425,6 +427,8 @@ export async function updateProjectFiles(path: string, revision: string, changes
     for (const change of changes) if (change.path !== 'flowark.project.json' && !candidate.manifest.publicFiles.includes(change.path))
       throw new ProjectDiagnostic('project-unlisted-file', '修改文件须同时列入publicFiles', change.path);
     for (const name of candidate.manifest.publicFiles) { pathName(name); required(candidate, name); }
+    const declared = new Set(['flowark.project.json', ...candidate.manifest.publicFiles]);
+    candidate.files = new Map([...candidate.files].filter(([name]) => declared.has(name)));
     await compileProject(candidate);
     await mkdir(staging, { mode: 0o700 });
     const records: { path: string; before: string | null; after: string }[] = [];

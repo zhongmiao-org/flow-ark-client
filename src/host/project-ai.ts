@@ -21,7 +21,7 @@ export const projectAIConnection = z.discriminatedUnion('provider', [
 type Connection = z.infer<typeof projectAIConnection>;
 type Task = { id: string; projectId: string; root: string; task: string; state: 'running' | 'complete' | 'question' | 'failed' | 'cancelled' | 'budget-exhausted' | 'interrupted';
   stage?: string; authoring?: any; connection: Connection; maxRequests: number; durationMs: number; requests: number; at: string; updatedAt: string;
-  stall?: { fingerprint: string; count: number }; nextStep?: string; diagnostics?: any[];
+  stall?: { fingerprint: string; count: number; tool?: string }; nextStep?: string; diagnostics?: any[];
   message: string; history: { kind: string; value: unknown }[]; paidRetryRequired?: boolean };
 export class ProjectAI {
   private active = new Map<string, { task: Task; abort: AbortController; done: Promise<void> }>();
@@ -32,9 +32,9 @@ export class ProjectAI {
   }
   private noProgress(task: Task, tool: string, result: any, revision: string) {
     const errors = result?.diagnostics ?? (result?.diagnostic ? [result.diagnostic] : result?.error ? [{ code: 'tool-error', message: result.error }] : []);
-    if (!errors.length) {if(result?.valid===true){task.diagnostics=undefined;task.nextStep=result.assembledRevision?'核对资源与运行方案，再读取实际Run回执。':'继续其余节点代码，全部就绪后组装。';}return false;}
-    const fingerprint = digest({ tool, revision, errors });
-    task.stall = task.stall?.fingerprint === fingerprint ? { fingerprint, count: task.stall.count + 1 } : { fingerprint, count: 1 };
+    if (!errors.length) {if(result?.valid===true){if(task.stall?.tool===tool)task.stall=undefined;task.diagnostics=undefined;task.nextStep=result.assembledRevision?'核对资源与运行方案，再读取实际Run回执。':'继续其余节点代码，全部就绪后组装。';}return false;}
+    const fingerprint = digest({ tool, errors });
+    task.stall = task.stall?.fingerprint === fingerprint ? { fingerprint, count: task.stall.count + 1, tool } : { fingerprint, count: 1, tool };
     task.diagnostics = errors;
     task.nextStep = '按诊断修改对应节点；必要时调整规划，再继续开发。';
     if (task.stall.count < 3) return false;

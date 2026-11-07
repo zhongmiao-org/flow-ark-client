@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Validate replacement entries against the new public file list, preserve old files, and keep failed assembly revisions monotonic. Recover affected drafts through read-only inspection and a new plan; unrelated edits no longer reset repeated-error stops.
+
 - Add candidate macOS window observations and actions, plus a bundled authoring Skill with staged node planning, SDK type checks, deterministic assembly and no-progress stops. Business acceptance remains separate.
 
 - Allow standalone flows and authoring copies to be classified as development work without changing their definitions or history; retain the classification when saving.

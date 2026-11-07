@@ -23,7 +23,7 @@ export const authoringPlanSchema = z.object({
 }).strict();
 type Plan = z.infer<typeof authoringPlanSchema>;
 type Script = { entryId: string; nodeId: string; language: 'js'|'ts'; purpose: string; path: string; sha256?: string };
-type Draft = { version: 1; id: string; projectRevision: string; plan: Plan; scripts: Script[]; createdAt: string; assembling?: boolean; assembledRevision?: string };
+type Draft = { version: 1; id: string; projectRevision: string; plan: Plan; scripts: Script[]; createdAt: string; sequence?: number; assembling?: boolean; assembledRevision?: string };
 const key = (entryId: string, nodeId: string) => entryId + '/' + nodeId;
 const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
 async function publish(path:string,content:string){const temp=path+'.'+randomUUID()+'.tmp';try{await writeFile(temp,content,{flag:'wx',mode:0o600});await link(temp,path);}finally{await rm(temp,{force:true});}}
@@ -42,7 +42,7 @@ async function read(path: string) {
   const file = await open(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
   try { const stat = await file.stat(); if (!stat.isFile() || stat.size > 2*1024*1024) throw Error('草稿文件超过范围'); return await file.readFile('utf8'); } finally { await file.close(); }
 }
-async function load(root: string, draftId: string) {
+async function load(root: string, draftId: string, recoverReadOnly = false) {
   z.string().uuid().parse(draftId); const dir = join(await base(root,false), draftId);const info=await lstat(dir);if(!info.isDirectory()||info.isSymbolicLink())throw new ProjectDiagnostic('authoring-private-path','草稿目录不允许符号链接');
   for(const child of ['edges','sources']){const stat=await lstat(join(dir,child));if(!stat.isDirectory()||stat.isSymbolicLink())throw new ProjectDiagnostic('authoring-private-path','草稿目录不允许符号链接');}
   let draft = JSON.parse(await read(join(dir, 'base.json'))) as Draft;
@@ -51,7 +51,7 @@ async function load(root: string, draftId: string) {
     if(draft.id!==draftId||draft.version!==1||!(/^[a-f0-9]{64}$/).test(draft.projectRevision))throw Error('草稿身份无效');
     authoringPlanSchema.parse(draft.plan);const expected=checkPlan(draft.plan);
     if(expected.length!==draft.scripts.length||expected.some((s,i)=>key(s.entryId,s.nodeId)!==key(draft.scripts[i].entryId,draft.scripts[i].nodeId)||s.path!==draft.scripts[i].path||s.language!==draft.scripts[i].language||draft.scripts[i].sha256!==undefined&&!(/^[a-f0-9]{64}$/).test(draft.scripts[i].sha256!)))throw Error('草稿代码来源无效');
-    const revision=digest(draft); if (seen.has(revision)) throw Error('草稿修订环'); seen.add(revision);
+    const revision=digest(draft); if (seen.has(revision)) {if(recoverReadOnly)return {dir,draft,revision,readOnlyHistory:true};throw new ProjectDiagnostic('authoring-history-cycle','旧草稿修订链有环；使用authoring_get只读核对，再用authoring_plan及previousDraftId创建新草稿，保留旧历史');} seen.add(revision);
     let edge: { parent: string; draft: Draft };
     try { edge = JSON.parse(await read(join(dir, 'edges', revision+'.json'))); }
     catch (error: any) { if (error.code === 'ENOENT') return { dir, draft, revision }; throw error; }
@@ -62,7 +62,7 @@ async function load(root: string, draftId: string) {
 }
 async function advance(root: string, draftId: string, revision: string, change: (d: Draft)=>Draft) {
   const current=await load(root,draftId); if(current.revision!==revision) throw new ProjectDiagnostic('authoring-conflict','草稿已变化，请读取新修订，不覆盖已有代码');
-  const draft=change(structuredClone(current.draft)); const edge=join(current.dir,'edges',revision+'.json');
+  const draft=change(structuredClone(current.draft)); draft.sequence=(current.draft.sequence??0)+1; const edge=join(current.dir,'edges',revision+'.json');
   try { await publish(edge,json({parent:revision,draft})); }
   catch(error:any){if(error.code==='EEXIST')throw new ProjectDiagnostic('authoring-conflict','草稿被另一作者更新，当前代码未覆盖');throw error;}
   return {dir:current.dir,draft,revision:digest(draft)};
@@ -101,7 +101,7 @@ export async function planAuthoring(root:string, revision:string, raw:unknown, p
   const plan=authoringPlanSchema.parse(raw);if(Buffer.byteLength(json(plan))>256*1024)throw new ProjectDiagnostic('authoring-plan-size','规划超过256KiB，请拆分入口');
   const scripts=checkPlan(plan), draft:Draft={version:1,id:randomUUID(),projectRevision:revision,plan,scripts,createdAt:new Date().toISOString()};
   const dir=await directory(await base(root),draft.id);await directory(dir,'edges');await directory(dir,'sources');
-  if(previousDraftId){const previous=await load(root,previousDraftId);
+  if(previousDraftId){const previous=await load(root,previousDraftId,true);
     const flatten=(steps:any[]):any[]=>steps.flatMap(n=>[n,...flatten(n.then??[]),...flatten(n.else??[]),...flatten(n.body??[])]);
     for(const script of draft.scripts){const old=previous.draft.scripts.find(s=>s.entryId===script.entryId&&s.nodeId===script.nodeId&&s.language===script.language&&s.sha256);
       const before=previous.draft.plan.entries.find(e=>e.id===script.entryId),after=draft.plan.entries.find(e=>e.id===script.entryId);
@@ -114,7 +114,7 @@ export async function planAuthoring(root:string, revision:string, raw:unknown, p
   return view(draft,digest(draft));
 }
 export async function getAuthoring(root:string,draftId:string,entryId?:string,nodeId?:string){
-  const {dir,draft,revision}=await load(root,draftId);const result:any=view(draft,revision);
+  const {dir,draft,revision,readOnlyHistory}=await load(root,draftId,true);const result:any={...view(draft,revision),...(readOnlyHistory?{readOnlyHistory:true,next:'保留旧草稿，通过authoring_plan及previousDraftId创建新草稿，复用核对过的未变化节点'}:{})};
   if(entryId!==undefined||nodeId!==undefined){const script=draft.scripts.find(s=>s.entryId===entryId&&s.nodeId===nodeId);if(!script)throw new ProjectDiagnostic('authoring-script','脚本区块不存在');if(script.sha256){result.source=await read(join(dir,'sources',script.sha256+'.source'));if(digest(result.source)!==script.sha256)throw Error('草稿代码摘要变化');}}
   return result;
 }

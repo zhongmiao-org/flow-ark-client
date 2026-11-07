@@ -44,3 +44,7 @@ metadata:
 ## 失败与费用
 
 保留当前规划、代码、诊断及回执。连续三次相同诊断且无有效代码或工程进展时暂停自动循环，提示调整对应节点；重复读取规范不算进展。遵守本批模型请求数和时限，静态检查不调用模型。失败的付费重试不自动进行；本人已明确批准的开发重试范围持续有效。API Key产生的费用由用户自行承担。
+
+## 内置AI输出协议
+
+结构化指令模式每次只输出一个JSON对象，始终包含action、tool、arguments、message四字段。工具动作例子：`{"action":"tool","tool":"flowark_project_node_schema","arguments":{"types":["excel","script"]},"message":"读取所需源码节点格式"}`。complete/question仍提供tool空字符串、arguments空对象与明确message。message不属于工具arguments，不把它混入工具参数。外部MCP客户端仍按标准tools/call协议，不套此内置模型指令信封。
