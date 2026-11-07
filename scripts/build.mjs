@@ -1,4 +1,5 @@
 import './generate-node-validator.mjs';
+import './generate-desktop-sdk.mjs';
 import { build } from 'esbuild';
 import { build as viteBuild } from 'vite';
 import { rm, mkdir, copyFile, readdir, readFile } from 'node:fs/promises';

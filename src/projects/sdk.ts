@@ -1,15 +1,17 @@
+import { desktopSdkTypes } from './desktop-sdk.generated';
 /** Installed script-worker surface. Host validates each request using the installed node/SDK contracts. */
-export const scriptSdk = `
+export const scriptSdk = `${desktopSdkTypes}
+
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export interface FlowArkContext {
   readonly input: Json;
   readonly constants: Readonly<Record<string, Json>>;
   readonly signal: AbortSignal;
   desktop: {
-    readSelection(request: {observationId: string}): Promise<Json>;
-    decide(request: {observationId: string; instructions: string; input?: Record<string,Json>; schema: Json; useScreenshot?: boolean}): Promise<Json>;
-    observe(options?: {screenshot?: boolean}): Promise<Json>;
-    act(request: {effectId: string; observationId: string; effectKey: string; command: Json}): Promise<Json>;
+    readSelection(request: {observationId: string}): Promise<DesktopSelectionResult>;
+    decide(request: {observationId: string; instructions: string; input?: Record<string,Json>; schema: Json; useScreenshot?: boolean}): Promise<{output: Json; requestId: string; model: string; provider: string; usage?: Json}>;
+    observe(options?: {screenshot?: boolean}): Promise<DesktopObservation>;
+    act(request: {effectId: string; observationId: string; effectKey: string; command: DesktopCommand}): Promise<DesktopActionReceipt>;
   };
   logger: { info(value: Json): void };
   progress(completed: number, total?: number): void;
@@ -24,7 +26,7 @@ export interface FlowArkContext {
     state: { get(): Promise<Json>; set(value: Json): Promise<Json> };
     human(request: Json): Promise<Json>;
     attention(request: Json): Promise<Json>;
-    effect: { prepare(request: Json): Promise<Json>; resolve(request: Json): Promise<Json> };
+    effect: { prepare(request: EffectPrepareInput): Promise<EffectPrepareResult>; resolve(request: EffectResolveInput): Promise<boolean> };
     result(value: Json): Promise<Json>;
   };
 }

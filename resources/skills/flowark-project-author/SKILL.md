@@ -36,7 +36,10 @@ metadata:
 
 - 先observe，优先控件引用。截图像素坐标须按image与bounds尺寸转换成窗口局部逻辑点，不加全局窗口原点。
 - `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。
-- 每个动作前重新观察；unknown不重发、不换键、不换实例规避防重。
+- 使用SDK确定返回类型，不把观察/回执转成any或Record来绕过字段校验。控件标识是element.id，角色是原生AX角色（如AXCell/AXTextField），可读名称使用title/description/value。act回执读取status，decide读取output；effect.resolve提交{id,state,evidence}。
+- 每个动作前重新观察；act与readSelection都会消费观察，下一动作必须重新observe。unknown不重发、不换键、不换实例规避防重。
+- 批量写入先核对目标字段和完整目标范围空白或可追加，再预留单批、明确定位、粘贴、重新观察并选中该批回读、一致后resolve，再进入下一批。不要反复粘贴到同一焦点，也不静默删除单元格换行或忽略表头冲突。失败且无法排除已执行时resolve unknown并停止；未发出的动作按宿主回执处理。
+- 保存必须取得正向保存标识并回读数据；缺少“未保存”字样不能作为成功证据。
 - `readSelection`只读所选前台窗口当前选区，本地比较表格数据，恢复旧剪贴板，不隐式把整表交给模型。
 - AI判断使用当前Run观察及本人批准预算；不可用或不确定时明确停止，不静默换模型。
 - 输入、发送和保存都要检查实际结果。按Enter、点击发送或Command+S不等于业务完成。

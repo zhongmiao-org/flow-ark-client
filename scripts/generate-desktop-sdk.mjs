@@ -1,0 +1,11 @@
+import { writeFileSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { compile } from 'json-schema-to-typescript';
+import { z } from 'zod';
+import { desktopObservation, desktopCommand } from '../src/shared/desktop-automation.ts';
+import { desktopActionReceipt, desktopSelectionResult, effectPrepareInput, effectResolveInput, effectPrepareResult } from '../src/shared/desktop-sdk-results.ts';
+const schemas={DesktopObservation:z.toJSONSchema(desktopObservation),DesktopCommand:z.toJSONSchema(desktopCommand,{io:'input'}),DesktopActionReceipt:z.toJSONSchema(desktopActionReceipt),DesktopSelectionResult:z.toJSONSchema(desktopSelectionResult),EffectPrepareInput:z.toJSONSchema(effectPrepareInput,{io:'input'}),EffectResolveInput:z.toJSONSchema(effectResolveInput,{io:'input'}),EffectPrepareResult:z.toJSONSchema(effectPrepareResult)};
+let types='';for(const [name,schema]of Object.entries(schemas))types+=await compile(schema,name,{bannerComment:'',ignoreMinAndMaxItems:true,unknownAny:true})+'\n';
+const digest=createHash('sha256').update(JSON.stringify(schemas)).digest('hex');
+const output='// Generated from installed SDK schemas; do not edit.\nexport const desktopSdkSchemaDigest = '+JSON.stringify(digest)+';\nexport const desktopSdkTypes = '+JSON.stringify(types)+';\n';
+const path=new URL('../src/projects/desktop-sdk.generated.ts',import.meta.url);let current;try{current=readFileSync(path,'utf8');}catch{}if(current!==output)writeFileSync(path,output);

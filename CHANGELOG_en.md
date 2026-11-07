@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Generate typed desktop observations, receipts, selection and effect SDK declarations from their schemas, and expose the same response shapes through MCP.
+
 - Validate replacement entries against the new public file list, preserve old files, and keep failed assembly revisions monotonic. Recover affected drafts through read-only inspection and a new plan; unrelated edits no longer reset repeated-error stops.
 
 - Add candidate macOS window observations and actions, plus a bundled authoring Skill with staged node planning, SDK type checks, deterministic assembly and no-progress stops. Business acceptance remains separate.

@@ -1,7 +1,9 @@
 import { planAuthoring, getAuthoring, codeAuthoring, assembleAuthoring, authoringPlanSchema } from './authoring';
 import { readAuthoringSkill } from './authoring-skill';
+import { desktopActionReceipt, desktopSelectionResult, effectPrepareInput, effectResolveInput, effectPrepareResult } from '../shared/desktop-sdk-results';
+import { desktopSdkSchemaDigest } from './desktop-sdk.generated';
 import { z } from 'zod';
-import { desktopCommand, desktopSdkRequest } from '../shared/desktop-automation';
+import { desktopCommand, desktopSdkRequest, desktopObservation } from '../shared/desktop-automation';
 import { buildProject, snapshotProject, projectInfo, projectFromZip, packageProject, configurationForProject } from './project';
 import { ProjectDiagnostic } from './configuration';
 import { desktopProjectRequest } from './connection';
@@ -102,7 +104,7 @@ export async function callProjectTool(name: string, args: any): Promise<any> {
         files[path] = new TextDecoder('utf8', { fatal: true }).decode(content); bytes += content.length;
       }
       return { skill: await readAuthoringSkill(), revision: snapshot.revision, files, omitted, bytes, complete: omitted.length === 0, scriptSdk,
-        desktop: { commandSchema: z.toJSONSchema(desktopCommand), sdkRequestSchema: z.toJSONSchema(desktopSdkRequest) }, scriptsExecuted: false };
+        desktop: { commandSchema: z.toJSONSchema(desktopCommand), sdkRequestSchema: z.toJSONSchema(desktopSdkRequest), schemaDigest:desktopSdkSchemaDigest, observationSchema:z.toJSONSchema(desktopObservation), receiptSchema:z.toJSONSchema(desktopActionReceipt), selectionSchema:z.toJSONSchema(desktopSelectionResult), effectPrepareInput:z.toJSONSchema(effectPrepareInput,{io:'input'}), effectResolveInput:z.toJSONSchema(effectResolveInput,{io:'input'}), effectPrepareResult:z.toJSONSchema(effectPrepareResult) }, scriptsExecuted: false };
     }
     case 'flowark_project_init': return createProject(args.destination, args.id, args.name);
     case 'flowark_node_schema': {
