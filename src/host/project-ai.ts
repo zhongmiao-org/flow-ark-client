@@ -1,6 +1,7 @@
 import { readAuthoringSkill, authoringSkill } from '../projects/authoring-skill';
 import { getAuthoring } from '../projects/authoring';
-import { projectAIContext } from './project-ai-context';
+import { projectAIContext, updatesActiveDraft } from './project-ai-context';
+import { AIRequestFailureError } from '../ai/request-failure';
 import { randomUUID } from 'node:crypto';
 import { resolve, relative, dirname, basename } from 'node:path';
 import { realpath } from 'node:fs/promises';
@@ -22,6 +23,7 @@ type Connection = z.infer<typeof projectAIConnection>;
 type Task = { id: string; projectId: string; root: string; task: string; state: 'running' | 'complete' | 'question' | 'failed' | 'cancelled' | 'budget-exhausted' | 'interrupted';
   stage?: string; authoring?: any; connection: Connection; maxRequests: number; durationMs: number; requests: number; at: string; updatedAt: string;
   stall?: { fingerprint: string; count: number; tool?: string }; nextStep?: string; diagnostics?: any[];
+  readStall?: { fingerprint: string; count: number; progress: string };
   message: string; history: { kind: string; value: unknown }[]; paidRetryRequired?: boolean };
 export class ProjectAI {
   private active = new Map<string, { task: Task; abort: AbortController; done: Promise<void> }>();
@@ -84,7 +86,7 @@ export class ProjectAI {
     if ([...this.active.values()].some(v => v.task.projectId === projectId)) throw Error('本工程已有AI任务');
     if (/\bsk-[a-zA-Z0-9]{24,}|-----BEGIN .*PRIVATE KEY/.test(answer)) throw Error('不要在回答中填写密钥');
     const task: Task = { ...previous, id: randomUUID(), state: 'running', requests: 0, maxRequests, durationMs,
-      paidRetryRequired: false, stall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
+      paidRetryRequired: false, stall: undefined, readStall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
     this.persist(task);
     const abort = new AbortController(), item = { task, abort, done: Promise.resolve() };
     this.active.set(task.id, item); item.done = this.execute(task, abort).finally(() => this.active.delete(task.id));
@@ -153,6 +155,9 @@ export class ProjectAI {
       task.history.push({ kind: 'initial-project-context', value: { name: 'flowark_project_context', result: context } }); this.persist(task);
       const skill = await readAuthoringSkill();
       const instruction = skill.content + '\n' + projectGuide + '\nYou are the FlowArk project developer. Follow the bundled Skill as the single stage policy. Use full flowark_authoring_* tool names. Do not handwrite manifest/Mermaid/bindings or use runtime node schemas. The private draft is not an executable project. Use installed schemas before writing nodes. The initial-project-context already contains the public source and SDK; do not read those same files again unless their revision changes. Reuse tool documents and contextDefinition schema references in the input. Return exactly one JSON action. Never claim runtime success without receipts. Read-only tools and edits inside the chosen project are allowed; runtime actions require separate user review. When a requirement needs facts from the user, return question. Do not repeat unknown effects. End when the requested artifact and checks are available. Mode: structured tool instructions (not native function calls).\nTools:\n' + JSON.stringify(projectTools);
+      // Reconstruct the active draft from the immutable audit when resuming older tasks.
+      const recovered = Object.values(projectAIContext(task.history).currentDrafts)[0];
+      if(recovered) task.authoring = { draftId:recovered.draftId, draftRevision:recovered.draftRevision, stage:recovered.stage, summary:recovered.summary, plan:recovered.plan, scripts:recovered.scripts, assembledRevision:recovered.assembledRevision };
       while (task.requests < task.maxRequests) {
         abort.signal.throwIfAborted();
         const info = await projectInfo(task.root);
@@ -206,9 +211,16 @@ export class ProjectAI {
             const { root, ...rest } = args; result = await this.runtime(runtimeMethods[action.tool.slice(16)], { ...rest, id: task.projectId });
           } else result = await callProjectTool(action.tool, args);
         } catch (error) { result = { error: error instanceof Error ? error.message : String(error), ...(error instanceof ProjectDiagnostic ? { diagnostic: error.toJSON() } : {}), retryExternalEffects: false, suggestion: '按file/field/line定位修复对应规划或脚本，原工程校验通过不代表未组装的草稿通过。' }; }
-        if (action.tool.startsWith('flowark_authoring_') && result?.draftId) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
+        if (action.tool.startsWith('flowark_authoring_') && result?.draftId && updatesActiveDraft(task.authoring?.draftId,action.tool,result.draftId)) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
         task.history.push({ kind: 'tool', value: { name: action.tool, result } });
-        const stopped=this.noProgress(task, action.tool, result, digest({project:(await projectInfo(task.root)).revision, plan:task.authoring?.plan, scripts:task.authoring?.scripts?.map((s:any)=>({entryId:s.entryId,nodeId:s.nodeId,sha256:s.sha256}))}));
+        const progress=digest({project:(await projectInfo(task.root)).revision, plan:task.authoring?.plan, scripts:task.authoring?.scripts?.map((s:any)=>({entryId:s.entryId,nodeId:s.nodeId,sha256:s.sha256}))});
+        if(task.readStall?.progress!==progress)task.readStall=undefined;
+        if(action.tool==='flowark_authoring_get'&&!result?.error){
+          const fingerprint=digest({args,result});
+          task.readStall={fingerprint,progress,count:task.readStall?.fingerprint===fingerprint?task.readStall.count+1:1};
+          if(task.readStall.count>=3){task.state='question';task.message='连续三次读取相同草稿且开发进度未变化，已暂停模型循环。';task.nextStep='使用当前开发草稿补齐节点，不重新从参考稿开始。';this.persist(task);break;}
+        }
+        const stopped=this.noProgress(task, action.tool, result, progress);
         this.persist(task); if(stopped) break;
         } catch (error) {
           task.history.push({ kind: 'tool-validation', value: { name: action.tool, error: redactedErrorText(error, secret ? [secret] : []), executed: false, allowedRoot: task.root } });
@@ -218,6 +230,7 @@ export class ProjectAI {
       }
       if (task.state === 'running') { task.state = 'budget-exhausted'; task.message = '达到本批调用预算，进度已保存。'; }
     } catch (error) {
+      if(error instanceof AIRequestFailureError) task.history.push({kind:'request-failure',value:error.failure});
       task.state = abort.signal.aborted ? abort.signal.reason === 'deadline' ? 'budget-exhausted' : 'cancelled' : 'failed';
       task.message = abort.signal.aborted ? '开发任务已停止，已提交操作与记录保留，不自动重试。' : redactedErrorText(error, secret ? [secret] : []);
     } finally { clearTimeout(deadline); this.persist(task); }
