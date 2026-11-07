@@ -103,6 +103,8 @@ pnpm package:linux        # Linux x64 runner
 
 CI 与推荐开发环境使用 Node 24.22.2、pnpm 10.14.0。选择应用自带内核或已经安装的本机浏览器，不额外下载自动化浏览器。
 
+macOS 开发候选和未公证分发包固定使用 `FlowArk Local Code Signing` 自签证书，公开指纹由 `scripts/macos-signing.mjs` 固定。私钥仅保存在本人登录钥匙串，缺失时打包停止，不自动创建新证书或回退临时签名。GitHub 托管构建机未持有该私钥，目前不能生成同身份的 macOS 包；需在持有证书的本机打包。本机代码签名信任不等于 Apple Developer ID、公证或其他用户设备信任。首次从旧临时签名切换仍可能需要重新授权；重开及跨构建授权保持须实际核验。
+
 贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。详细需求、架构、契约说明和验收资料统一由治理仓库管理，不在客户端复制维护。
 
 构建会替换 dist 目录，请先完成构建，再运行依赖它的本地运行或桌面测试。

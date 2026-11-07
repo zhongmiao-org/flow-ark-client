@@ -138,7 +138,7 @@
         "dmg",
         "zip"
       ],
-      "identity": "-",
+      "identity": "1B00E55D2A28A571909A6D6791BA357416AC5A57",
       "artifactName": "FlowArk-${version}-macos-${arch}.${ext}",
       "hardenedRuntime": false,
       "strictVerify": true,
