@@ -4,10 +4,10 @@ import MarkdownBody from './MarkdownBody';
 import AuthoringPlanSummary from './AuthoringPlanSummary';
 import { emitGraph } from '../projects/graph';
 
-export default function ProjectAiConversation({ tasks, message, change, send, review, detail, cancel, busy, ready, settings, cost }: {
-  tasks: any[]; message: string; change: (text: string) => void; send: (current?: any, answer?: string) => void;
+export default function ProjectAiConversation({ tasks, message, change, send, review, detail, cancel, busy, ready, settings, cost, usage, evidence }: {
+  usage?: {input:number|null;output:number|null;total:number|null;calls:number;missing:number}; tasks: any[]; message: string; change: (text: string) => void; send: (current?: any, answer?: string) => void;
   review: (task: any, operation: 'generate' | 'assemble' | 'pause', nodes: string[]) => void;
-  detail: (task: any) => void; cancel: (task: any) => void; busy: boolean; ready: boolean; settings: ReactNode; cost: ReactNode;
+  detail: (task: any) => void; cancel: (task: any) => void; busy: boolean; ready: boolean; settings: ReactNode; cost: ReactNode; evidence?:ReactNode;
 }) {
   const ordered=useMemo(()=>[...tasks].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),[tasks]);
   const current=ordered.find(t=>t.assisted),scripts=current?.authoring?.scripts??[];
@@ -20,7 +20,7 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
     if(current?.review){
       const result:any[]=[];
       if(!scripts.some((s:any)=>!s.ready))result.push({id:'assemble',operation:'assemble',label:'确认节点，组装并检查',description:'在本机组装和静态检查，不调用模型，也不运行流程。',recommended:true});
-      if(scripts.length&&!current.authoring.assembledRevision)result.push({id:'generate',operation:'generate',label:current.paidRetryRequired?'重试生成所选节点':'按当前方案生成所选节点',description:'仅生成你勾选的节点；本批完成或检查失败后停止。会使用已核对的模型预算。',recommended:result.length===0});
+      if(scripts.length&&!current.authoring.assembledRevision)result.push({id:'generate',operation:'generate',label:current.paidRetryRequired?'重试生成所选节点':'按当前方案生成所选节点',description:'仅生成你勾选的节点；本批完成或检查失败后停止。使用当前已配置的 AI 服务。',recommended:result.length===0});
       result.push({id:'revise',operation:'revise',label:'调整字段或节点',description:'在下方写明改动，AI先更新方案，重新确认后才生成。'});
       result.push({id:'pause',operation:'pause',label:'先保留方案，稍后继续',description:'保留当前草稿和对话，不调用模型，不运行。'});
       return result;
@@ -39,11 +39,13 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
   };
   return <Space direction="vertical" style={{width:'100%'}} size="middle">
     <p>先一起确认字段和步骤，再生成你选择的节点。可以直接说“这个字段对应手机号”“先不要发送”，不必填写代码或工具指令。</p>
+    {evidence}
+    {usage&&<p aria-label="累计 token 用量">累计 token：输入 {usage.input?.toLocaleString()??'未返回'} · 输出 {usage.output?.toLocaleString()??'未返回'} · 总计 {usage.total?.toLocaleString()??'未返回'}{usage.missing>0?'（部分调用未返回用量）':''}</p>}
     <div className="task-plan-conversation" aria-label="工程开发对话" aria-live="polite">
       {!current&&<article className="ai-step-assistant"><h3>FlowArk</h3><p>描述要处理的文件、目标和完成条件。我会先给你看方案，等你确认。</p></article>}
       {(current?.dialogue??[]).map((item:any,index:number)=><article key={index} className={item.role==='user'?'ai-step-user':'ai-step-assistant'}><h3>{item.role==='user'?'你':'FlowArk'}</h3><MarkdownBody text={item.text}/></article>)}
     </div>
-    {current&&<Alert type={current.state==='failed'?'error':current.review?'info':current.state==='complete'?'success':'info'} message={current.message.startsWith('AI 输出JSON无效')?'本次回复未通过格式检查，尚未采用；可以补充说明后再试。':current.message} description={<span>本批 {current.requests}/{current.maxRequests} 次请求 · {running?'正在处理':'已停下，等待你的下一步'}</span>}/>}
+    {current&&<Alert type={current.state==='failed'?'error':current.review?'info':current.state==='complete'?'success':'info'} message={current.message.startsWith('AI 输出JSON无效')?'本次回复未通过格式检查，尚未采用；可以补充说明后再试。':current.message} description={<span>本轮 {current.requests} 次请求 · {running?'正在处理':'已停下，等待你的下一步'}</span>}/>}
     {current?.diagnostics?.length>0&&<Collapse items={[{key:'diagnostics',label:'有节点需要调整 · 查看检查问题',children:<ul>{current.diagnostics.map((d:any,i:number)=><li key={i}>{[d.file,d.entryId,d.nodeId].filter(Boolean).join(' · ')}：{d.message}</li>)}</ul>}]}/>}
     {current?.authoring?.plan&&<Card title={current.review?.kind==='nodes'?'节点检查结果':'待确认的字段与节点方案'}>
       <AuthoringPlanSummary value={current.authoring}/>
@@ -63,7 +65,7 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
       <Input.TextArea aria-label="自定义回答或修正" rows={3} value={message} onChange={e=>change(e.target.value)} placeholder="例如：联系电话对应手机号列；后两列不写入。也可以提出其他方案。"/>
     </Card>
     {cost}
-    <Space><Button type="primary" disabled={blocked} onClick={submit}>{local?'提交选择（不调用模型）':current?.paidRetryRequired?'确认费用并提交重试':'提交回答'}</Button>{running&&<Button disabled={busy} onClick={()=>cancel(tasks.find(t=>t.state==='running'))}>停止本次回复</Button>}</Space>
-    <Collapse items={[{key:'settings',label:'AI 服务与本批预算',children:settings},{key:'history',label:`历史与详细审计 · ${ordered.length} 批（全部保留）`,children:<Space direction="vertical" style={{width:'100%'}}>{ordered.map(t=><Card size="small" key={t.id} title={new Date(t.at).toLocaleString()}><p>{t.message}</p><p>{t.requests}/{t.maxRequests} 次请求</p><Button onClick={()=>detail(t)}>查看完整开发记录</Button></Card>)}</Space>}]}/>
+    <Space><Button type="primary" disabled={blocked} onClick={submit}>{local?'提交选择（不调用模型）':current?.paidRetryRequired?'确认修复并重试':'提交回答'}</Button>{running&&<Button disabled={busy} onClick={()=>cancel(tasks.find(t=>t.state==='running'))}>停止本次回复</Button>}</Space>
+    <Collapse items={[{key:'settings',label:'AI 服务',children:settings},{key:'history',label:`历史与详细审计 · ${ordered.length} 批（全部保留）`,children:<Space direction="vertical" style={{width:'100%'}}>{ordered.map(t=><Card size="small" key={t.id} title={new Date(t.at).toLocaleString()}><p>{t.message}</p><p>{t.requests} 次请求</p><Button onClick={()=>detail(t)}>查看完整开发记录</Button></Card>)}</Space>}]}/>
   </Space>;
 }

@@ -13,7 +13,7 @@ import {
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, relative, dirname, join, basename, sep } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
@@ -285,4 +285,17 @@ export async function artifactPath(root: string, runId: string, name: string) {
   const dir = join(root, 'artifacts', runId);
   await mkdir(dir, { recursive: true, mode: 0o700 });
   return join(dir, name);
+}
+
+/** Native picker approved source; only metadata leaves the local adapter. */
+export async function workbookHeaders(path: string) {
+  if(!path.toLowerCase().endsWith('.xlsx'))throw Error('请选择.xlsx工作簿');
+  const source=await realpath(path),info=await stat(source);
+  if(!info.isFile()||info.size>50*1024*1024)throw Error('工作簿须为50MiB以内的普通文件');
+  const bytes=await readFile(source),workbook=new ExcelJS.Workbook();
+  await workbook.xlsx.load(bytes as any);
+  const sheet=workbook.worksheets[0];
+  if(!sheet)throw Error('工作簿没有工作表');
+  const columns=Math.min(sheet.columnCount,256);
+  return {sha256:createHash('sha256').update(bytes).digest('hex'),inspectedAt:new Date().toISOString(),name:basename(source),sheet:sheet.name,rowCount:Math.max(0,sheet.rowCount-1),columnCount:sheet.columnCount,headers:Array.from({length:columns},(_,i)=>({column:i+1,header:sheet.getRow(1).getCell(i+1).text})),truncated:sheet.columnCount>columns};
 }

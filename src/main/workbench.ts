@@ -338,7 +338,7 @@ app
           if (method === 'desktop.automation.bind') {
             await ready; await rpc.call('desktop.automation.scope', { scopeId: args.scopeId });
             const binding = await desktopAutomation.bind(args);
-            try { await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, maxRequests: args.maxRequests, durationMs: args.durationMs, bindingId: binding!.bindingId }); }
+            try { await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, durationMs: args.durationMs, bindingId: binding!.bindingId }); }
             catch (error) { desktopAutomation.release(args.scopeId); throw error; }
             return binding;
           }
@@ -349,6 +349,13 @@ app
           const pending = projectReview;
           if (!pending || pending.id !== args.reviewId || pending.readStamp !== args.readStamp || Date.now() >= pending.expiresAt) throw Error('工程核对已过期，不执行');
           pending.finish(args.approved); return { accepted: true };
+        }
+        if (method === 'project.ai.chooseWorkbook') {
+          await ready;
+          await rpc.call('project.get', { id: args.id });
+          const picked = await dialog.showOpenDialog(win, {title:'选择只读工作簿（仅提取表头与统计）',properties:['openFile'],filters:[{name:'Excel 工作簿',extensions:['xlsx']}]});
+          if(picked.canceled||!picked.filePaths[0])return null;
+          return rpc.call('project.ai.workbook', {id:args.id,path:picked.filePaths[0]});
         }
         if (method === 'project.choose' || method === 'project.create') {
           const chosen = await dialog.showOpenDialog(win, { title: method === 'project.create' ? '选择新工程的存放目录' : '打开本地流程工程', properties: ['openDirectory', 'createDirectory'] });

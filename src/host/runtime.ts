@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { workbookHeaders } from '../adapters/files';
 import { DesktopAutomationRuns } from './desktop-automation';
 import {
   assertBrowserScrollInvocation,
@@ -256,7 +258,7 @@ export class Runtime {
       const value = await this.system(method, args);
       if (method === 'credentials.get' && typeof value === 'string') this.secrets.push(value);
       return value;
-    }, id => this.projects.request('project.get', { id }), (method, args) => this.projects.request(method, args), projectId => this.desktopAutomationRuns().chargeProject(projectId));
+    }, id => this.projects.request('project.get', { id }), (method, args) => this.projects.request(method, args));
     this.typedResults = new TypedResults(
       this.store,
       (record, node, value) => this.sources.verifyResult(record, node, value),
@@ -2908,11 +2910,19 @@ export class Runtime {
     return true;
   }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'project.ai.workbook') {
+      await this.ready;
+      const value=z.object({id:z.string().min(1).max(100),path:z.string().min(1).max(4096)}).strict().parse(args);
+      await this.projects.request('project.get',{id:value.id});
+      const summary=await workbookHeaders(value.path);
+      this.store.put('project-ai-evidence',value.id,{...(this.store.get<any>('project-ai-evidence',value.id)??{}),workbook:summary,selectedFile:value.path});
+      return summary;
+    }
     if (method === 'desktop.automation.budget') {
       await this.ready;
-      if (!Number.isSafeInteger(args.maxRequests) || args.maxRequests < 1 || args.maxRequests > 100 || !Number.isSafeInteger(args.durationMs) || args.durationMs < 10000 || args.durationMs > 3600000) throw Error('桌面任务预算无效');
+      if (!Number.isSafeInteger(args.durationMs) || args.durationMs < 10000 || args.durationMs > 3600000) throw Error('桌面窗口授权时限无效');
       await this.request('desktop.automation.scope', { scopeId: args.scopeId });
-      return this.desktopAutomationRuns().configure(args.scopeId, args.bindingId, args.maxRequests, args.durationMs);
+      return this.desktopAutomationRuns().configure(args.scopeId, args.bindingId, args.durationMs);
     }
     if (method === 'desktop.automation.scope') {
       await this.ready; this.assertAdmitting();
@@ -2933,12 +2943,19 @@ export class Runtime {
       if (!rule) throw Error('未知工程AI操作');
       const value = rule.parse(args) as any;
       await this.projects.request('project.get', { id: value.id });
-      if (method === 'project.ai.get') return { ...this.projectAI.get(value.id), desktopBudget: this.desktopAutomationRuns().budgetForProject(value.id) };
+      if(method==='project.ai.runEvidence') {
+        const detail=await this.projects.request('project.run.status',{id:value.id,runId:value.runId});
+        const run=detail.run;
+        const summary={runId:run.id,versionId:run.versionId,state:run.state,error:run.error??null,steps:(detail.events??[]).filter((e:any)=>e.nodeInstance&&['node-start','node-end','error'].includes(e.type)).map((e:any)=>({nodeId:e.nodeInstance,type:e.type,state:e.data?.state??null})).slice(-100),desktopReceipts:this.store.list<any>('desktop-effect').filter(r=>r.runId===run.id).map((r:any)=>({actionId:r.actionId,status:r.status}))};
+        this.store.put('project-ai-evidence',value.id,{...(this.store.get<any>('project-ai-evidence',value.id)??{}),run:summary});
+        return summary;
+      }
+      if (method === 'project.ai.get') return this.projectAI.get(value.id);
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
-      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.maxRequests, value.durationMs, value.reviewedCost);
+      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task);
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
-      if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes, value.maxRequests, value.durationMs, value.reviewedCost);
-      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, value.maxRequests, value.durationMs, value.reviewedCost, undefined, value.reviewedPaidRetry);
+      if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes);
+      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer);
       const task = this.projectAI.detail(value.id, value.taskId);
       return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
     }

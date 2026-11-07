@@ -14,7 +14,7 @@ export const desktopCommand = z.union([
 export const desktopAutomationMethods = {
   'desktop.automation.list': z.object({}).strict(),
   'desktop.automation.state': z.object({ scopeId }).strict(),
-  'desktop.automation.bind': z.object({ scopeId, windowId: uuid, screenshotAllowed: z.boolean(), actionsAllowed: z.boolean(), maxRequests: z.number().int().min(1).max(100).default(20), durationMs: z.number().int().min(10000).max(3600000).default(600000), reviewedCost: z.literal(true), reviewed: z.literal(true) }).strict(),
+  'desktop.automation.bind': z.object({ scopeId, windowId: uuid, screenshotAllowed: z.boolean(), actionsAllowed: z.boolean(), durationMs: z.number().int().min(10000).max(3600000).default(3600000), reviewed: z.literal(true) }).strict(),
   'desktop.automation.release': z.object({ scopeId }).strict(),
   'desktop.automation.settings': z.object({ permission: z.enum(['accessibility','screen-recording']) }).strict(),
 };

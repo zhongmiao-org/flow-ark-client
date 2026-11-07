@@ -18,7 +18,8 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [conflict, setConflict] = useState(false), [pendingField, setPendingField] = useState(false);
   const [ai, setAi] = useState<any>(), [aiProvider, setAiProvider] = useState('deepseek'), [baseUrl, setBaseUrl] = useState('');
   const [protocol, setProtocol] = useState('chat-completions'), [model, setModel] = useState(''), [credentialId, setCredentialId] = useState('');
-  const [keyValue, setKeyValue] = useState(''), [task, setTask] = useState(''), [requests, setRequests] = useState(20), [minutes, setMinutes] = useState(10), [reviewedCost, setReviewedCost] = useState(false);
+  const [keyValue, setKeyValue] = useState(''), [task, setTask] = useState('');
+  const [evidenceRuns,setEvidenceRuns]=useState<any[]>([]),[evidenceRun,setEvidenceRun]=useState('');
   const [tab, setTab] = useState('blocks');
   const [issues, setIssues] = useState<ProjectIssue[]>([]);
   const [focusRequest, setFocusRequest] = useState<{ file: string; field?: string; request: number }>();
@@ -54,7 +55,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
   useEffect(() => {
     if (!info) return;
     let live = true;
-    setDesktopScope(''); setTask(initialTask ?? ''); if (initialTask) setTab('ai'); setReviewedCost(false); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel(''); setRequests(20); setMinutes(10);
+    setDesktopScope(''); setTask(initialTask ?? ''); if (initialTask) setTab('ai'); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel('');
     const refresh = () => void api('project.ai.get', { id: info.id }).then(next => {
       if (!live) return; setAi(next);
     }).catch(e => { if (live) setError(e.message); });
@@ -121,7 +122,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
       <Button disabled={busy} onClick={() => leave(() => void perform(async () => { const next = await api('project.choose'); if (next) { setInfo(next); await load(next, next.entries[0].id); } }))}>打开工程目录</Button>
       {info && <Tag>{info.revision.slice(0, 12)}{dirty ? ' · 未保存' : ' · 已保存'}</Tag>}</Space>
     {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}{notice && <Alert type={conflict ? 'warning' : 'info'} showIcon message={notice} style={{ marginBottom: 16 }} />}
-    {!info ? <Card title="代码、区块与 Agent 共用一个工程">{initialTask && <Alert type="info" message="桌面任务需求已保留" description={initialTask + ' 请选择存放目录创建工程，然后绑定目标窗口并在 AI 开发中核对预算生成流程。'} />}<h3>已连接工程</h3>{recentProjects.length ? recentProjects.map(p => <div key={p.id} style={{ marginBottom: 12 }}><Button disabled={busy} onClick={() => void perform(async () => { const next = await api('project.get', { id: p.id }); setInfo(next); await load(next, next.entries[0].id); })}>打开 {p.root.split(/[\\/]/).pop()}</Button><small> {p.root}</small></div>) : <p>还没有工程。可打开目录，或创建第一个工程。</p>}<p>打开包含 flowark.project.json 的目录。Mermaid 定义结构，区块绑定参数和 JS/TS；连接不运行流程。</p><p>CLI / MCP 使用安装包内启动器；Key 使用受保护凭据，不写入工程或 env。</p>
+    {!info ? <Card title="代码、区块与 Agent 共用一个工程">{initialTask && <Alert type="info" message="桌面任务需求已保留" description={initialTask + ' 请选择存放目录创建工程，然后绑定目标窗口并在 AI 开发中确认方案并生成流程。'} />}<h3>已连接工程</h3>{recentProjects.length ? recentProjects.map(p => <div key={p.id} style={{ marginBottom: 12 }}><Button disabled={busy} onClick={() => void perform(async () => { const next = await api('project.get', { id: p.id }); setInfo(next); await load(next, next.entries[0].id); })}>打开 {p.root.split(/[\\/]/).pop()}</Button><small> {p.root}</small></div>) : <p>还没有工程。可打开目录，或创建第一个工程。</p>}<p>打开包含 flowark.project.json 的目录。Mermaid 定义结构，区块绑定参数和 JS/TS；连接不运行流程。</p><p>CLI / MCP 使用安装包内启动器；Key 使用受保护凭据，不写入工程或 env。</p>
       <Space><Input aria-label="新工程名称" value={newName} onChange={e => setNewName(e.target.value)} /><Button disabled={busy || !newName.trim()} onClick={() => void perform(async () => { const next = await api('project.create', { name: newName }); if (next) { setInfo(next); await load(next, next.entries[0].id); } })}>创建工程</Button></Space>
     </Card> : <>
       <Space wrap style={{ marginBottom: 16 }}><Select aria-label="工程入口" value={entryId} style={{ minWidth: 240 }} options={info.entries.map(e => ({ value: e.id, label: e.name }))} onChange={id => leave(() => void perform(() => load(info, id)))} />
@@ -139,19 +140,26 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
       </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{selected && <Space style={{ marginBottom: 12 }}><Button onClick={() => locateSource(entry.nodes, selected)}>定位节点源码</Button><Button onClick={() => locateSource(entry.graph, selected)}>定位编排源码</Button>{typeof projection.bindings[selected]?.script === 'string' && <Button onClick={() => locateSource(projection.bindings[selected].script)}>定位脚本</Button>}</Space>}{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
         { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
         { key: 'ai', label: 'AI 开发', children: <Card title="一起确认字段和流程节点">
-          <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={reviewedCost}
+          <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={true} usage={ai?.usage}
             send={(current,answer)=>void perform(async()=>{
               const text=answer??task;
-              if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text,reviewedPaidRetry:!!current.paidRetryRequired,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
-              else await api('project.ai.start',{id:info.id,task:text,maxRequests:requests,durationMs:minutes*60000,reviewedCost:true});
+              if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text});
+              else await api('project.ai.start',{id:info.id,task:text});
               setTask('');setAi(await api('project.ai.get',{id:info.id}));
             })}
-            review={(current,operation,nodes)=>void perform(async()=>{await api('project.ai.review',{id:info.id,taskId:current.id,reviewStamp:current.review.stamp,operation,nodes,maxRequests:requests,durationMs:minutes*60000,reviewedCost:operation==='generate'?reviewedCost:false});setAi(await api('project.ai.get',{id:info.id}));if(operation==='assemble')await reload();})}
+            review={(current,operation,nodes)=>void perform(async()=>{await api('project.ai.review',{id:info.id,taskId:current.id,reviewStamp:current.review.stamp,operation,nodes});setAi(await api('project.ai.get',{id:info.id}));if(operation==='assemble')await reload();})}
             detail={current=>void perform(async()=>{const detail=await api('project.ai.detail',{id:info.id,taskId:current.id});Modal.info({title:'开发步骤与结果（只读）',width:960,content:<pre tabIndex={0} style={{maxHeight:520,overflow:'auto',whiteSpace:'pre-wrap',userSelect:'text'}}>{JSON.stringify(detail,null,2)}</pre>});})}
             cancel={current=>void perform(async()=>{await api('project.ai.cancel',{id:info.id,taskId:current.id});setAi(await api('project.ai.get',{id:info.id}));})}
-            cost={<Checkbox checked={reviewedCost} onChange={e=>setReviewedCost(e.target.checked)}>已核对本批调用预算；API Key 产生的费用由用户自行承担</Checkbox>}
+            evidence={<Space direction="vertical" style={{width:'100%'}}>
+              <Space wrap><Button disabled={busy} onClick={()=>void perform(async()=>{const selected=await api('project.ai.chooseWorkbook',{id:info.id});if(selected){setAi(await api('project.ai.get',{id:info.id}));setNotice('只读表头已准备；提交回答后才发送给AI，不含客户数据行。');}})}>选择 Excel 并读取表头</Button>
+              <Button disabled={busy} onClick={()=>void perform(async()=>{const h=await api('project.run.history',{id:info.id});setEvidenceRuns(h.runs);})}>选择运行结果用于排错</Button></Space>
+              {ai?.evidence?.workbook&&<p>已选：{ai.evidence.workbook.name} · {ai.evidence.workbook.rowCount} 行 · 表头：{ai.evidence.workbook.headers.map((h:any)=>h.header||'（无表头）').join('、')}</p>}
+              {!!evidenceRuns.length&&<Space wrap><Select aria-label="用于排错的运行" style={{width:360}} value={evidenceRun||undefined} onChange={setEvidenceRun} options={evidenceRuns.map(r=>({value:r.id,label:new Date(r.createdAt).toLocaleString()+' · '+r.state+' · '+r.name}))}/><Button disabled={!evidenceRun||busy} onClick={()=>void perform(async()=>{await api('project.ai.runEvidence',{id:info.id,runId:evidenceRun});setAi(await api('project.ai.get',{id:info.id}));setNotice('运行身份、节点状态、错误和动作状态已关联，不包含完整业务输出；提交回答后才调用AI。');})}>关联所选运行</Button></Space>}
+              {ai?.evidence?.run&&<p>关联 Run：{ai.evidence.run.runId} · {ai.evidence.run.state} · {ai.evidence.run.error??'没有运行错误；业务结果仍须核对'}</p>}
+            </Space>}
+            cost={<p>API Key 产生的费用由用户自行承担。</p>}
             settings={<Space direction="vertical" style={{width:'100%'}}>
-            <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);setReviewedCost(false);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
+            <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
             {aiProvider === 'compatible' && <>
               <Input aria-label="兼容接口 Base URL" placeholder="https://example.com/v1" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />
               <Select aria-label="兼容接口协议" value={protocol} onChange={setProtocol} options={[{ value: 'chat-completions', label: 'Chat Completions 兼容' }, { value: 'responses', label: 'Responses 兼容' }]} />
@@ -164,8 +172,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
               if (aiProvider === 'compatible' && keyValue) { localKeyId.current = 'local-' + crypto.randomUUID(); const saved = await api('credential.local.save', { id: localKeyId.current, revision: null, name: '本地工程 AI 服务', value: keyValue }); reference = saved.id; setCredentialId(reference); setKeyValue(''); }
               const connection = aiProvider === 'compatible' ? { provider: aiProvider, baseUrl, protocol, model, credentialId: reference } : { provider: aiProvider };
               setAi(await api('project.ai.save', { id: info.id, connection })); setNotice('开发服务已保存；尚未调用模型。');
-            })}>保存开发服务</Button>{ai?.skill && <Tag>内置开发 Skill · {ai.skill.version}</Tag>}{ai?.desktopBudget && <Tag color={ai.desktopBudget.blocked ? "red" : "blue"}>桌面共享预算剩余 {ai.desktopBudget.remaining}/{ai.desktopBudget.maxRequests} 次 · {ai.desktopBudget.model}</Tag>}
-            <Space wrap><span>最多模型请求</span><InputNumber aria-label="模型请求预算" min={1} max={100} value={requests} onChange={v => {setRequests(v ?? 20);setReviewedCost(false);}} /><span>最长分钟</span><InputNumber aria-label="AI开发时限" min={1} max={60} value={minutes} onChange={v => {setMinutes(v ?? 10);setReviewedCost(false);}} /></Space>
+            })}>保存开发服务</Button>{ai?.skill && <Tag>内置开发 Skill · {ai.skill.version}</Tag>}
             </Space>}/>
         </Card> }]} />
     </>}

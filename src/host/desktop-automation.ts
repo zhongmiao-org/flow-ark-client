@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { AIRequestFailureError } from '../ai/request-failure';
 import { generate } from '../ai/providers';
 import { assertAISchema } from '../shared/ai-node';
 import { projectAIConnection } from './project-ai';
@@ -10,7 +12,7 @@ import { digest, uid, now } from '../shared/utils';
 export class DesktopAutomationRuns {
   private pending = new Set<string>();
   private observations = new Map<string, any>();
-  private budgets = new Map<string, { scopeId: string; projectId: string; bindingId: string; requests: number; maxRequests: number; expiresAt: number; connection: any; blocked?: boolean }>();
+  private budgets = new Map<string, { scopeId: string; projectId: string; bindingId: string; requests: number; expiresAt: number; connection: any; blocked?: boolean }>();
   constructor(private store: Store, private system: (method: string, args: any) => Promise<any>) {}
   async binding(record: FlowRecord): Promise<DesktopAutomationContext | undefined> {
     if (!record.flow.requiredCapabilities.includes(desktopAutomationCapability)) return;
@@ -19,7 +21,7 @@ export class DesktopAutomationRuns {
     if (!state || state.expiresAt <= Date.now()) throw Error('请在本实例绑定当前macOS桌面窗口后再核对运行');
     const { active, ...context } = state; return context;
   }
-  async configure(scopeId: string, bindingId: string, maxRequests: number, durationMs: number) {
+  async configure(scopeId: string, bindingId: string, durationMs: number) {
     const project = this.store.list<any>('local-project').find(p => p.instances?.includes(scopeId));
 
     const connection = projectAIConnection.parse((project ? this.store.get('project-ai-connection', project.id) : undefined) ?? { provider: 'deepseek' });
@@ -32,18 +34,12 @@ export class DesktopAutomationRuns {
     }
     if (previous && digest(previous.connection) !== digest(connection)) throw Error('本批模型配置发生变化，请先结束原任务并重新核对AI服务');
     for (const [id, budget] of this.budgets) if (budget.projectId === projectId) this.budgets.delete(id);
-    this.budgets.set(scopeId, { scopeId, projectId, bindingId, requests: previous?.requests ?? 0, maxRequests, expiresAt: previous ? Math.min(previous.expiresAt, Date.now() + durationMs) : Date.now() + durationMs, connection, ...(previous?.blocked ? { blocked: true } : {}) });
-    return { maxRequests, durationMs, connection };
+    this.budgets.set(scopeId, { scopeId, projectId, bindingId, requests: previous?.requests ?? 0, expiresAt: Date.now() + durationMs, connection });
+    return { durationMs, connection };
   }
-  chargeProject(projectId: string) {
-    const budgets = [...this.budgets.values()].filter(b => b.projectId === projectId);
-    if (budgets.length > 1) throw Error('工程有多个桌面预算，请解除旧窗口后重新绑定');
-    if (budgets[0]) this.charge(budgets[0].scopeId);
-  }
-  budgetForProject(projectId: string) { const value = [...this.budgets.values()].find(b => b.projectId === projectId); return value ? { requests: value.requests, maxRequests: value.maxRequests, remaining: Math.max(0, value.maxRequests - value.requests), expiresAt: value.expiresAt, blocked: !!value.blocked, model: value.connection.model ?? value.connection.fixedModel, provider: value.connection.provider } : null; }
   private charge(scopeId: string) {
     const budget = this.budgets.get(scopeId);
-    if (!budget || budget.blocked || Date.now() >= budget.expiresAt || budget.requests >= budget.maxRequests) throw Error('桌面任务模型预算已耗尽或失效，进度保留，未追加调用');
+    if (!budget || budget.blocked || Date.now() >= budget.expiresAt) throw Error('桌面窗口授权或模型连接已失效，请重新核对窗口与服务');
     budget.requests++;
     this.store.put('desktop-budget-receipt', budget.bindingId, { ...budget, at: now() });
     return budget;
@@ -54,11 +50,11 @@ export class DesktopAutomationRuns {
     if (request.useScreenshot && !observation.image) throw Error('请先在获准范围内观察窗口截图');
     assertAISchema(request.schema);
     const budget = this.budgets.get(scopeId);
-    if (!budget) throw Error('请重新绑定窗口并核对模型预算');
+    if (!budget) throw Error('请重新绑定窗口并核对AI服务');
     const connection = budget.connection;
     const credentialId = connection.provider === 'compatible' ? connection.credentialId : connection.provider;
     const saved = ['deepseek','openai-codex'].includes(credentialId) ? await this.system('ai.configuration.read', { provider: credentialId }) : undefined;
-    if (saved && connection.configurationRevision && saved.revision !== connection.configurationRevision) throw Error('AI配置已变化，请重新核对窗口与预算');
+    if (saved && connection.configurationRevision && saved.revision !== connection.configurationRevision) throw Error('AI配置已变化，请重新核对窗口与服务');
     if (saved && !saved.configured) throw Error('本人AI服务尚未配置');
     const key = await this.system('credentials.get', { id: credentialId, ...(saved ? { revision: saved.revision } : {}) });
     const provider = connection.provider === 'compatible' ? 'openai-codex' : connection.provider;
@@ -73,9 +69,9 @@ export class DesktopAutomationRuns {
         request.useScreenshot ? [{ id: observation.observationId, name: '本人绑定窗口', ...image }] : [], 'planning', true, undefined,
         connection.provider === 'compatible' ? { baseUrl: connection.baseUrl, protocol: connection.protocol } : undefined);
       active();
-      this.store.put('desktop-model-receipt', result.requestId, { runId, bindingId: budget.bindingId, requestId: result.requestId, provider: result.provider, model: result.model, usage: result.usage, at: now() });
+      this.store.put('desktop-model-receipt', result.requestId, { projectId:budget.projectId, runId, bindingId: budget.bindingId, requestId: result.requestId, provider: result.provider, model: result.model, usage: result.usage, at: now() });
       return result;
-    } catch (error) { budget.blocked = true; throw error; }
+    } catch (error) { this.store.put('desktop-model-receipt',randomUUID(),{projectId:budget.projectId,runId,requestId:randomUUID(),usage:error instanceof AIRequestFailureError?error.failure.usage:null,status:'failed',at:now()});budget.blocked = true; throw error; }
   }
   async call(record: FlowRecord & Partial<PreparedScripts>, runId: string, raw: unknown, active: () => void, signal: AbortSignal) {
     active();
