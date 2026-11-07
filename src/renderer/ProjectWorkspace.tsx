@@ -115,7 +115,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
       },
     });
   };
-  const reload = async () => { if (!info) return; const next = await api('project.get', { id: info.id }); setInfo(next); await load(next, entryId); };
+  const reload = async () => { if (!info) return; const next: Info = await api('project.get', { id: info.id }); setInfo(next); await load(next, next.entries.some(e => e.id === entryId) ? entryId : next.entries[0]?.id ?? ''); };
   return <section className="template-workspace" style={{ padding: 24 }}>
     <Space wrap style={{ marginBottom: 20 }}><Button onClick={() => leave(back)}>返回我的流程</Button><Typography.Title level={2} style={{ margin: 0 }}>流程编辑器</Typography.Title>
       <Button disabled={busy} onClick={() => leave(() => void perform(async () => { const next = await api('project.choose'); if (next) { setInfo(next); await load(next, next.entries[0].id); } }))}>打开工程目录</Button>

@@ -20,6 +20,10 @@ struct DesktopObservation {
     let frame: CGRect
     let elements: [String: AXUIElement]
     let pointer: CGPoint
+    let targetStamps: [String:String]
+    let focus: AXUIElement?
+    let focusStamp: String?
+    let image: CGImage?
 }
 func fault(_ message: String) throws -> Never { throw DesktopFault(message: message) }
 func ax(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
@@ -37,6 +41,10 @@ func frame(_ e: AXUIElement) -> CGRect? {
 }
 func rectJSON(_ f: CGRect) -> [String:Double] { ["x":f.minX,"y":f.minY,"width":f.width,"height":f.height] }
 func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
+func jsonStamp(_ value:Any) throws -> String {
+    let bytes=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
+    return SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
+}
 
 @main struct DesktopAutomation {
     static var windows: [String:DesktopWindow]=[:]
@@ -79,9 +87,42 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
                 for child in children.prefix(1000-queue.count) { queue.append((child,depth+1)) }
             }
         }
-        let stampData=try JSONSerialization.data(withJSONObject:["bounds":rectJSON(bounds),"rows":rows],options:[.sortedKeys])
-        let stamp=SHA256.hash(data:stampData).map{String(format:"%02x",$0)}.joined()
+        // Unrelated live text is not the identity of every control in the window.
+        // The selected target/focus is separately checked using its full attributes.
+        let structure=rows.map { row in row.filter { !["title","description","value"].contains($0.key) } }
+        let stamp=try jsonStamp(["bounds":rectJSON(bounds),"rows":structure])
         return (bounds,rows,refs,stamp,truncated || cursor<queue.count)
+    }
+    static func captureFocus(_ w:DesktopWindow) throws -> (AXUIElement,String)? {
+        let root=AXUIElementCreateApplication(w.app.processIdentifier)
+        guard let fw=ax(root,kAXFocusedWindowAttribute),CFGetTypeID(fw)==AXUIElementGetTypeID(),same(fw as! AXUIElement,w.window),
+              let focused=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(focused)==AXUIElementGetTypeID() else {return nil}
+        let e=focused as! AXUIElement
+        guard str(e,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else {return nil}
+        var attributes:[String:Any]=["role":str(e,kAXRoleAttribute),"subrole":str(e,kAXSubroleAttribute),"title":str(e,kAXTitleAttribute),"description":str(e,kAXDescriptionAttribute),"value":str(e,kAXValueAttribute),"selection":str(e,kAXSelectedTextAttribute)]
+        if let box=frame(e) {attributes["bounds"]=rectJSON(box)}
+        if let raw=ax(e,kAXSelectedTextRangeAttribute),CFGetTypeID(raw)==AXValueGetTypeID() {
+            var range=CFRange();if AXValueGetValue(raw as! AXValue,.cfRange,&range){attributes["range"]=[range.location,range.length]}
+        }
+        return (e,try jsonStamp(attributes))
+    }
+    static func checkFocus(_ w:DesktopWindow,_ old:DesktopObservation) throws {
+        guard let e=old.focus,let stamp=old.focusStamp,let current=try captureFocus(w),same(e,current.0),stamp==current.1 else {try fault("focus-or-selection-changed")}
+    }
+    static func image(_ payload:[String:Any]) -> CGImage? {
+        guard let encoded=payload["data"] as? String,let data=Data(base64Encoded:encoded) else{return nil}
+        return NSBitmapImageRep(data:data)?.cgImage
+    }
+    static func patch(_ image:CGImage,_ p:CGPoint,_ bounds:CGRect) throws -> String {
+        let sx=Double(image.width)/bounds.width,sy=Double(image.height)/bounds.height
+        let rect=CGRect(x:(p.x-bounds.minX)*sx-10*sx,y:(p.y-bounds.minY)*sy-10*sy,width:20*sx,height:20*sy).integral.intersection(CGRect(x:0,y:0,width:image.width,height:image.height))
+        guard !rect.isEmpty,let cropped=image.cropping(to:rect) else {try fault("image-target-unavailable")}
+        let width=Int(rect.width),height=Int(rect.height)
+        guard let context=CGContext(data:nil,width:width,height:height,bitsPerComponent:8,bytesPerRow:width*4,space:CGColorSpaceCreateDeviceRGB(),bitmapInfo:CGImageAlphaInfo.premultipliedLast.rawValue) else {try fault("image-target-unavailable")}
+        context.clear(CGRect(x:0,y:0,width:width,height:height));context.interpolationQuality = .none
+        context.draw(cropped,in:CGRect(x:0,y:0,width:width,height:height))
+        guard let bytes=context.data else {try fault("image-target-unavailable")}
+        return SHA256.hash(data:Data(bytes:bytes,count:width*height*4)).map{String(format:"%02x",$0)}.joined()
     }
     static func discover() throws -> Any {
         windows.removeAll(); selected=nil;binding=nil;observation=nil
@@ -127,16 +168,19 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
         let w=try check();let (bounds,rows,refs,stamp,truncated)=try tree(w)
         var result:[String:Any]=["version":1,"observationId":UUID().uuidString,"title":str(w.window,kAXTitleAttribute),"application":w.app.localizedName ?? "Application","bounds":rectJSON(bounds),"elements":rows,"truncated":truncated]
         if args["screenshot"] as? Bool == true { result["image"]=try await screenshot(w,bounds) }
-        let next=try tree(w)
-        guard next.3==stamp else { try fault("observation-changed") }
+        // A bounded read is a snapshot, not an atomic transaction over an entire live UI.
+        let checked=try check();guard same(checked.window,w.window),frame(w.window)==bounds else {try fault("window-changed")}
         let id=result["observationId"] as! String
-        observation=DesktopObservation(id:id,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero)
+        var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
+        let focus=try captureFocus(w)
+        observation=DesktopObservation(id:id,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)})
         return result
     }
     static func readSelection(_ args:[String:Any]) throws -> Any {
         let w=try check();try focused(w)
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
+        try checkFocus(w,old)
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID(),str(element as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
         let board=NSPasteboard.general;var snapshot=[[NSPasteboard.PasteboardType:Data]]();var total=0
@@ -165,9 +209,9 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
     }
     static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[]) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
-        down.flags=flags;up.flags=flags;down.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
+        down.flags=flags;up.flags=[];down.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
     }
-    static func act(_ args:[String:Any]) throws -> Any {
+    static func act(_ args:[String:Any]) async throws -> Any {
         let w=try check()
         guard let actionId=args["actionId"] as? String,UUID(uuidString:actionId) != nil,!consumed.contains(actionId) else { try fault("action-already-consumed") }
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
@@ -175,9 +219,21 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
         guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else { try fault("user-intervention") }
         let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
         guard let command=args["command"] as? [String:Any],let kind=command["kind"] as? String else { try fault("invalid-command") }
-        if kind != "activate" { try focused(w) }
+        if kind != "activate" { try focused(w);try checkFocus(w,old) }
         var target:AXUIElement?
-        if let id=command["elementId"] as? String { guard let e=old.elements[id] else { try fault("element-not-found") };target=e }
+        if let id=command["elementId"] as? String {
+            guard let e=old.elements[id],let now=current.2[id],same(e,now),let row=current.1.first(where:{$0["id"] as? String==id}),try jsonStamp(row)==old.targetStamps[id] else {try fault("target-changed")};target=e
+        }
+        let coordinateKeys = kind=="drag" ? ["from","to"] : command["point"] != nil ? ["point"] : []
+        if !coordinateKeys.isEmpty {
+            guard let before=old.image else {try fault("coordinate-observation-requires-image")}
+            let points=try coordinateKeys.map{try point(command[$0],old.frame)}
+            guard let after=image(try await screenshot(w,old.frame)),after.width==before.width,after.height==before.height else {try fault("image-target-unavailable")}
+            for p in points {guard try patch(before,p,old.frame)==patch(after,p,old.frame) else {try fault("image-target-changed")}}
+            try focused(w);try checkFocus(w,old)
+            let pointer=CGEvent(source:nil)?.location ?? .zero
+            guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention")}
+        }
         // Consume before the first native event. Any subsequent failure is unknown, never retried.
         consumed.insert(actionId);observation=nil
         do {
@@ -227,7 +283,7 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
                         board.writeObjects(items)
                     }
                 }
-                try focused(w);try key(9,.maskCommand);Thread.sleep(forTimeInterval:0.2)
+                try focused(w);try key(9,.maskCommand);try await Task.sleep(nanoseconds:200_000_000)
             case "key":
                 guard let name=command["key"] as? String else { try fault("invalid-key") }
                 let codes:[String:CGKeyCode]=["a":0,"s":1,"c":8,"v":9,"x":7,"z":6,"f":3,"Return":36,"Tab":48,"Escape":53,"Backspace":51,"Space":49,"Left":123,"Right":124,"Down":125,"Up":126,"Home":115,"End":119]
@@ -244,7 +300,7 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
                 let from=try point(command["from"],old.frame),to=try point(command["to"],old.frame)
                 try mouse(.leftMouseDown,from)
                 defer { try? mouse(.leftMouseUp,to) }
-                for i in 1...12 { try focused(w);let t=Double(i)/12;try mouse(.leftMouseDragged,CGPoint(x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t));Thread.sleep(forTimeInterval:0.015) }
+                for i in 1...12 { try focused(w);let t=Double(i)/12;try mouse(.leftMouseDragged,CGPoint(x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t));try await Task.sleep(nanoseconds:15_000_000) }
             default:try fault("unsupported-command")
             }
             return ["status":"performed","actionId":actionId]
@@ -265,7 +321,7 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
         if method=="release" {selected=nil;binding=nil;observation=nil;return true}
         if method=="observe" {return try await observe(args)}
         if method=="readSelection" {return try readSelection(args)}
-        if method=="act" {return try act(args)}
+        if method=="act" {return try await act(args)}
         try fault("unsupported-method")
     }
     static func main() async {

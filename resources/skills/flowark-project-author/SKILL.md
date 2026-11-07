@@ -38,6 +38,7 @@ metadata:
 - `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。
 - 使用SDK确定返回类型，不把观察/回执转成any或Record来绕过字段校验。控件标识是element.id，角色是原生AX角色（如AXCell/AXTextField），可读名称使用title/description/value。act回执读取status，decide读取output；effect.resolve提交{id,state,evidence}。
 - 每个动作前重新观察；act与readSelection都会消费观察，下一动作必须重新observe。unknown不重发、不换键、不换实例规避防重。
+- effectKey唯一标识一个原生命令。同一业务effectId下的激活、定位点击、粘贴和保存按键分别使用稳定子键；不同命令不可共用effectKey，恢复时不可换键重放unknown。
 - 批量写入先核对目标字段和完整目标范围空白或可追加，再预留单批、明确定位、粘贴、重新观察并选中该批回读、一致后resolve，再进入下一批。不要反复粘贴到同一焦点，也不静默删除单元格换行或忽略表头冲突。失败且无法排除已执行时resolve unknown并停止；未发出的动作按宿主回执处理。
 - 保存必须取得正向保存标识并回读数据；缺少“未保存”字样不能作为成功证据。
 - `readSelection`只读所选前台窗口当前选区，本地比较表格数据，恢复旧剪贴板，不隐式把整表交给模型。
