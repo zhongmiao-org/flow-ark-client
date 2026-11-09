@@ -185,6 +185,22 @@ func jsonStamp(_ value:Any) throws -> String {
         observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)})
         return result
     }
+    static func clipboardSnapshot(_ board:NSPasteboard) throws -> ([[NSPasteboard.PasteboardType:Data]],Int) {
+        let count=board.changeCount
+        var snapshot=[[NSPasteboard.PasteboardType:Data]](),total=0
+        for item in board.pasteboardItems ?? [] {
+            var values=[NSPasteboard.PasteboardType:Data]()
+            for type in item.types {
+                guard let data=item.data(forType:type) else {try fault("clipboard-unavailable")}
+                total+=data.count
+                guard total<=16*1024*1024 else {try fault("clipboard-snapshot-limit")}
+                values[type]=data
+            }
+            snapshot.append(values)
+        }
+        guard board.changeCount==count else {try fault("clipboard-changed")}
+        return (snapshot,count)
+    }
     static func readSelection(_ args:[String:Any]) throws -> Any {
         let w=try check();try focused(w)
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
@@ -193,12 +209,9 @@ func jsonStamp(_ value:Any) throws -> String {
         try checkFocus(w,old)
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID(),str(element as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
-        let board=NSPasteboard.general;var snapshot=[[NSPasteboard.PasteboardType:Data]]();var total=0
-        for item in board.pasteboardItems ?? [] {
-            var values=[NSPasteboard.PasteboardType:Data]()
-            for type in item.types {guard let data=item.data(forType:type) else {try fault("clipboard-unavailable")};total+=data.count;guard total<=1024*1024 else{try fault("clipboard-snapshot-limit")};values[type]=data};snapshot.append(values)
-        }
-        let before=board.changeCount;observation=nil
+        let board=NSPasteboard.general
+        let (snapshot,before)=try clipboardSnapshot(board)
+        observation=nil
         try key(8,.maskCommand)
         let deadline=Date().addingTimeInterval(1)
         while board.changeCount==before && Date()<deadline {Thread.sleep(forTimeInterval:0.02)}
@@ -275,15 +288,8 @@ func jsonStamp(_ value:Any) throws -> String {
                 guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
                 let root=AXUIElementCreateApplication(w.app.processIdentifier)
                 guard let focusedElement=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(focusedElement)==AXUIElementGetTypeID(),str(focusedElement as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
-                let board=NSPasteboard.general;var snapshot=[[NSPasteboard.PasteboardType:Data]]();var total=0
-                for item in board.pasteboardItems ?? [] {
-                    var values=[NSPasteboard.PasteboardType:Data]()
-                    for type in item.types {
-                        guard let data=item.data(forType:type) else { try fault("clipboard-unavailable") }
-                        total+=data.count;guard total<=1024*1024 else { try fault("clipboard-snapshot-limit") };values[type]=data
-                    };snapshot.append(values)
-                }
-                let previousCount=board.changeCount
+                let board=NSPasteboard.general
+                let (snapshot,previousCount)=try clipboardSnapshot(board)
                 guard board.changeCount==previousCount else { try fault("clipboard-changed") }
                 board.clearContents();guard board.setString(text,forType:.string) else { try fault("clipboard-write-failed") }
                 let ownCount=board.changeCount

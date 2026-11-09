@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Preserve bounded clipboard snapshots up to 16 MiB for desktop copy/paste, including image formats; reject changes during capture and oversized snapshots before modifying clipboard contents.
+
 - Remove project AI request/time budgets and cost checkboxes. Show provider-reported cumulative tokens, read selected workbook headers, and attach owned run diagnostics; require confirmation before repairs and execution.
 
 - Provide at least three choices and custom input for assisted decisions; preselection does not submit, corrections do not approve the old plan, and explicit paid retries retain the conversation.
