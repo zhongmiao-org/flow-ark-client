@@ -375,6 +375,7 @@ function WorkspaceApp() {
     return () => window.removeEventListener('flowark:open-browser', open);
   }, []);
   const [desktopProjectTask, setDesktopProjectTask] = useState('');
+  const [projectRepair,setProjectRepair]=useState<{id:string;runId:string;nonce:string;handled?:boolean}>();
   const [data, setData] = useState(initial),
     [section, setSection] = useState('tasks'),
     [detail, setDetail] = useState<any>(null),
@@ -2140,7 +2141,7 @@ function WorkspaceApp() {
             }
             showAttention={() => setSection('inbox')}
           />
-          {section === 'projects' && <ProjectWorkspace initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
+          {section === 'projects' && <ProjectWorkspace key={projectRepair?.nonce??'projects'} initialProjectId={projectRepair?.handled?undefined:projectRepair?.id} initialRunId={projectRepair?.handled?undefined:projectRepair?.runId} initialHandled={()=>setProjectRepair(p=>p?{...p,handled:true}:p)} initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
             setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'resources', returnLabel: '流程编辑器', back: () => { setTemplateInstanceRequest(undefined); setSection('projects'); } });
             setSection('templates');
           }} />}
@@ -2827,6 +2828,7 @@ function WorkspaceApp() {
                 <TaskRunPage
                   key={detail.run.id}
                   detail={detail}
+                  repairProject={detail.developmentProject?()=>{setDesktopProjectTask('');setProjectRepair({id:detail.developmentProject.id,runId:detail.run.id,nonce:crypto.randomUUID()});setSection('projects');}:undefined}
                   fault={data.fault}
                   page={taskRunView}
                   restored={taskRunRestored}
@@ -2873,6 +2875,7 @@ function WorkspaceApp() {
                 <RunDetail
                   key={detail.run.id}
                   detail={detail}
+                  repairProject={detail.developmentProject?()=>{setDesktopProjectTask('');setProjectRepair({id:detail.developmentProject.id,runId:detail.run.id,nonce:crypto.randomUUID()});setSection('projects');}:undefined}
                   fault={data.fault}
                   humanRequest={
                     data.attention.some(

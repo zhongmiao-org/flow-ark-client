@@ -1,3 +1,4 @@
+import { runFailureGuidance } from '../shared/run-failure-guidance';
 import { Collapse, Descriptions, Tag, Badge, Card } from 'antd';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import type { ReactNode } from 'react';
@@ -6,6 +7,7 @@ import type { taskRunPresentation } from './task-run-presentation';
 type Model = ReturnType<typeof taskRunPresentation>;
 
 function failureReason(model: Model, error: string) {
+  const guidance=runFailureGuidance(error);if(guidance)return guidance;
   if (model.node?.type === 'assert' && error === `结果断言失败：${model.node.id}`)
     return {
       title: '结果没有通过检查',

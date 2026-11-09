@@ -15,6 +15,7 @@ import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
 import { ProjectWorkspace } from './project-workspace';
 import { ProjectAI } from './project-ai';
+import { projectRunEvidence } from './project-recovery';
 import { createProject } from '../projects/project';
 import { projectMethods } from '../shared/project';
 import { EntryResults } from './entry-results';
@@ -2945,17 +2946,27 @@ export class Runtime {
       await this.projects.request('project.get', { id: value.id });
       if(method==='project.ai.runEvidence') {
         const detail=await this.projects.request('project.run.status',{id:value.id,runId:value.runId});
-        const run=detail.run;
-        const summary={runId:run.id,versionId:run.versionId,state:run.state,error:run.error??null,steps:(detail.events??[]).filter((e:any)=>e.nodeInstance&&['node-start','node-end','error'].includes(e.type)).map((e:any)=>({nodeId:e.nodeInstance,type:e.type,state:e.data?.state??null})).slice(-100),desktopReceipts:this.store.list<any>('desktop-effect').filter(r=>r.runId===run.id).map((r:any)=>({actionId:r.actionId,status:r.status}))};
+        const summary=projectRunEvidence(detail,this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect'));
         this.store.put('project-ai-evidence',value.id,{...(this.store.get<any>('project-ai-evidence',value.id)??{}),run:summary});
         return summary;
       }
-      if (method === 'project.ai.get') return this.projectAI.get(value.id);
+      if (method === 'project.ai.get') {
+        const history=await this.projects.request('project.run.history',{id:value.id});
+        const owned=new Set(history.runs.map((r:any)=>r.id));
+        const pending=this.store.list<any>('attention').filter(a=>!a.read&&owned.has(a.detail?.runId??a.origin?.runId));
+        pending.sort((a,b)=>b.time.localeCompare(a.time));
+        const latest=history.runs[0],pendingRunId=pending[0]?.detail?.runId??pending[0]?.origin?.runId;
+        const runId=latest&&['FAILED','INTERRUPTED','CANCELLED'].includes(latest.state)?latest.id:pendingRunId;
+        const run=runId?projectRunEvidence(await this.projects.request('project.run.status',{id:value.id,runId}),this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect')):null;
+        const recovery={run,pendingCount:pending.length,pending:pending.map(a=>({id:a.id,runId:a.detail?.runId??a.origin?.runId,kind:a.kind,time:a.time})),checkedRuns:history.runs.length,readOnly:true};
+        if(digest(this.store.get('project-ai-recovery',value.id)??null)!==digest(recovery))this.store.put('project-ai-recovery',value.id,recovery);
+        return {...this.projectAI.get(value.id),recovery};
+      }
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
-      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task);
+      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.intent);
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
       if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes);
-      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer);
+      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, undefined, value.intent);
       const task = this.projectAI.detail(value.id, value.taskId);
       return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
     }
@@ -3410,8 +3421,10 @@ export class Runtime {
         const artifactCleanup = this.artifactCleanup.status(id);
         const run = this.store.get<Run>('run', id);
         const results = this.typedResults.summary(id);
+        const owners=this.store.list<any>('local-project').filter(p=>p.instances?.includes(snapshot?.bindings?.template?.instanceId));
         return {
           run,
+          developmentProject:owners.length===1?{id:owners[0].id}:undefined,
           desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
           mcpReceipts: this.mcpRuns
             .receipts(id)

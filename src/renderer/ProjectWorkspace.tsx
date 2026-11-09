@@ -10,7 +10,7 @@ import JsonTreeEditor from './JsonTreeEditor';
 import ProjectSourceEditor, { type ProjectIssue } from './ProjectSourceEditor';
 const api = (method: string, args: unknown = {}): Promise<any> => window.flowark.request(method, args);
 type Info = { id: string; root: string; revision: string; metadata: { name: string }; entries: { id: string; name: string }[]; files: { path: string; size: number }[] };
-export default function ProjectWorkspace({ back, configure, navigation, initialTask }: { initialTask?: string; back: () => void; configure: (detail: any) => void; navigation: MutableRefObject<((next: () => void) => void) | undefined> }) {
+export default function ProjectWorkspace({ back, configure, navigation, initialTask, initialProjectId, initialRunId, initialHandled }: { initialTask?: string; initialProjectId?:string; initialRunId?:string; initialHandled?:()=>void; back: () => void; configure: (detail: any) => void; navigation: MutableRefObject<((next: () => void) => void) | undefined> }) {
   const [info, setInfo] = useState<Info>(), [entryId, setEntryId] = useState(''), [selected, setSelected] = useState('');
   const [files, setFiles] = useState<Record<string, string>>({}), [edits, setEdits] = useState<Record<string, string>>({});
   const [desktopScope, setDesktopScope] = useState('');
@@ -39,6 +39,13 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
     setIssues([]);
     setEdits({}); setConflict(false); setEntry(e); setEntryId(id); setFile(e.graph); setSelected('');
   };
+  useEffect(()=>{
+    if(!initialProjectId)return;
+    void perform(async()=>{
+      const p=await api('project.get',{id:initialProjectId});setInfo(p);await load(p,p.entries[0]?.id??'');
+      if(initialRunId){await api('project.ai.runEvidence',{id:p.id,runId:initialRunId});setTab('ai');}initialHandled?.();
+    });
+  },[initialProjectId,initialRunId]);
   const leave = (next: () => void) => {
     if (busy) return;
     if (!dirty && !pendingField && !keyValue) { next(); return; }
@@ -55,7 +62,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
   useEffect(() => {
     if (!info) return;
     let live = true;
-    setDesktopScope(''); setTask(initialTask ?? ''); if (initialTask) setTab('ai'); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel('');
+    setDesktopScope(''); setTask(initialTask ?? ''); if (initialTask||initialRunId) setTab('ai'); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel('');
     const refresh = () => void api('project.ai.get', { id: info.id }).then(next => {
       if (!live) return; setAi(next);
     }).catch(e => { if (live) setError(e.message); });
@@ -140,11 +147,11 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
       </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{selected && <Space style={{ marginBottom: 12 }}><Button onClick={() => locateSource(entry.nodes, selected)}>定位节点源码</Button><Button onClick={() => locateSource(entry.graph, selected)}>定位编排源码</Button>{typeof projection.bindings[selected]?.script === 'string' && <Button onClick={() => locateSource(projection.bindings[selected].script)}>定位脚本</Button>}</Space>}{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
         { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
         { key: 'ai', label: 'AI 开发', children: <Card title="一起确认字段和流程节点">
-          <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={true} usage={ai?.usage}
-            send={(current,answer)=>void perform(async()=>{
+          <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={true} usage={ai?.usage} recovery={ai?.recovery}
+            send={(current,answer,intent)=>void perform(async()=>{
               const text=answer??task;
-              if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text});
-              else await api('project.ai.start',{id:info.id,task:text});
+              if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text,intent});
+              else await api('project.ai.start',{id:info.id,task:text,intent});
               setTask('');setAi(await api('project.ai.get',{id:info.id}));
             })}
             review={(current,operation,nodes)=>void perform(async()=>{await api('project.ai.review',{id:info.id,taskId:current.id,reviewStamp:current.review.stamp,operation,nodes});setAi(await api('project.ai.get',{id:info.id}));if(operation==='assemble')await reload();})}
@@ -155,7 +162,7 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
               <Button disabled={busy} onClick={()=>void perform(async()=>{const h=await api('project.run.history',{id:info.id});setEvidenceRuns(h.runs);})}>选择运行结果用于排错</Button></Space>
               {ai?.evidence?.workbook&&<p>已选：{ai.evidence.workbook.name} · {ai.evidence.workbook.rowCount} 行 · 表头：{ai.evidence.workbook.headers.map((h:any)=>h.header||'（无表头）').join('、')}</p>}
               {!!evidenceRuns.length&&<Space wrap><Select aria-label="用于排错的运行" style={{width:360}} value={evidenceRun||undefined} onChange={setEvidenceRun} options={evidenceRuns.map(r=>({value:r.id,label:new Date(r.createdAt).toLocaleString()+' · '+r.state+' · '+r.name}))}/><Button disabled={!evidenceRun||busy} onClick={()=>void perform(async()=>{await api('project.ai.runEvidence',{id:info.id,runId:evidenceRun});setAi(await api('project.ai.get',{id:info.id}));setNotice('运行身份、节点状态、错误和动作状态已关联，不包含完整业务输出；提交回答后才调用AI。');})}>关联所选运行</Button></Space>}
-              {ai?.evidence?.run&&<p>关联 Run：{ai.evidence.run.runId} · {ai.evidence.run.state} · {ai.evidence.run.error??'没有运行错误；业务结果仍须核对'}</p>}
+              {ai?.evidence?.run&&<p>已选历史运行 · {ai.evidence.run.state} · {ai.evidence.run.recovery?.title??'历史证据已关联，业务结果仍须核对'}</p>}
             </Space>}
             cost={<p>API Key 产生的费用由用户自行承担。</p>}
             settings={<Space direction="vertical" style={{width:'100%'}}>

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Inspect project-owned failed runs and pending evidence automatically; add enforced read-only AI analysis and local repair planning, and allow technical corrections within approved nodes while retaining scope, unknown-result and run reviews.
+
 - Route synthetic desktop input to the bound process, check posting access before dispatch, and retain foreground and observation checks; dispatch receipts do not prove selection changes.
 
 - Preserve bounded clipboard snapshots up to 16 MiB for desktop copy/paste, including image formats; reject changes during capture and oversized snapshots before modifying clipboard contents.

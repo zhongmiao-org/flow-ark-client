@@ -28,7 +28,12 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
   const candidateSources: Record<string, unknown> = {}; let bytes=0;
   for(const [key,value]of [...candidates].reverse()){const size=Buffer.byteLength(value.source);if(bytes+size<=64*1024){candidateSources[key]=value;bytes+=size;}else candidateSources[key]={sha256:value.sha256,bytes:size,notIncluded:'历史代码保留在审计/草稿中；通过authoring_get按区块读取'};}
 
-  const projected = history.map(item => {
+  const latestInitial=history.findLastIndex(h=>h.kind==='initial-project-context');
+  const latestRecovery=history.findLastIndex(h=>h.kind==='project-recovery');
+  const latestSelected=history.findLastIndex(h=>h.kind==='user-selected-evidence');
+  const projected = history.map((item,index) => {
+    if(item.kind==='initial-project-context'&&index!==latestInitial||item.kind==='project-recovery'&&index!==latestRecovery||item.kind==='user-selected-evidence'&&index!==latestSelected)return {kind:item.kind,value:{historicalDigest:digest(item.value),notIncluded:'历史现场/工程正文保留完整审计；模型使用本轮最新工程和现场证据，不重复旧快照。'}};
+
     if(item.kind==='model'){
       const value=structuredClone(item.value) as any,action=value?.action,args=action?.arguments;
       if(action?.tool==='flowark_authoring_plan'&&args?.plan)args.plan={sha256:digest(args.plan),note:'历史规划正文保留审计；最新候选见candidatePlan，当前有效草稿见currentDrafts'};

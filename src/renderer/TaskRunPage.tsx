@@ -1,3 +1,4 @@
+import RunFailureNotice from './RunFailureNotice';
 import { runRecordLabel } from './readable-labels';
 import { activateCollapseWithSpace } from './collapseKeyboard';
 import { runStateColors } from './theme';
@@ -47,6 +48,7 @@ export default function TaskRunPage({
   hideBrowser,
   open,
   restored,
+  repairProject,
 }: {
   detail: any;
   fault?: string;
@@ -62,6 +64,7 @@ export default function TaskRunPage({
   hideBrowser: () => void;
   open: (detail: any, context?: TaskRunReturnContext) => void;
   restored?: TaskRunReturnContext;
+  repairProject?:()=>void;
 }) {
   const [, tick] = useState(0);
   const [learning, setLearning] = useState<LearningStatus>();
@@ -347,12 +350,12 @@ export default function TaskRunPage({
     !!model.node.selector;
   const actions = (
     <>
-      {canRepair && (
+      {(canRepair||repairProject) && (
         <>
           <Button type="primary" onClick={() => setPage('repair')}>
             重新选择网页目标
           </Button>
-          <Button onClick={() => setPage('repair')}>让 AI 提议修复</Button>
+          <Button onClick={repairProject??(()=>setPage('repair'))}>让 AI 提议修复</Button>
         </>
       )}
       <Button type={canRepair ? 'default' : 'primary'} onClick={() => navigate('modify')}>
@@ -607,7 +610,7 @@ export default function TaskRunPage({
                     </dd>
                   </div>
                 </dl>
-                {run.error && <p className="field-error">{run.error}</p>}
+                {run.error && <RunFailureNotice error={run.error} />}
                 <Button type="primary" onClick={() => setPage('overview')}>
                   返回结果摘要
                 </Button>
@@ -872,9 +875,7 @@ export default function TaskRunPage({
                     </h2>
                     {target}
                     {run.error && (
-                      <p className="field-error" role="alert">
-                        {run.error}
-                      </p>
+                      <RunFailureNotice error={run.error} />
                     )}
                     {compactLive ? (
                       <div className="task-run-progress" aria-label="当前运行进度">
