@@ -10,7 +10,7 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
   detail: (task: any) => void; cancel: (task: any) => void; busy: boolean; ready: boolean; settings: ReactNode; cost: ReactNode; evidence?:ReactNode;
 }) {
   const ordered=useMemo(()=>[...tasks].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),[tasks]);
-  const current=ordered.find(t=>t.assisted),scripts=current?.authoring?.scripts??[];
+  const current=ordered.find(t=>t.assisted)??ordered[0],scripts=current?.authoring?.scripts??[];
   const [selected,setSelected]=useState<string[]>([]);
   const [choice,setChoice]=useState('');
   useEffect(()=>{setSelected(scripts.filter((s:any)=>!s.ready).slice(0,1).map((s:any)=>s.entryId+'/'+s.nodeId));},[current?.review?.stamp]);

@@ -11,6 +11,7 @@ const allowed = new Set([
   'project.package', 'project.prepare', 'project.instance', 'project.configure',
   'project.run.history', 'project.run.preview', 'project.run.request', 'project.run.status', 'project.run.control',
   'project.ai.retryTool', 'project.ai.resume', 'project.ai.get', 'project.ai.save', 'project.ai.start', 'project.ai.detail', 'project.ai.cancel',
+  'project.ai.chooseWorkbook', 'project.ai.runEvidence', 'project.ai.review',
   'cache.locations',
   'cache.location',
   'cache.scan',
