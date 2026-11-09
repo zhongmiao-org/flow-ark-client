@@ -25,6 +25,7 @@ struct DesktopObservation {
     let focus: AXUIElement?
     let focusStamp: String?
     let image: CGImage?
+    let windowNumber: CGWindowID?
 }
 func fault(_ message: String) throws -> Never { throw DesktopFault(message: message) }
 func ax(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
@@ -57,6 +58,7 @@ func jsonStamp(_ value:Any) throws -> String {
     static var windows: [String:DesktopWindow]=[:]
     static var selected: DesktopWindow?
     static var binding: String?
+    static var capturedWindowNumber: CGWindowID?
     static var observation: DesktopObservation?
     static var consumed=Set<String>()
     static var expires=Date.distantPast
@@ -131,7 +133,7 @@ func jsonStamp(_ value:Any) throws -> String {
         return SHA256.hash(data:Data(bytes:bytes,count:width*height*4)).map{String(format:"%02x",$0)}.joined()
     }
     static func discover() throws -> Any {
-        windows.removeAll(); selected=nil;binding=nil;observation=nil
+        windows.removeAll(); selected=nil;binding=nil;observation=nil;capturedWindowNumber=nil
         guard AXIsProcessTrusted() else { return ["version":1,"accessibility":"not-granted","screenRecording":CGPreflightScreenCaptureAccess(),"windows":[]] as [String:Any] }
         var result=[[String:Any]]();let deadline=Date().addingTimeInterval(5)
         for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && app.processIdentifier != getpid() {
@@ -169,6 +171,7 @@ func jsonStamp(_ value:Any) throws -> String {
             guard try check().app.processIdentifier==w.app.processIdentifier, frame(w.window)==expected else { try fault("window-changed") }
             let rep=NSBitmapImageRep(cgImage:cg)
             guard let data=rep.representation(using:.png,properties:[:]), data.count<=6*1024*1024 else { try fault("image-limit") }
+            capturedWindowNumber=matches[0].windowID
             return ["mimeType":"image/png","data":data.base64EncodedString(),"width":cg.width,"height":cg.height]
         }
         try fault("capture-requires-macos14")
@@ -182,7 +185,7 @@ func jsonStamp(_ value:Any) throws -> String {
         let id=result["observationId"] as! String
         var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
         let focus=try captureFocus(w)
-        observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)})
+        observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)},windowNumber:capturedWindowNumber)
         return result
     }
     static func clipboardSnapshot(_ board:NSPasteboard) throws -> ([[NSPasteboard.PasteboardType:Data]],Int) {
@@ -229,7 +232,11 @@ func jsonStamp(_ value:Any) throws -> String {
     }
     static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1,pid:pid_t) throws {
         guard let event=CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:p,mouseButton:.left) else { try fault("input-unavailable") }
-        event.setIntegerValueField(.mouseEventClickState,value:Int64(count));event.postToPid(pid)
+        guard let number=capturedWindowNumber else {try fault("input-window-unavailable")}
+        event.setIntegerValueField(.mouseEventClickState,value:Int64(count))
+        event.setIntegerValueField(.mouseEventWindowUnderMousePointer,value:Int64(number))
+        event.setIntegerValueField(.mouseEventWindowUnderMousePointerThatCanHandleThisEvent,value:Int64(number))
+        event.postToPid(pid)
     }
     static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[],pid:pid_t) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
@@ -255,6 +262,7 @@ func jsonStamp(_ value:Any) throws -> String {
             guard let before=old.image else {try fault("coordinate-observation-requires-image")}
             let points=try coordinateKeys.map{try point(command[$0],old.frame)}
             guard let after=image(try await screenshot(w,old.frame)),after.width==before.width,after.height==before.height else {try fault("image-target-unavailable")}
+            guard old.windowNumber==capturedWindowNumber,old.windowNumber != nil else {try fault("input-window-changed")}
             for p in points {guard try patch(before,p,old.frame)==patch(after,p,old.frame) else {try fault("image-target-changed")}}
             try focused(w);try checkFocus(w,old)
             let pointer=CGEvent(source:nil)?.location ?? .zero
@@ -333,7 +341,7 @@ func jsonStamp(_ value:Any) throws -> String {
             return ["accessibility":AXIsProcessTrusted(),"screenRecording":CGPreflightScreenCaptureAccess()] }
         if method=="bind" {
             guard let id=args["windowId"] as? String,let w=windows[id],!w.app.isTerminated,w.app.launchDate==w.born else { try fault("window-changed") }
-            selected=w;binding=UUID().uuidString;expires=Date().addingTimeInterval(min(3600,max(10,(args["durationMs"] as? Double ?? 600000)/1000)));observation=nil;consumed.removeAll()
+            selected=w;capturedWindowNumber=nil;binding=UUID().uuidString;expires=Date().addingTimeInterval(min(3600,max(10,(args["durationMs"] as? Double ?? 600000)/1000)));observation=nil;consumed.removeAll()
             return ["bindingId":binding!,"application":w.app.localizedName ?? "Application","title":w.title,"expiresAt":expires.timeIntervalSince1970*1000] as [String:Any]
         }
         guard args["bindingId"] as? String==binding,binding != nil else { try fault("binding-mismatch") }
