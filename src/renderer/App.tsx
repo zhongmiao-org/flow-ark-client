@@ -1374,7 +1374,8 @@ function WorkspaceApp() {
             </Button>
           </div>
         </aside>
-        <main>
+        <main aria-busy={!loaded}>
+          {!loaded&&<Alert type="info" showIcon title="正在读取本机受保护资料" description="工作区尚未载入，不能据此判断没有流程或待办。如系统弹出钥匙串提示，请本人核对应用后授权；无需向AI提供密码。"/>}
           {nodeSession && (
             <header className="topbar">
               <Button className="context-back" onClick={() => nodeNavigation.current?.()}>
@@ -2141,7 +2142,7 @@ function WorkspaceApp() {
             }
             showAttention={() => setSection('inbox')}
           />
-          {section === 'projects' && <ProjectWorkspace key={projectRepair?.nonce??'projects'} initialProjectId={projectRepair?.handled?undefined:projectRepair?.id} initialRunId={projectRepair?.handled?undefined:projectRepair?.runId} initialHandled={()=>setProjectRepair(p=>p?{...p,handled:true}:p)} initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
+          {loaded&&section === 'projects' && <ProjectWorkspace key={projectRepair?.nonce??'projects'} initialProjectId={projectRepair?.handled?undefined:projectRepair?.id} initialRunId={projectRepair?.handled?undefined:projectRepair?.runId} initialHandled={()=>setProjectRepair(p=>p?{...p,handled:true}:p)} initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
             setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'resources', returnLabel: '流程编辑器', back: () => { setTemplateInstanceRequest(undefined); setSection('projects'); } });
             setSection('templates');
           }} />}
@@ -3002,7 +3003,7 @@ function WorkspaceApp() {
             }}
             request={attentionRequest}
             data={data}
-            active={section === 'inbox'}
+            active={loaded&&section === 'inbox'}
             refresh={reloadSettingsData}
             navigation={setAttentionNavigation}
             showBrowser={() => setBrowserOpen(true)}

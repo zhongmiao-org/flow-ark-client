@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Show protected-workspace initialization explicitly and avoid displaying an empty inbox before workspace loading completes.
+
 - Inspect project-owned failed runs and pending evidence automatically; add enforced read-only AI analysis and local repair planning, and allow technical corrections within approved nodes while retaining scope, unknown-result and run reviews.
 
 - Route synthetic desktop input to the bound process, check posting access before dispatch, and retain foreground and observation checks; dispatch receipts do not prove selection changes.
