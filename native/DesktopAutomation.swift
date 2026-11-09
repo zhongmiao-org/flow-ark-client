@@ -42,6 +42,12 @@ func frame(_ e: AXUIElement) -> CGRect? {
 }
 func rectJSON(_ f: CGRect) -> [String:Double] { ["x":f.minX,"y":f.minY,"width":f.width,"height":f.height] }
 func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
+// AX may append the owning app's display name while ScreenCaptureKit omits it.
+// Remove only that exact decoration; owner, geometry and uniqueness still match.
+func captureTitle(_ title:String,_ appName:String) -> String {
+    let suffix=" - " + appName
+    return !appName.isEmpty && title.hasSuffix(suffix) ? String(title.dropLast(suffix.count)) : title
+}
 func jsonStamp(_ value:Any) throws -> String {
     let bytes=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
     return SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
@@ -147,10 +153,13 @@ func jsonStamp(_ value:Any) throws -> String {
         if #available(macOS 14.0,*) {
             let content=try await SCShareableContent.excludingDesktopWindows(true,onScreenWindowsOnly:true)
             let candidates=content.windows.filter { $0.owningApplication?.processID==w.app.processIdentifier && $0.frame==expected }
-            var matches=candidates.filter { ($0.title ?? "")==str(w.window,kAXTitleAttribute) }
+            let appName=w.app.localizedName ?? "", title=captureTitle(str(w.window,kAXTitleAttribute),appName)
+            let root=AXUIElementCreateApplication(w.app.processIdentifier)
+            let siblings=(ax(root,kAXWindowsAttribute) as? [AXUIElement] ?? []).filter { frame($0)==expected }
+            let titledSiblings=siblings.filter {captureTitle(str($0,kAXTitleAttribute),appName)==title}
+            guard titledSiblings.count==1 && same(titledSiblings[0],w.window) else {try fault("capture-window-ambiguous")}
+            var matches=candidates.filter { captureTitle($0.title ?? "",appName)==title }
             if matches.isEmpty {
-                let root=AXUIElementCreateApplication(w.app.processIdentifier)
-                let siblings=(ax(root,kAXWindowsAttribute) as? [AXUIElement] ?? []).filter { frame($0)==expected }
                 if siblings.count==1 && same(siblings[0],w.window) && candidates.count==1 { matches=candidates }
             }
             guard matches.count==1 else { try fault("capture-window-ambiguous") }
