@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Route synthetic desktop input to the bound process, check posting access before dispatch, and retain foreground and observation checks; dispatch receipts do not prove selection changes.
+
 - Preserve bounded clipboard snapshots up to 16 MiB for desktop copy/paste, including image formats; reject changes during capture and oversized snapshots before modifying clipboard contents.
 
 - Remove project AI request/time budgets and cost checkboxes. Show provider-reported cumulative tokens, read selected workbook headers, and attach owned run diagnostics; require confirmation before repairs and execution.

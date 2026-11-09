@@ -203,6 +203,7 @@ func jsonStamp(_ value:Any) throws -> String {
     }
     static func readSelection(_ args:[String:Any]) throws -> Any {
         let w=try check();try focused(w)
+        guard CGPreflightPostEventAccess() else {try fault("input-posting-not-authorized")}
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
         let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
@@ -212,7 +213,7 @@ func jsonStamp(_ value:Any) throws -> String {
         let board=NSPasteboard.general
         let (snapshot,before)=try clipboardSnapshot(board)
         observation=nil
-        try key(8,.maskCommand)
+        try key(8,.maskCommand,pid:w.app.processIdentifier)
         let deadline=Date().addingTimeInterval(1)
         while board.changeCount==before && Date()<deadline {Thread.sleep(forTimeInterval:0.02)}
         guard board.changeCount != before else {try fault("copy-not-confirmed")}
@@ -226,16 +227,17 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let p=raw as? [String:Any],let x=p["x"] as? Double,let y=p["y"] as? Double,x.isFinite,y.isFinite,x>=0,y>=0,x<bounds.width,y<bounds.height else { try fault("point-outside-window") }
         return CGPoint(x:bounds.minX+x,y:bounds.minY+y)
     }
-    static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1) throws {
+    static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1,pid:pid_t) throws {
         guard let event=CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:p,mouseButton:.left) else { try fault("input-unavailable") }
-        event.setIntegerValueField(.mouseEventClickState,value:Int64(count));event.post(tap:.cghidEventTap)
+        event.setIntegerValueField(.mouseEventClickState,value:Int64(count));event.postToPid(pid)
     }
-    static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[]) throws {
+    static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[],pid:pid_t) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
-        down.flags=flags;up.flags=[];down.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
+        down.flags=flags;up.flags=[];down.postToPid(pid);up.postToPid(pid)
     }
     static func act(_ args:[String:Any]) async throws -> Any {
         let w=try check()
+        guard CGPreflightPostEventAccess() else {try fault("input-posting-not-authorized")}
         guard let actionId=args["actionId"] as? String,UUID(uuidString:actionId) != nil,!consumed.contains(actionId) else { try fault("action-already-consumed") }
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
@@ -272,7 +274,7 @@ func jsonStamp(_ value:Any) throws -> String {
                     var actions:CFArray?;AXUIElementCopyActionNames(e,&actions)
                     if (actions as? [String])?.contains(kAXPressAction)==true { guard AXUIElementPerformAction(e,kAXPressAction as CFString) == .success else { try fault("press-failed") };break }
                 }
-                for i in 1...(kind=="doubleClick" ? 2:1) { try focused(w);try mouse(.leftMouseDown,p,i);try mouse(.leftMouseUp,p,i) }
+                for i in 1...(kind=="doubleClick" ? 2:1) { try focused(w);try mouse(.leftMouseDown,p,i,pid:w.app.processIdentifier);try mouse(.leftMouseUp,p,i,pid:w.app.processIdentifier) }
             case "input":
                 guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
                 let root=AXUIElementCreateApplication(w.app.processIdentifier)
@@ -282,7 +284,7 @@ func jsonStamp(_ value:Any) throws -> String {
                 for chunk in unicodeChunks(text) {
                     try focused(w)
                     guard let event=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:false) else { try fault("input-unavailable") }
-                    event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);event.post(tap:.cghidEventTap);up.post(tap:.cghidEventTap)
+                    event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);event.postToPid(w.app.processIdentifier);up.postToPid(w.app.processIdentifier)
                 }
             case "paste":
                 guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
@@ -300,24 +302,24 @@ func jsonStamp(_ value:Any) throws -> String {
                         board.writeObjects(items)
                     }
                 }
-                try focused(w);try key(9,.maskCommand);try await Task.sleep(nanoseconds:200_000_000)
+                try focused(w);try key(9,.maskCommand,pid:w.app.processIdentifier);try await Task.sleep(nanoseconds:200_000_000)
             case "key":
                 guard let name=command["key"] as? String else { try fault("invalid-key") }
                 let codes:[String:CGKeyCode]=["a":0,"s":1,"c":8,"v":9,"x":7,"z":6,"f":3,"Return":36,"Tab":48,"Escape":53,"Backspace":51,"Space":49,"Left":123,"Right":124,"Down":125,"Up":126,"Home":115,"End":119]
                 guard let code=codes[name] else { try fault("unsupported-key") }
                 let modifiers=command["modifiers"] as? [String] ?? []
                 guard modifiers.allSatisfy({["command","shift","option","control"].contains($0)}) else { try fault("unsupported-modifier") }
-                var flags:CGEventFlags=[];for m in modifiers { flags.insert(m=="command" ? .maskCommand:m=="shift" ? .maskShift:m=="option" ? .maskAlternate:.maskControl) };try key(code,flags)
+                var flags:CGEventFlags=[];for m in modifiers { flags.insert(m=="command" ? .maskCommand:m=="shift" ? .maskShift:m=="option" ? .maskAlternate:.maskControl) };try key(code,flags,pid:w.app.processIdentifier)
             case "scroll":
-                let p=try point(command["point"],old.frame);try mouse(.mouseMoved,p)
+                let p=try point(command["point"],old.frame);try mouse(.mouseMoved,p,pid:w.app.processIdentifier)
                 guard let dy=command["deltaY"] as? Int,abs(dy)<=1000,let dx=command["deltaX"] as? Int,abs(dx)<=1000,
                       let e=CGEvent(scrollWheelEvent2Source:nil,units:.pixel,wheelCount:2,wheel1:Int32(dy),wheel2:Int32(dx),wheel3:0) else { try fault("invalid-scroll") }
-                e.location=p;e.post(tap:.cghidEventTap)
+                e.location=p;e.postToPid(w.app.processIdentifier)
             case "drag":
                 let from=try point(command["from"],old.frame),to=try point(command["to"],old.frame)
-                try mouse(.leftMouseDown,from)
-                defer { try? mouse(.leftMouseUp,to) }
-                for i in 1...12 { try focused(w);let t=Double(i)/12;try mouse(.leftMouseDragged,CGPoint(x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t));try await Task.sleep(nanoseconds:15_000_000) }
+                try mouse(.leftMouseDown,from,pid:w.app.processIdentifier)
+                defer { try? mouse(.leftMouseUp,to,pid:w.app.processIdentifier) }
+                for i in 1...12 { try focused(w);let t=Double(i)/12;try mouse(.leftMouseDragged,CGPoint(x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t),pid:w.app.processIdentifier);try await Task.sleep(nanoseconds:15_000_000) }
             default:try fault("unsupported-command")
             }
             return ["status":"performed","actionId":actionId]
