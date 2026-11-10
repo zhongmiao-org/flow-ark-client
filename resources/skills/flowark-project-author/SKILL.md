@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.15-draft
+  version: 1.2.16-draft
 ---
 
 # FlowArk 流程工程开发
@@ -22,9 +22,9 @@ metadata:
 ## 先规划，再按节点写代码
 
 1. 读取一次工程上下文和已确认需求。currentAuthoring只在已组装修订与当前公开修订完全一致时提供，是接续的准确源码基准。旧对话草稿与当前公开工程不符时不得复用，先使用当前基准规划局部修改，保留旧记录。复用已读内容；只补查缺失规范。不要逐个重读所有文件。
-2. 给出入口、步骤、条件/串行循环、输入输出、资源、动作及结束条件。缺少本人事实或目标时提问，不猜测。将规划提交 `flowark_authoring_plan`，取得草稿ID及修订。仅修改已有脚本职责时优先使用 `flowark_authoring_revise`，传准确公开及草稿修订，只发送指定区块的新purpose及summary；其他结构由宿主保持，不重发完整规划。结构变更时才用完整plan。修改规划时保留区块ID，并传previousDraftId复用未变化节点代码；输入/用途变化的脚本重新实现。
+2. 给出入口、步骤、条件/串行循环、输入输出、资源、动作及结束条件。缺少本人事实或目标时提问，不猜测。将规划提交 `flowark_authoring_plan`，取得草稿ID及修订。仅修改已有脚本职责时优先使用 `flowark_authoring_revise`，传准确公开及草稿修订，只发送指定区块的新purpose及summary；其他结构由宿主保持，不重发完整规划。结构、资源、capabilities、stateSchema或配置Schema变更必须用完整plan，不能只把要求写入purpose后声称结构已修好。修改规划时保留区块ID，并传previousDraftId复用未变化节点代码；输入/用途变化的脚本重新实现。
 3. 优先使用已有节点：Excel读取用 excel v1/read，原表不写；读取结果是首行为表头的二维数组。已有能力不再用脚本/Python/Shell重造。
-4. 已有源码的局部修复先用 `flowark_authoring_get` 读取source及sourceSha256，然后调用 `flowark_authoring_code_patch`，仅替换所需的唯一原文片段，其他字节由宿主保持；不重写整个模块，不重排格式，不改变无关的写入保护。每个补丁静态通过后仍逐项复核已确认节点的完整职责，遗漏继续补丁；全部完成后显式complete，才由客户端展示节点确认。类型通过不代表逻辑已修好。新script节点才分别调用 `flowark_authoring_code` 提交完整JS/TS模块。每个模块 default export 一个 async 函数，通过ctx使用已安装SDK。修复该节点的语法和SDK类型诊断后再继续。TS参数写 `ctx: FlowArkContext`；JS用 `/** @param {FlowArkContext} ctx */` 标注。也可仅导入类型 `flowark:sdk`，不得用any掩盖未知SDK方法。不要在节点JSON里写code，也不要自己拼脚本文件路径。
+4. 已有源码的局部修复先用 `flowark_authoring_get` 读取source及sourceSha256，然后调用 `flowark_authoring_code_patch`，仅替换所需的唯一原文片段，其他字节由宿主保持；不重写整个模块，不重排格式，不改变无关的写入保护。每个补丁静态通过后仍逐项复核已确认节点的完整职责，遗漏继续补丁；全部完成后显式complete，才由客户端展示节点确认。类型通过不代表逻辑已修好。收到source-review的node-purpose-gap时，依据已存源码逐项修复；不能仅重述已完成或再次complete而不修改。源码独立复核通过仍不代表运行验收。新script节点才分别调用 `flowark_authoring_code` 提交完整JS/TS模块。每个模块 default export 一个 async 函数，通过ctx使用已安装SDK。修复该节点的语法和SDK类型诊断后再继续。TS参数写 `ctx: FlowArkContext`；JS用 `/** @param {FlowArkContext} ctx */` 标注。也可仅导入类型 `flowark:sdk`，不得用any掩盖未知SDK方法。不要在节点JSON里写code，也不要自己拼脚本文件路径。
 5. 全部脚本齐全后调用 `flowark_authoring_assemble`。工具生成Mermaid、节点绑定、Schema路径、脚本文件和publicFiles，并调用正式编译器；不由模型手写完整工程格式。
 6. 若组装失败，读取code/file/field/line/column和修复说明，只修改对应规划或脚本。原工程未写入时，不把旧工程校验成功当作新方案成功。
 7. 编译通过后才准备实例、核对配置和权限。用户确认运行后读取准确Run结果，依据回执修改；代码可编译不等于业务通过。
