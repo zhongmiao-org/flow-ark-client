@@ -264,12 +264,12 @@ export class ProjectAI {
           const key=actual.draftId+'/'+entryId+'/'+nodeId,prior=context.candidateSources[key] as any;
           approvedNodeSource={draftId:actual.draftId,draftRevision:actual.draftRevision,entryId,nodeId,sourceSha256:actual.sourceSha256,sourceKind:actual.sourceKind??'new',source:actual.source,purpose:actual.scripts.find((s:any)=>s.entryId===entryId&&s.nodeId===nodeId)?.purpose,note:'宿主按当前已批准节点直接读取的真实源码；已有源码的补丁oldText只能逐字取自此source。历史model-candidate不是已存源码，不必再次get当前节点。'};
           sourceProvenance={draftId:actual.draftId,node:pendingNode,sourceSha256:actual.sourceSha256,projectionMismatch:!!prior&&prior.sha256!==actual.sourceSha256};
-          const codeName=actual.source?'flowark_authoring_code_patch':'flowark_authoring_code';
+          const codeName=actual.sourceKind==='staged'?'flowark_authoring_code_patch':'flowark_authoring_code';
           const definition=availableTools.find(t=>t.name===codeName);
           if(!definition)throw new ProjectDiagnostic('node-stage-tool','本节点所需生成工具未声明，未请求模型');
           const parameters=structuredClone(definition.inputSchema) as Record<string,any>;
           for(const [field,value]of Object.entries({root:task.root,draftId:actual.draftId,draftRevision:actual.draftRevision,entryId,nodeId}))parameters.properties[field]={...parameters.properties[field],const:value};
-          if(actual.source)parameters.properties.patch.properties.baseSourceSha256={...parameters.properties.patch.properties.baseSourceSha256,const:actual.sourceSha256};
+          if(codeName==='flowark_authoring_code_patch')parameters.properties.patch.properties.baseSourceSha256={...parameters.properties.patch.properties.baseSourceSha256,const:actual.sourceSha256};
           const canComplete=task.approval.nodes.every(key=>{const script=actual.scripts.find((s:any)=>s.entryId+'/'+s.nodeId===key);return script?.sha256&&task.approval!.validated?.[key]===script.sha256;})&&!task.diagnostics?.length;
           requestTools=nativeActions?.filter(t=>t.name===codeName||t.action==='question'||t.action==='complete'&&canComplete).map(t=>t.name===codeName?{...t,parameters,description:t.description+' Current approved node only; exact source and purpose are supplied in approvedNodeSource. SDK already supplied; submit code/patch without rereading context.'}:t);
           requestSchema={...actionSchema,properties:{...actionSchema.properties,action:{enum:['tool','question',...(canComplete?['complete']:[])]},tool:{type:'string',enum:[codeName,'']}},allOf:[{if:{properties:{action:{const:'tool'}},required:['action']},then:{properties:{tool:{const:codeName},arguments:parameters}}}]};
@@ -429,7 +429,7 @@ export class ProjectAI {
             const approved=task.approval,key=args.entryId+'/'+args.nodeId;
             if(!approved||args.draftId!==approved.draftId||!approved.nodes.includes(key)||approved.completed.includes(key))throw new ProjectDiagnostic('assisted-node-unapproved','此节点未获本人确认，不执行代码写入');
             const draft=await getAuthoring(task.root,approved.draftId);
-            if(action.tool==='flowark_authoring_code'&&draft.scripts.some((s:any)=>s.entryId===args.entryId&&s.nodeId===args.nodeId&&(s.sha256||s.baselineSha256)))throw new ProjectDiagnostic('authoring-patch-required','已有源码的局部修复必须读取节点并使用authoring_code_patch，禁止重写完整模块');
+            if(action.tool==='flowark_authoring_code'&&draft.scripts.some((s:any)=>s.entryId===args.entryId&&s.nodeId===args.nodeId&&s.sha256))throw new ProjectDiagnostic('authoring-patch-required','已有源码的局部修复必须读取节点并使用authoring_code_patch，禁止重写完整模块');
             if(digest(draft.plan)!==approved.planDigest)throw new ProjectDiagnostic('assisted-plan-changed','方案已变化，请重新确认');
           }
         }
