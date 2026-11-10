@@ -37,7 +37,14 @@ export class ProjectAI {
   constructor(private store: Store, private system: (method: string, args: any) => Promise<any>,
     private project: (id: string) => Promise<{ root: string }>,
     private runtime: (method: string, args: any) => Promise<any>) {
-    for (const task of store.list<Task>('project-ai-task')) if (task.state === 'running') this.persist({ ...task, state: 'interrupted', message: '上次开发任务已中断，未自动调用模型或重放工具。' });
+    const saved=store.list<Task>('project-ai-task'),latest=new Map<string,Task>();
+    for(const task of saved){
+      if(task.state==='running'){task.state='interrupted';task.message='上次开发任务已中断，未自动调用模型或重放工具。';this.persist(task);}
+      if(!latest.has(task.projectId)||Date.parse(task.at)>Date.parse(latest.get(task.projectId)!.at))latest.set(task.projectId,task);
+    }
+    for(const task of latest.values())if(!task.review&&task.approval&&task.authoring&&['question','interrupted','failed'].includes(task.state)){
+      const message=task.message;this.checkpoint(task,'nodes');task.message=message;this.persist(task);
+    }
   }
   private noProgress(task: Task, tool: string, result: any, revision: string) {
     const errors = result?.diagnostics ?? (result?.diagnostic ? [result.diagnostic] : result?.error ? [{ code: 'tool-error', message: result.error }] : []);
@@ -176,7 +183,8 @@ export class ProjectAI {
     let secret = '',callId: string | undefined;
     const actionSchema = { type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'], properties: {
       action: { enum: ['tool', 'complete', 'question'] }, tool: { type: 'string' }, arguments: { type: 'object' }, message: { type: 'string' } } };
-    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',...(!task.analysisOnly&&task.approval?['flowark_authoring_code_patch']:[]),...(!task.analysisOnly&&!task.approval?['flowark_authoring_revise']:[]),task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
+    const needsFullCode=!!task.approval?.nodes.some(key=>{const script=task.authoring?.scripts?.find((s:any)=>s.entryId+'/'+s.nodeId===key);return !script?.sha256&&!script?.baselineSha256;});
+    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',...(!task.analysisOnly&&task.approval?['flowark_authoring_code_patch']:[]),...(!task.analysisOnly&&!task.approval?['flowark_authoring_revise']:[]),task.analysisOnly?'':task.approval?(needsFullCode?'flowark_authoring_code':''):'flowark_authoring_plan'].includes(t.name)):projectTools;
     const ajv = new Ajv({ strict: false, logger: false }), validateQuestion = ajv.compile(assistedQuestionSchema), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
     try {
       let key: string, model: string, provider: 'deepseek' | 'openai-codex', endpoint: { baseUrl: string; protocol: 'responses' | 'chat-completions' } | undefined;
