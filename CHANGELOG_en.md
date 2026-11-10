@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Resolve an assembled authoring baseline by the exact public revision, preserve current unassembled work on that revision, and reject stale-base reuse instead of reverting current source to an older conversation draft.
+
 - Add redacted read-only instance and runtime preflight evidence, separate generation, client and prerequisite failures in the Skill, keep analysis in recovery mode, and distinguish native dispatch receipts from document replacement receipts.
 
 - Show protected-workspace initialization explicitly and avoid displaying an empty inbox before workspace loading completes.

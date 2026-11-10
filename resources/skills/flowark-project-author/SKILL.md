@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.2-draft
+  version: 1.2.3-draft
 ---
 
 # FlowArk 流程工程开发
@@ -17,7 +17,7 @@ metadata:
 
 ## 先规划，再按节点写代码
 
-1. 读取一次工程上下文和已确认需求。复用已读内容；只补查缺失规范。不要逐个重读所有文件。
+1. 读取一次工程上下文和已确认需求。currentAuthoring只在已组装修订与当前公开修订完全一致时提供，是接续的准确源码基准。旧对话草稿与当前公开工程不符时不得复用，先使用当前基准规划局部修改，保留旧记录。复用已读内容；只补查缺失规范。不要逐个重读所有文件。
 2. 给出入口、步骤、条件/串行循环、输入输出、资源、动作及结束条件。缺少本人事实或目标时提问，不猜测。将规划提交 `flowark_authoring_plan`，取得草稿ID及修订。修改规划时保留区块ID，并传previousDraftId复用未变化节点代码；输入/用途变化的脚本重新实现。
 3. 优先使用已有节点：Excel读取用 excel v1/read，原表不写；读取结果是首行为表头的二维数组。已有能力不再用脚本/Python/Shell重造。
 4. 对每个script节点分别调用 `flowark_authoring_code` 提交完整JS/TS模块。每个模块 default export 一个 async 函数，通过ctx使用已安装SDK。修复该节点的语法和SDK类型诊断后再继续。TS参数写 `ctx: FlowArkContext`；JS用 `/** @param {FlowArkContext} ctx */` 标注。也可仅导入类型 `flowark:sdk`，不得用any掩盖未知SDK方法。不要在节点JSON里写code，也不要自己拼脚本文件路径。

@@ -1,4 +1,4 @@
-import { planAuthoring, getAuthoring, codeAuthoring, assembleAuthoring, authoringPlanSchema } from './authoring';
+import { planAuthoring, getAuthoring, codeAuthoring, assembleAuthoring, authoringPlanSchema, currentAuthoring } from './authoring';
 import { readAuthoringSkill } from './authoring-skill';
 import { desktopActionReceipt, desktopSelectionResult, effectPrepareInput, effectResolveInput, effectPrepareResult } from '../shared/desktop-sdk-results';
 import { desktopSdkSchemaDigest } from './desktop-sdk.generated';
@@ -106,7 +106,7 @@ export async function callProjectTool(name: string, args: any): Promise<any> {
         if (bytes + content.length > 64 * 1024) { omitted.push(path); continue; }
         files[path] = new TextDecoder('utf8', { fatal: true }).decode(content); bytes += content.length;
       }
-      return { skill: await readAuthoringSkill(), revision: snapshot.revision, files, omitted, bytes, complete: omitted.length === 0, scriptSdk,
+      return { ...(await currentAuthoring(args.root,snapshot.revision)), skill: await readAuthoringSkill(), revision: snapshot.revision, files, omitted, bytes, complete: omitted.length === 0, scriptSdk,
         desktop: desktopDocumentation, scriptsExecuted: false };
     }
     case 'flowark_project_init': return createProject(args.destination, args.id, args.name);

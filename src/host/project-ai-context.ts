@@ -7,7 +7,14 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
   const documents: Record<string, unknown> = {}, schemaDefinitions: Record<string, unknown> = {};
   const currentDrafts: Record<string, any> = {};
   let referenceDraft: any;
-  for(const item of history){const v=item.value as any;if(item.kind==='tool'&&v?.name?.startsWith('flowark_authoring_')&&v.result?.plan){
+  for(const item of history){const v=item.value as any;
+    if(item.kind==='initial-project-context'){
+      const current=Object.values(currentDrafts)[0],r=v?.result;
+      if(r?.currentAuthoring&&(!current||current.projectRevision!==r.revision&&current.assembledRevision!==r.revision)){
+        for(const id of Object.keys(currentDrafts))delete currentDrafts[id];currentDrafts[r.currentAuthoring.draftId]=r.currentAuthoring;
+      }
+    }
+    if(item.kind==='tool'&&v?.name?.startsWith('flowark_authoring_')&&v.result?.plan){
     if(updatesActiveDraft(Object.keys(currentDrafts)[0],v.name,v.result.draftId)){for(const id of Object.keys(currentDrafts))delete currentDrafts[id];currentDrafts[v.result.draftId]=v.result;}
     else referenceDraft=v.result;
   }}

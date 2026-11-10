@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs';
-import { mkdir, lstat, open, writeFile, link, rm } from 'node:fs/promises';
+import { mkdir, lstat, open, writeFile, link, rm, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
@@ -95,13 +95,28 @@ function checkPlan(plan: Plan) {
   if(plan.entries.length*4+scripts.length+5>99)throw new ProjectDiagnostic('authoring-file-limit','本次组装超过单批100文件范围，请拆分入口');
   return scripts;
 }
-function view(draft:Draft,revision:string){return {draftId:draft.id,draftRevision:revision,projectRevision:draft.projectRevision,stage:draft.assembledRevision?'assembled':draft.assembling?'assembling':draft.scripts.every(s=>s.sha256)?'ready-to-assemble':'coding',summary:draft.plan.summary,plan:draft.plan,scripts:draft.scripts.map(s=>({...s,ready:!!s.sha256})),assembledRevision:draft.assembledRevision,publicFilesWritten:!!draft.assembledRevision};}
+function view(draft:Draft,revision:string){return {draftId:draft.id,draftRevision:revision,projectRevision:draft.projectRevision,createdAt:draft.createdAt,stage:draft.assembledRevision?'assembled':draft.assembling?'assembling':draft.scripts.every(s=>s.sha256)?'ready-to-assemble':'coding',summary:draft.plan.summary,plan:draft.plan,scripts:draft.scripts.map(s=>({...s,ready:!!s.sha256})),assembledRevision:draft.assembledRevision,publicFilesWritten:!!draft.assembledRevision};}
+/** Find an exact assembled source baseline; historical drafts never win by recency alone. */
+export async function currentAuthoring(root:string,projectRevision:string){
+  let path:string;
+  try{path=await base(root,false);}catch(error:any){if(error.code==='ENOENT')return {currentAuthoring:null,authoringLookup:{complete:true,scanned:0}};throw error;}
+  const names=(await readdir(path,{withFileTypes:true})).filter(e=>e.isDirectory()&&z.string().uuid().safeParse(e.name).success).map(e=>e.name).sort();
+  const limit=2000;let scanned=0;const candidates:any[]=[];
+  for(const id of names.slice(0,limit)){
+    scanned++;
+    try{const result=await getAuthoring(root,id);if(result.assembledRevision===projectRevision&&!result.readOnlyHistory)candidates.push(result);}catch{/* A damaged historical draft is not a source baseline. */}
+  }
+  candidates.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.draftId.localeCompare(a.draftId));
+  return {currentAuthoring:candidates[0]??null,authoringLookup:{complete:names.length<=limit,scanned,match:'exact-assembled-project-revision'}};
+}
 export async function planAuthoring(root:string, revision:string, raw:unknown, previousDraftId?:string){
   const snapshot=await snapshotProject(root);if(snapshot.revision!==revision)throw new ProjectDiagnostic('project-conflict','工程已修改，请读取新修订再规划');
   const plan=authoringPlanSchema.parse(raw);if(Buffer.byteLength(json(plan))>256*1024)throw new ProjectDiagnostic('authoring-plan-size','规划超过256KiB，请拆分入口');
+  const previous=previousDraftId?await load(root,previousDraftId,true):undefined;
+  if(previous&&previous.draft.projectRevision!==revision&&previous.draft.assembledRevision!==revision)throw new ProjectDiagnostic('authoring-stale-base','参考草稿不属于当前公开修订；读取project_context.currentAuthoring后从准确基准局部修改，旧记录保留。',undefined,'previousDraftId');
   const scripts=checkPlan(plan), draft:Draft={version:1,id:randomUUID(),projectRevision:revision,plan,scripts,createdAt:new Date().toISOString()};
   const dir=await directory(await base(root),draft.id);await directory(dir,'edges');await directory(dir,'sources');
-  if(previousDraftId){const previous=await load(root,previousDraftId,true);
+  if(previous){
     const flatten=(steps:any[]):any[]=>steps.flatMap(n=>[n,...flatten(n.then??[]),...flatten(n.else??[]),...flatten(n.body??[])]);
     for(const script of draft.scripts){const old=previous.draft.scripts.find(s=>s.entryId===script.entryId&&s.nodeId===script.nodeId&&s.language===script.language&&s.sha256);
       const before=previous.draft.plan.entries.find(e=>e.id===script.entryId),after=draft.plan.entries.find(e=>e.id===script.entryId);
