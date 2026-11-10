@@ -46,7 +46,7 @@ export class ProjectAI {
       if(!latest.has(task.projectId)||Date.parse(task.at)>Date.parse(latest.get(task.projectId)!.at))latest.set(task.projectId,task);
     }
     for(const task of latest.values())if(!task.review&&task.approval&&task.authoring&&['question','interrupted','failed'].includes(task.state)){
-      const message=task.message;this.checkpoint(task,'nodes');task.message=message;this.persist(task);
+      const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;this.persist(task);
     }
   }
   private noProgress(task: Task, tool: string, result: any, revision: string) {
@@ -274,7 +274,7 @@ export class ProjectAI {
         task.requests++; task.message = '模型请求 ' + task.requests; this.persist(task);
         let response;
         try { response = await generate({ provider, model, instructions: instruction, input: input as any, schema: actionSchema }, key, abort.signal, fetch, [], 'planning', true,
-          provider === 'deepseek' ? { thinking: 'disabled', maxOutputTokens: 8192 } : undefined, endpoint, nativeActions); }
+          provider === 'deepseek' ? { thinking: 'disabled', maxOutputTokens: 8192 } : undefined, endpoint, task.diagnostics?.some(d=>d.code==='node-purpose-gap')?nativeActions?.filter(t=>t.action!=='complete'):nativeActions); }
         catch (error) {
           abort.signal.throwIfAborted();
           if(error instanceof AIRequestFailureError && error.failure.error.code==='invalid-response'){
@@ -464,7 +464,10 @@ export class ProjectAI {
       }
       task.state = abort.signal.aborted ? 'cancelled' : 'failed';
       task.message = abort.signal.aborted ? '开发任务已停止，已提交操作与记录保留，不自动重试。' : redactedErrorText(error, secret ? [secret] : []);
-      if(task.assisted&&task.approval&&task.authoring){const message=task.message;this.checkpoint(task,'nodes');task.message=message;}
-    } finally { this.persist(task); }
+      if(task.assisted&&task.approval&&task.authoring){const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;}
+    } finally {
+      if(task.assisted&&task.approval&&task.authoring&&!task.review&&['question','failed','cancelled','interrupted'].includes(task.state)){const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;}
+      this.persist(task);
+    }
   }
 }
