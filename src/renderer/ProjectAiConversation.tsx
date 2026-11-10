@@ -11,7 +11,7 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
 }) {
   const ordered=useMemo(()=>[...tasks].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),[tasks]);
   const current=ordered.find(t=>t.assisted)??ordered[0],scripts=current?.authoring?.scripts??[];
-  const pendingRecovery=!!recovery?.run&&(recovery.run.stamp!==current?.recoveryStamp||current?.analysisOnly&&!current?.review);
+  const pendingRecovery=!!recovery?.run&&(recovery.run.stamp!==current?.recoveryStamp||(current?.analysisOnly||current?.revising)&&!current?.review);
   const [selected,setSelected]=useState<string[]>([]);
   const [choice,setChoice]=useState('');
   const [held,setHeld]=useState(false);
@@ -57,7 +57,7 @@ export default function ProjectAiConversation({ tasks, message, change, send, re
     </div>
     {current&&<Alert type={current.state==='failed'?'error':current.review?'info':current.state==='complete'?'success':'info'} message={current.message.startsWith('AI 输出JSON无效')?'本次回复未通过格式检查，尚未采用；可以补充说明后再试。':current.message} description={<span>本轮 {current.requests} 次请求 · {running?'正在处理':'已停下，等待你的下一步'}</span>}/>}
     {current?.diagnostics?.length>0&&<Collapse items={[{key:'diagnostics',label:'有节点需要调整 · 查看检查问题',children:<ul>{current.diagnostics.map((d:any,i:number)=><li key={i}>{[d.file,d.entryId,d.nodeId].filter(Boolean).join(' · ')}：{d.message}</li>)}</ul>}]}/>}
-    {current?.authoring?.plan&&!pendingRecovery&&!current.analysisOnly&&<Card title={current.review?.kind==='nodes'?'节点检查结果':'待确认的字段与节点方案'}>
+    {current?.authoring?.plan&&!pendingRecovery&&!current.analysisOnly&&(!current.revising||!!current.review)&&<Card title={current.review?.kind==='nodes'?'节点检查结果':'待确认的字段与节点方案'}>
       <AuthoringPlanSummary value={current.authoring}/>
       {current.authoring.plan.entries.map((e:any)=>{const fields=Object.entries(e.inputSchema?.properties??{});return fields.length?<section key={e.id} aria-label={e.name+'输入字段'}><h4>{e.name} · 输入字段</h4><ul>{fields.map(([key,raw])=>{const f=raw as any;return <li key={key}><strong>{f.title??key}</strong>：{f.description??f.type??'请确认用途'}{e.inputSchema.required?.includes(key)?'（必填）':''}</li>;})}</ul></section>:null;})}
       {diagrams.map((d:any)=><section key={d.id} aria-label={d.name+'流程预览'}><h4>{d.name}</h4><MarkdownBody text={'```mermaid\n'+d.source+'```'}/></section>)}
