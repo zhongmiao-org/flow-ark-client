@@ -320,7 +320,7 @@ export async function generate(
     } catch (error) {
       if (error instanceof SyntaxError) {
         const trimmed=text.trim(),position=/position (\d+)/.exec(error.message)?.[1] ?? 'unknown';
-        fail('invalid-response', `AI 输出JSON无效（字符数=${text.length}，位置=${position}，Markdown封装=${trimmed.startsWith('```')}，对象起始=${trimmed.startsWith('{')}）；未采用正文`);
+        fail('invalid-response', `${nativeCall?'原生函数'+nativeCall.name+'参数':'AI 输出'}JSON无效（字符数=${text.length}，位置=${position}，Markdown封装=${trimmed.startsWith('```')}，对象起始=${trimmed.startsWith('{')}）；未采用正文`);
       }
       throw error;
     }
