@@ -14,12 +14,12 @@
     "localProjectFormat": {
       "version": 1,
       "status": "draft-unreleased",
-      "authoringSkillVersion": "1.2.19-draft",
+      "authoringSkillVersion": "1.2.20-draft",
       "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746",
       "tableRangeHelper": {
         "version": 1,
         "status": "draft-unreleased",
-        "governanceCommit": "c864b47a30c8940300ceea387e6b893270d1eef2"
+        "governanceCommit": "be5df01531e159322b79793117bc69d00fc2fbb3"
       }
     }
   },

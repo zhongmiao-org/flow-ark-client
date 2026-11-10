@@ -44,15 +44,15 @@ export async function readTableRange(driver: Driver, raw: DesktopTableRangeReque
   const q=raw;
   if(q.requireBlank&&q.expected?.some(row=>row.some(cell=>cell!=='')))throw Error('table-range:conflicting-expectations');
   if(q.rows*q.columns>20000||q.expected&&(q.expected.length!==q.rows||q.expected.some(row=>row.length!==q.columns)))throw Error('table-range:invalid-shape');
-  if(q.to.x<q.from.x||q.to.y<q.from.y)throw Error('table-range:invalid-rectangle-direction');
-  if((q.rows>1||q.columns>1)&&q.from.x===q.to.x&&q.from.y===q.to.y)throw Error('table-range:empty-rectangle');
+  if(q.to&&(q.to.x<q.from.x||q.to.y<q.from.y))throw Error('table-range:invalid-rectangle-direction');
+  if(q.selection==='drag'&&(!q.to||((q.rows>1||q.columns>1)&&q.from.x===q.to.x&&q.from.y===q.to.y)))throw Error('table-range:empty-rectangle');
   let size: {width:number;height:number}|undefined;
   const observe=async()=>{
     signal.throwIfAborted();const o=await driver.observe({screenshot:false});signal.throwIfAborted();
     if(o.application!==q.target.application||o.title!==q.target.title)throw Error('table-range:target-changed');
     if(size&&(size.width!==o.bounds.width||size.height!==o.bounds.height))throw Error('table-range:window-resized');
     size={width:o.bounds.width,height:o.bounds.height};
-    for(const p of [q.from,q.to])if(p.x>=size.width||p.y>=size.height)throw Error('table-range:point-outside-window');
+    for(const p of [q.from,...(q.to?[q.to]:[])])if(p.x>=size.width||p.y>=size.height)throw Error('table-range:point-outside-window');
     return o;
   };
   const act=async(suffix:string,command:Command)=>{
@@ -61,7 +61,7 @@ export async function readTableRange(driver: Driver, raw: DesktopTableRangeReque
     signal.throwIfAborted();if(receipt.status!=='performed')throw Error('table-range:action-'+receipt.status);
   };
   await act('activate',{kind:'activate'});
-  if(q.selection==='drag'&&(q.rows>1||q.columns>1))await act('select',{kind:'drag',from:q.from,to:q.to});
+  if(q.selection==='drag'&&(q.rows>1||q.columns>1))await act('select',{kind:'drag',from:q.from,to:q.to!});
   else {
     await act('anchor',{kind:'click',point:q.from});
     for(let row=1;row<q.rows;row++)await act('down-'+row,{kind:'key',key:'Down',modifiers:['shift']});

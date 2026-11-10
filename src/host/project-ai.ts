@@ -45,7 +45,7 @@ export class ProjectAI {
       if(task.state==='running'){task.state='interrupted';task.message='上次开发任务已中断，未自动调用模型或重放工具。';this.persist(task);}
       if(!latest.has(task.projectId)||Date.parse(task.at)>Date.parse(latest.get(task.projectId)!.at))latest.set(task.projectId,task);
     }
-    for(const task of latest.values())if(!task.review&&task.approval&&task.authoring&&['question','interrupted','failed'].includes(task.state)){
+    for(const task of latest.values())if(!task.review&&task.approval&&task.authoring&&(!task.choices||task.state!=='question')&&['question','interrupted','failed'].includes(task.state)){
       const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;this.persist(task);
     }
   }

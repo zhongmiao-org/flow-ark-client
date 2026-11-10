@@ -1,5 +1,5 @@
 // Generated from installed table-range helper contracts; do not edit.
-export interface DesktopTableRangeRequest {
+export type DesktopTableRangeRequest = {
   effectId: string;
   effectKey: string;
   target: {
@@ -10,7 +10,10 @@ export interface DesktopTableRangeRequest {
     x: number;
     y: number;
   };
-  to: {
+  /**
+   * Required only for explicit drag selection; keyboard selection needs only from and rows/columns.
+   */
+  to?: {
     x: number;
     y: number;
   };
@@ -26,7 +29,7 @@ export interface DesktopTableRangeRequest {
    * Default keyboard: click anchor then Shift+Down/Right. Drag only for a target explicitly known to select a rectangle.
    */
   selection?: "keyboard" | "drag";
-}
+};
 
 export interface DesktopTableRangeResult {
   version: 1;

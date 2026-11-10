@@ -8,7 +8,6 @@
     "effectKey",
     "target",
     "from",
-    "to",
     "rows",
     "columns"
   ],
@@ -80,7 +79,8 @@
           "minimum": 0,
           "maximum": 20000
         }
-      }
+      },
+      "description": "Required only for explicit drag selection; keyboard selection needs only from and rows/columns."
     },
     "rows": {
       "type": "integer",
@@ -117,5 +117,24 @@
       ],
       "description": "Default keyboard: click anchor then Shift+Down/Right. Drag only for a target explicitly known to select a rectangle."
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "selection"
+        ],
+        "properties": {
+          "selection": {
+            "const": "drag"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "to"
+        ]
+      }
+    }
+  ]
 }
