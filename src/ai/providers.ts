@@ -46,7 +46,7 @@ function finiteJsonNumbers(value: unknown): boolean {
   }
   return true;
 }
-export type NativeActionTool = {name:string;description:string;parameters:unknown;action:'tool'|'question'|'complete'};
+export type NativeActionTool = {name:string;description:string;parameters:unknown;action:'tool'|'question'|'complete';readOnly?:boolean};
 export async function generate(
   input: AIRequest,
   key: string,
@@ -286,8 +286,17 @@ export async function generate(
     )
   )
     fail('invalid-response', 'AI 消息结构无效');
-  let nativeCall:any;
-  if(nativeActions){const calls=body.choices[0].message.tool_calls;if(!Array.isArray(calls)||calls.length!==1||calls[0]?.type!=='function'||typeof calls[0].function?.name!=='string'||typeof calls[0].function.arguments!=='string')fail('invalid-response','模型必须返回一个有效的原生函数调用，未执行');nativeCall=calls[0].function;if(!nativeActions.some(t=>t.name===nativeCall.name))fail('invalid-response','模型请求未声明函数，未执行');}
+  let nativeCall:any,nativeBatch:any[]|undefined;
+  if(nativeActions){
+    const calls=body.choices[0].message.tool_calls;
+    if(!Array.isArray(calls)||!calls.length||calls.length>8)fail('invalid-response','原生函数响应数量无效（'+(Array.isArray(calls)?calls.length:'非列表')+'），未执行');
+    if(calls.some((c:any)=>c?.type!=='function'||typeof c.function?.name!=='string'||typeof c.function.arguments!=='string'))fail('invalid-response','原生响应含无效函数结构（共'+calls.length+'项），未执行');
+    if(calls.some((c:any)=>!nativeActions.some(t=>t.name===c.function.name)))fail('invalid-response','模型请求未声明函数，未执行');
+    if(calls.length>1){
+      if(calls.some((c:any)=>!nativeActions.some(t=>t.name===c.function.name&&t.action==='tool'&&t.readOnly)))fail('invalid-response','收到'+calls.length+'个原生调用；仅只读查询可批量，写入、补问和完成须分别提交；本次未执行');
+      nativeBatch=calls.map((c:any)=>c.function);
+    }else nativeCall=calls[0].function;
+  }
   const text = nativeCall ? nativeCall.arguments : deep
     ? body.choices[0].message.content
     : body.output
@@ -298,9 +307,10 @@ export async function generate(
         .join('');
   let output: any;
   if (structuredOutcome) {
-    if (typeof text !== 'string') fail('invalid-response', 'AI 输出正文类型无效');
+    if (!nativeBatch && typeof text !== 'string') fail('invalid-response', 'AI 输出正文类型无效');
     try {
-      output = JSON.parse(text);
+      if(nativeBatch)output={action:'read-tools',tool:'',arguments:{calls:nativeBatch.map((c,index)=>{let args;try{args=JSON.parse(c.arguments);}catch{fail('invalid-response','只读批次第'+(index+1)+'项参数JSON无效，未执行');}if(!args||typeof args!=='object'||Array.isArray(args))fail('invalid-response','只读函数参数必须为对象，未执行');return {tool:c.name,arguments:args};})},message:'只读工具查询批次'};
+      else output = JSON.parse(text);
       if(nativeCall){
         if(!output||typeof output!=='object'||Array.isArray(output))fail('invalid-response','原生函数参数必须为对象，未执行');
         const definition=nativeActions!.find(t=>t.name===nativeCall.name)!;

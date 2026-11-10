@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.12-draft
+  version: 1.2.13-draft
 ---
 
 # FlowArk 流程工程开发

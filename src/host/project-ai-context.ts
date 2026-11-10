@@ -24,7 +24,7 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
   const candidates = new Map<string, { source: string; sha256: string; origin:string }>();
   let lastAction: any,lastSourceKey:string|undefined;
   for(const item of history){const v=item.value as any;
-    if(item.kind==='model'){
+    if(item.kind==='model'||item.kind==='model-tool-request'){
       lastAction=v?.action;const action=lastAction,args=action?.arguments;
       if(action?.action==='tool'&&action.tool==='flowark_authoring_code'&&typeof args?.source==='string'){const key=args.draftId+'/'+args.entryId+'/'+args.nodeId;candidates.delete(key);candidates.set(key,{source:args.source,sha256:digest(args.source),origin:'model-candidate'});}
       if(action?.action==='tool'&&action.tool==='flowark_project_write'&&Array.isArray(args?.changes))for(const change of args.changes)if(typeof change?.content==='string'){const key='legacy-source/'+change.path;candidates.delete(key);candidates.set(key,{source:change.content,sha256:digest(change.content),origin:'model-candidate'});}
@@ -56,7 +56,7 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
     const index=stageStart+offset;
     if((item.kind==='initial-project-context'||item.kind==='tool'&&(item.value as any)?.name==='flowark_project_context')&&index!==latestInitial||item.kind==='project-recovery'&&index!==latestRecovery||item.kind==='user-selected-evidence'&&index!==latestSelected)return {kind:item.kind,value:{historicalDigest:digest(item.value),notIncluded:'历史现场/工程正文保留完整审计；模型使用本轮最新工程和现场证据，不重复旧快照。'}};
 
-    if(item.kind==='model'){
+    if(item.kind==='model'||item.kind==='model-tool-request'){
       const value=structuredClone(item.value) as any,action=value?.action,args=action?.arguments;
       if(action?.tool==='flowark_authoring_plan'&&args?.plan)args.plan={sha256:digest(args.plan),note:'历史规划正文保留审计；最新候选见candidatePlan，当前有效草稿见currentDrafts'};
       if(action?.tool==='flowark_authoring_code'&&typeof args?.source==='string')args.source={candidateSource:args.draftId+'/'+args.entryId+'/'+args.nodeId,sha256:digest(args.source),origin:'model-candidate'};
