@@ -21,6 +21,10 @@ export const authoringPlanSchema = z.object({
   resources: z.array(resource).max(50).default([]), actions: z.array(action).max(50).default([]),
   entries: z.array(z.object({ id, name: z.string().min(1).max(200), parameters: schema.default({}), inputSchema: schema.default({ type: 'object', properties: {}, additionalProperties: false }), resultSchema: schema.default({ type: 'object' }), capabilities: z.array(z.string().max(100)).max(100), resourceIds: z.array(id).max(50).default([]), actionIds: z.array(id).max(50).default([]), steps: z.array(schema).min(1).max(200) }).strict()).min(1).max(20),
 }).strict();
+export const authoringRevisionSchema = z.object({
+  summary: z.string().min(1).max(4000),
+  updates: z.array(z.object({entryId:id,nodeId:id,purpose:z.string().min(1).max(4000)}).strict()).min(1).max(10),
+}).strict();
 type Plan = z.infer<typeof authoringPlanSchema>;
 type Script = { entryId: string; nodeId: string; language: 'js'|'ts'; purpose: string; path: string; sha256?: string };
 type Draft = { version: 1; id: string; projectRevision: string; plan: Plan; scripts: Script[]; createdAt: string; sequence?: number; assembling?: boolean; assembledRevision?: string };
@@ -109,10 +113,11 @@ export async function currentAuthoring(root:string,projectRevision:string){
   candidates.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.draftId.localeCompare(a.draftId));
   return {currentAuthoring:candidates[0]??null,authoringLookup:{complete:names.length<=limit,scanned,match:'exact-assembled-project-revision'}};
 }
-export async function planAuthoring(root:string, revision:string, raw:unknown, previousDraftId?:string){
+export async function planAuthoring(root:string, revision:string, raw:unknown, previousDraftId?:string, previousDraftRevision?:string){
   const snapshot=await snapshotProject(root);if(snapshot.revision!==revision)throw new ProjectDiagnostic('project-conflict','工程已修改，请读取新修订再规划');
   const plan=authoringPlanSchema.parse(raw);if(Buffer.byteLength(json(plan))>256*1024)throw new ProjectDiagnostic('authoring-plan-size','规划超过256KiB，请拆分入口');
   const previous=previousDraftId?await load(root,previousDraftId,true):undefined;
+  if(previousDraftRevision&&previous?.revision!==previousDraftRevision)throw new ProjectDiagnostic('authoring-conflict','参考草稿已变化，请读取新修订再局部规划');
   if(previous&&previous.draft.projectRevision!==revision&&previous.draft.assembledRevision!==revision)throw new ProjectDiagnostic('authoring-stale-base','参考草稿不属于当前公开修订；读取project_context.currentAuthoring后从准确基准局部修改，旧记录保留。',undefined,'previousDraftId');
   const scripts=checkPlan(plan), draft:Draft={version:1,id:randomUUID(),projectRevision:revision,plan,scripts,createdAt:new Date().toISOString()};
   const dir=await directory(await base(root),draft.id);await directory(dir,'edges');await directory(dir,'sources');
@@ -127,6 +132,23 @@ export async function planAuthoring(root:string, revision:string, raw:unknown, p
   }
   await publish(join(dir,'base.json'),json(draft));
   return view(draft,digest(draft));
+}
+/** Revise responsibilities only; all structural fields and unaffected sources stay host-owned. */
+export async function reviseAuthoring(root:string,revision:string,draftId:string,draftRevision:string,raw:unknown){
+  const changes=authoringRevisionSchema.parse(raw), previous=await load(root,draftId,true);
+  if(previous.revision!==draftRevision)throw new ProjectDiagnostic('authoring-conflict','参考草稿已变化，请读取新修订再局部规划');
+  const plan=structuredClone(previous.draft.plan),seen=new Set<string>();
+  const flatten=(steps:Record<string,unknown>[]):Record<string,unknown>[]=>steps.flatMap(n=>[n,...flatten((n.then??[]) as Record<string,unknown>[]),...flatten((n.else??[]) as Record<string,unknown>[]),...flatten((n.body??[]) as Record<string,unknown>[])]);
+  for(const update of changes.updates){
+    const target=key(update.entryId,update.nodeId);
+    if(seen.has(target))throw new ProjectDiagnostic('authoring-duplicate','局部规划重复指定同一区块',undefined,target);seen.add(target);
+    const entry=plan.entries.find(e=>e.id===update.entryId),nodes=entry?flatten(entry.steps).filter(n=>n.id===update.nodeId):[];
+    if(nodes.length!==1||nodes[0].type!=='script')throw new ProjectDiagnostic('authoring-revise-target','局部规划仅支持准确存在的脚本区块',undefined,target);
+    nodes[0].purpose=update.purpose;
+  }
+  plan.summary=changes.summary;
+  if(digest(plan)===digest(previous.draft.plan))throw new ProjectDiagnostic('authoring-no-change','局部规划没有变化，请修改对应节点职责');
+  return planAuthoring(root,revision,plan,draftId,draftRevision);
 }
 export async function getAuthoring(root:string,draftId:string,entryId?:string,nodeId?:string){
   const {dir,draft,revision,readOnlyHistory}=await load(root,draftId,true);const result:any={...view(draft,revision),...(readOnlyHistory?{readOnlyHistory:true,next:'保留旧草稿，通过authoring_plan及previousDraftId创建新草稿，复用核对过的未变化节点'}:{})};

@@ -176,7 +176,7 @@ export class ProjectAI {
     let secret = '',callId: string | undefined;
     const actionSchema = { type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'], properties: {
       action: { enum: ['tool', 'complete', 'question'] }, tool: { type: 'string' }, arguments: { type: 'object' }, message: { type: 'string' } } };
-    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
+    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',...(!task.analysisOnly&&!task.approval?['flowark_authoring_revise']:[]),task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
     const ajv = new Ajv({ strict: false, logger: false }), validateQuestion = ajv.compile(assistedQuestionSchema), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
     try {
       let key: string, model: string, provider: 'deepseek' | 'openai-codex', endpoint: { baseUrl: string; protocol: 'responses' | 'chat-completions' } | undefined;
@@ -270,7 +270,7 @@ export class ProjectAI {
         abort.signal.throwIfAborted();
         if(task.assisted){
           if(action.tool.startsWith('flowark_runtime_')&&!['flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview'].includes(action.tool)||['flowark_authoring_assemble','flowark_project_write','flowark_project_package','flowark_project_from_zip','flowark_project_init'].includes(action.tool))throw new ProjectDiagnostic('assisted-review-required','本轮协作仅讨论方案或生成本人选定节点；组装和运行使用本人确认按钮');
-          if(action.tool==='flowark_authoring_plan'&&task.approval)throw new ProjectDiagnostic('assisted-plan-locked','方案已确认，修改方案须先与本人讨论并重新确认');
+          if(['flowark_authoring_plan','flowark_authoring_revise'].includes(action.tool)&&task.approval)throw new ProjectDiagnostic('assisted-plan-locked','方案已确认，修改方案须先与本人讨论并重新确认');
           if(action.tool==='flowark_authoring_code'){
             const approved=task.approval,key=args.entryId+'/'+args.nodeId;
             if(!approved||args.draftId!==approved.draftId||!approved.nodes.includes(key)||approved.completed.includes(key))throw new ProjectDiagnostic('assisted-node-unapproved','此节点未获本人确认，不执行代码写入');
@@ -278,7 +278,7 @@ export class ProjectAI {
             if(digest(draft.plan)!==approved.planDigest)throw new ProjectDiagnostic('assisted-plan-changed','方案已变化，请重新确认');
           }
         }
-        task.stage = ({flowark_authoring_plan:'节点规划',flowark_authoring_code:'节点代码',flowark_authoring_assemble:'校验与组装',flowark_project_package:'打包',flowark_runtime_run:'运行'} as Record<string,string>)[action.tool] ?? task.stage;
+        task.stage = ({flowark_authoring_revise:'局部节点规划',flowark_authoring_plan:'节点规划',flowark_authoring_code:'节点代码',flowark_authoring_assemble:'校验与组装',flowark_project_package:'打包',flowark_runtime_run:'运行'} as Record<string,string>)[action.tool] ?? task.stage;
         task.message = action.tool; this.persist(task);
         let result: any;
         try {
@@ -301,10 +301,10 @@ export class ProjectAI {
 
           } else result = await callProjectTool(action.tool, args);
         } catch (error) { result = { error: error instanceof Error ? error.message : String(error), ...(error instanceof ProjectDiagnostic ? { diagnostic: error.toJSON() } : {}), retryExternalEffects: false, suggestion: '按file/field/line定位修复对应规划或脚本，原工程校验通过不代表未组装的草稿通过。' }; }
-        if (action.tool.startsWith('flowark_authoring_') && result?.draftId && updatesActiveDraft(task.authoring?.draftId,action.tool,result.draftId)) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
+        if (action.tool.startsWith('flowark_authoring_') && result?.draftId && updatesActiveDraft(task.authoring?.draftId,action.tool,result.draftId)) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, projectRevision:state.projectRevision, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
         task.history.push({ kind: 'tool', value: { name: action.tool, result } });
         if(!task.analysisOnly&&task.assisted&&task.authoring?.draftId){
-          if(!task.approval&&result?.plan&&(action.tool==='flowark_authoring_plan'||!task.revising)){this.checkpoint(task,'plan');break;}
+          if(!task.approval&&result?.plan&&(['flowark_authoring_plan','flowark_authoring_revise'].includes(action.tool)||!task.revising)){this.checkpoint(task,'plan');break;}
           if(action.tool==='flowark_authoring_code'){
             if(result.valid===true){const key=args.entryId+'/'+args.nodeId;if(!task.approval!.completed.includes(key))task.approval!.completed.push(key);}
             else {task.diagnostics=result.diagnostics??[{message:result.error??'节点检查未通过'}];task.nextStep='仅修正当前已批准节点的检查问题，保留其他节点及业务方案。';}

@@ -1,4 +1,4 @@
-import { planAuthoring, getAuthoring, codeAuthoring, assembleAuthoring, authoringPlanSchema, currentAuthoring } from './authoring';
+import { planAuthoring, reviseAuthoring, authoringRevisionSchema, getAuthoring, codeAuthoring, assembleAuthoring, authoringPlanSchema, currentAuthoring } from './authoring';
 import { readAuthoringSkill } from './authoring-skill';
 import { desktopActionReceipt, desktopSelectionResult, effectPrepareInput, effectResolveInput, effectPrepareResult } from '../shared/desktop-sdk-results';
 import { desktopSdkSchemaDigest } from './desktop-sdk.generated';
@@ -38,6 +38,7 @@ Desktop automation uses installed ctx.desktop.observe({screenshot:false}) and ct
 Static compilation is not business acceptance. Package only a checked immutable revision and verify ZIP re-import.
 `;
 export const projectTools = [
+  { name: 'flowark_authoring_revise', description: 'For a local repair of existing scripts, prefer this over resending the entire plan. Change only summary and selected script purposes. Host preserves all structure, resource/action/schema fields and unaffected source hashes. Requires exact public and draft revisions; creates a private plan for user review, never codes or runs.', inputSchema:{type:'object',additionalProperties:false,required:['root','revision','draftId','draftRevision','changes'],properties:{root:{type:'string'},revision:{type:'string',pattern:'^[a-f0-9]{64}$'},draftId:{type:'string',format:'uuid'},draftRevision:{type:'string',pattern:'^[a-f0-9]{64}$'},changes:z.toJSONSchema(authoringRevisionSchema,{io:'input'})}} },
   { name: 'flowark_authoring_plan', description: 'Validate and save a private workflow plan before coding. Node steps use installed project node schemas; script steps declare purpose/language/input but no code. Resources/actions are typed and deny by default. Returns draftId/draftRevision. No public files or actions are executed.', inputSchema: {type:'object',additionalProperties:false,required:['root','revision','plan'],properties:{root:{type:'string'},revision:{type:'string',pattern:'^[a-f0-9]{64}$'},previousDraftId:{type:'string',format:'uuid'},plan:z.toJSONSchema(authoringPlanSchema,{io:'input'})}} },
   { name: 'flowark_authoring_get', description: 'Read a saved plan, exact draft revision and code readiness. Supply entryId and nodeId to read one stored script. No model or runtime calls.', inputSchema:{type:'object',additionalProperties:false,required:['root','draftId'],properties:{root:{type:'string'},draftId:{type:'string',format:'uuid'},entryId:{type:'string'},nodeId:{type:'string'}}} },
   { name: 'flowark_authoring_code', description: 'Stage one complete default-exported JS/TS module for one planned script node at exact draft revision. Checks syntax, installed SDK types and default export function shape; does not execute. Invalid code returns precise diagnostics and leaves previous source intact. Reuse the returned draftRevision for the next node.', inputSchema:{type:'object',additionalProperties:false,required:['root','draftId','draftRevision','entryId','nodeId','source'],properties:{root:{type:'string'},draftId:{type:'string',format:'uuid'},draftRevision:{type:'string',pattern:'^[a-f0-9]{64}$'},entryId:{type:'string'},nodeId:{type:'string'},source:{type:'string',minLength:1,maxLength:262144}}} },
@@ -75,6 +76,7 @@ export async function callProjectTool(name: string, args: any): Promise<any> {
     const { root, ...input } = args; return desktopProjectRequest(root, method, input);
   }
   switch (name) {
+    case 'flowark_authoring_revise': return reviseAuthoring(args.root,args.revision,args.draftId,args.draftRevision,args.changes);
     case 'flowark_authoring_plan': return planAuthoring(args.root,args.revision,args.plan,args.previousDraftId);
     case 'flowark_authoring_get': return getAuthoring(args.root,args.draftId,args.entryId,args.nodeId);
     case 'flowark_authoring_code': return codeAuthoring(args.root,args.draftId,args.draftRevision,args.entryId,args.nodeId,args.source);
