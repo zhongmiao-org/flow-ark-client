@@ -25,8 +25,9 @@ export const authoringRevisionSchema = z.object({
   summary: z.string().min(1).max(4000),
   updates: z.array(z.object({entryId:id,nodeId:id,purpose:z.string().min(1).max(4000)}).strict()).min(1).max(10),
 }).strict();
+export const authoringPatchSchema=z.object({baseSourceSha256:z.string().regex(/^[a-f0-9]{64}$/),edits:z.array(z.object({oldText:z.string().min(1).max(8192),newText:z.string().max(8192)}).strict()).min(1).max(10)}).strict();
 type Plan = z.infer<typeof authoringPlanSchema>;
-type Script = { entryId: string; nodeId: string; language: 'js'|'ts'; purpose: string; path: string; sha256?: string };
+type Script = { entryId: string; nodeId: string; language: 'js'|'ts'; purpose: string; path: string; sha256?: string; baselineSha256?:string };
 type Draft = { version: 1; id: string; projectRevision: string; plan: Plan; scripts: Script[]; createdAt: string; sequence?: number; assembling?: boolean; assembledRevision?: string };
 const key = (entryId: string, nodeId: string) => entryId + '/' + nodeId;
 const json = (value: unknown) => JSON.stringify(value, null, 2) + '\n';
@@ -123,11 +124,13 @@ export async function planAuthoring(root:string, revision:string, raw:unknown, p
   const dir=await directory(await base(root),draft.id);await directory(dir,'edges');await directory(dir,'sources');
   if(previous){
     const flatten=(steps:any[]):any[]=>steps.flatMap(n=>[n,...flatten(n.then??[]),...flatten(n.else??[]),...flatten(n.body??[])]);
-    for(const script of draft.scripts){const old=previous.draft.scripts.find(s=>s.entryId===script.entryId&&s.nodeId===script.nodeId&&s.language===script.language&&s.sha256);
+    for(const script of draft.scripts){const old=previous.draft.scripts.find(s=>s.entryId===script.entryId&&s.nodeId===script.nodeId&&s.language===script.language&&(s.sha256||s.baselineSha256));
       const before=previous.draft.plan.entries.find(e=>e.id===script.entryId),after=draft.plan.entries.find(e=>e.id===script.entryId);
-      if(!old||!before||!after||digest(flatten(before.steps).find(n=>n.id===script.nodeId))!==digest(flatten(after.steps).find(n=>n.id===script.nodeId)))continue;
-      const source=await read(join(previous.dir,'sources',old.sha256+'.source'));if(digest(source)!==old.sha256)throw new ProjectDiagnostic('authoring-source-changed','旧草稿代码摘要变化',script.path,script.nodeId);
-      await publish(join(dir,'sources',old.sha256+'.source'),source);script.sha256=old.sha256;
+      if(!old||!before||!after)continue;
+      const sha=old.sha256??old.baselineSha256!;
+      const source=await read(join(previous.dir,'sources',sha+'.source'));if(digest(source)!==sha)throw new ProjectDiagnostic('authoring-source-changed','旧草稿代码摘要变化',script.path,script.nodeId);
+      try{await publish(join(dir,'sources',sha+'.source'),source);}catch(error:any){if(error.code!=='EEXIST'||await read(join(dir,'sources',sha+'.source'))!==source)throw error;}script.baselineSha256=sha;
+      if(old.sha256&&digest(flatten(before.steps).find(n=>n.id===script.nodeId))===digest(flatten(after.steps).find(n=>n.id===script.nodeId)))script.sha256=old.sha256;
     }
   }
   await publish(join(dir,'base.json'),json(draft));
@@ -152,8 +155,23 @@ export async function reviseAuthoring(root:string,revision:string,draftId:string
 }
 export async function getAuthoring(root:string,draftId:string,entryId?:string,nodeId?:string){
   const {dir,draft,revision,readOnlyHistory}=await load(root,draftId,true);const result:any={...view(draft,revision),...(readOnlyHistory?{readOnlyHistory:true,next:'保留旧草稿，通过authoring_plan及previousDraftId创建新草稿，复用核对过的未变化节点'}:{})};
-  if(entryId!==undefined||nodeId!==undefined){const script=draft.scripts.find(s=>s.entryId===entryId&&s.nodeId===nodeId);if(!script)throw new ProjectDiagnostic('authoring-script','脚本区块不存在');if(script.sha256){result.source=await read(join(dir,'sources',script.sha256+'.source'));if(digest(result.source)!==script.sha256)throw Error('草稿代码摘要变化');}}
+  if(entryId!==undefined||nodeId!==undefined){const script=draft.scripts.find(s=>s.entryId===entryId&&s.nodeId===nodeId);if(!script)throw new ProjectDiagnostic('authoring-script','脚本区块不存在');const sha=script.sha256??script.baselineSha256;if(sha){result.source=await read(join(dir,'sources',sha+'.source'));if(digest(result.source)!==sha)throw Error('草稿代码摘要变化');result.sourceSha256=sha;result.sourceKind=script.sha256?'staged':'baseline';}}
+
   return result;
+}
+export async function patchAuthoring(root:string,draftId:string,revision:string,entryId:string,nodeId:string,raw:unknown){
+  const patch=authoringPatchSchema.parse(raw),current=await load(root,draftId);
+  if(current.revision!==revision)throw new ProjectDiagnostic('authoring-conflict','草稿已变化，请读取后重新生成精确补丁');
+  const script=current.draft.scripts.find(s=>s.entryId===entryId&&s.nodeId===nodeId),sha=script?.sha256??script?.baselineSha256;
+  if(!sha||sha!==patch.baseSourceSha256)throw new ProjectDiagnostic('authoring-patch-base','补丁源码摘要不符，请读取准确节点源码');
+  const source=await read(join(current.dir,'sources',sha+'.source'));
+  if(digest(source)!==sha)throw new ProjectDiagnostic('authoring-source-changed','补丁基准源码摘要变化');
+  const spans=patch.edits.map(e=>{const start=source.indexOf(e.oldText);if(start<0||source.indexOf(e.oldText,start+1)>=0||e.oldText===e.newText)throw new ProjectDiagnostic('authoring-patch-match','原文必须唯一匹配且补丁需有实际变化');return {...e,start,end:start+e.oldText.length};}).sort((a,b)=>a.start-b.start);
+  if(spans.some((e,i)=>i>0&&e.start<spans[i-1].end))throw new ProjectDiagnostic('authoring-patch-overlap','补丁片段重叠，未写出');
+  if(spans.reduce((n,e)=>n+e.oldText.length,0)*2>=source.length)throw new ProjectDiagnostic('authoring-patch-scope','局部补丁不得替换半数或更多源码，请重新规划较大改写');
+  let updated=source;for(const e of [...spans].reverse())updated=updated.slice(0,e.start)+e.newText+updated.slice(e.end);
+  const result=await codeAuthoring(root,draftId,revision,entryId,nodeId,updated);
+  return {...result,patch:{baseSourceSha256:sha,editCount:spans.length,unchangedBytesPreserved:true}};
 }
 export async function codeAuthoring(root:string,draftId:string,revision:string,entryId:string,nodeId:string,source:string){
   const current=await load(root,draftId);if(current.revision!==revision)throw new ProjectDiagnostic('authoring-conflict','草稿已变化，请先读取');
