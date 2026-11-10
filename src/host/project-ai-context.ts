@@ -21,17 +21,17 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
   }}
   const lastPlanIndex=history.findLastIndex(item=>item.kind==='model'&&(item.value as any)?.action?.tool==='flowark_authoring_plan');
   const candidatePlan=lastPlanIndex>activeUpdate?(history[lastPlanIndex].value as any)?.action?.arguments?.plan:undefined;
-  const candidates = new Map<string, { source: string; sha256: string }>();
+  const candidates = new Map<string, { source: string; sha256: string; origin:string }>();
   let lastAction: any,lastSourceKey:string|undefined;
   for(const item of history){const v=item.value as any;
     if(item.kind==='model'){
       lastAction=v?.action;const action=lastAction,args=action?.arguments;
-      if(action?.action==='tool'&&action.tool==='flowark_authoring_code'&&typeof args?.source==='string'){const key=args.draftId+'/'+args.entryId+'/'+args.nodeId;candidates.delete(key);candidates.set(key,{source:args.source,sha256:digest(args.source)});}
-      if(action?.action==='tool'&&action.tool==='flowark_project_write'&&Array.isArray(args?.changes))for(const change of args.changes)if(typeof change?.content==='string'){const key='legacy-source/'+change.path;candidates.delete(key);candidates.set(key,{source:change.content,sha256:digest(change.content)});}
+      if(action?.action==='tool'&&action.tool==='flowark_authoring_code'&&typeof args?.source==='string'){const key=args.draftId+'/'+args.entryId+'/'+args.nodeId;candidates.delete(key);candidates.set(key,{source:args.source,sha256:digest(args.source),origin:'model-candidate'});}
+      if(action?.action==='tool'&&action.tool==='flowark_project_write'&&Array.isArray(args?.changes))for(const change of args.changes)if(typeof change?.content==='string'){const key='legacy-source/'+change.path;candidates.delete(key);candidates.set(key,{source:change.content,sha256:digest(change.content),origin:'model-candidate'});}
     }
     if(item.kind==='tool'&&v?.name==='flowark_authoring_get'&&typeof v.result?.source==='string'){
       const args=lastAction?.arguments,key=v.result.draftId+'/'+args?.entryId+'/'+args?.nodeId;
-      lastSourceKey=key;candidates.delete(key);candidates.set(key,{source:v.result.source,sha256:digest(v.result.source)});
+      lastSourceKey=key;candidates.delete(key);candidates.set(key,{source:v.result.source,sha256:digest(v.result.source),origin:'stored-source'});
     }
   }
   const activeId=Object.keys(currentDrafts)[0];
@@ -48,9 +48,9 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
     if(item.kind==='model'){
       const value=structuredClone(item.value) as any,action=value?.action,args=action?.arguments;
       if(action?.tool==='flowark_authoring_plan'&&args?.plan)args.plan={sha256:digest(args.plan),note:'历史规划正文保留审计；最新候选见candidatePlan，当前有效草稿见currentDrafts'};
-      if(action?.tool==='flowark_authoring_code'&&typeof args?.source==='string')args.source={candidateSource:args.draftId+'/'+args.entryId+'/'+args.nodeId,sha256:digest(args.source)};
+      if(action?.tool==='flowark_authoring_code'&&typeof args?.source==='string')args.source={candidateSource:args.draftId+'/'+args.entryId+'/'+args.nodeId,sha256:digest(args.source),origin:'model-candidate'};
       if(action?.tool==='flowark_authoring_code_patch'&&args?.patch&&(index!==latestPatch||args.draftId!==activeId))args.patch={baseSourceSha256:args.patch.baseSourceSha256,edits:args.patch.edits?.map((e:any)=>({oldDigest:digest(e.oldText),newDigest:digest(e.newText)})),note:'历史补丁正文保留审计；读取当前节点源码生成下一补丁'};
-      if(action?.tool==='flowark_project_write'&&Array.isArray(args?.changes))for(const change of args.changes)if(typeof change?.content==='string')change.content={candidateSource:'legacy-source/'+change.path,sha256:digest(change.content)};
+      if(action?.tool==='flowark_project_write'&&Array.isArray(args?.changes))for(const change of args.changes)if(typeof change?.content==='string')change.content={candidateSource:'legacy-source/'+change.path,sha256:digest(change.content),origin:'model-candidate'};
       return {kind:item.kind,value};
     }
     if (item.kind !== 'tool' && item.kind !== 'initial-project-context') return item;
