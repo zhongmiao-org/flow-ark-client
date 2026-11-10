@@ -217,8 +217,9 @@ export class ProjectAI {
         // Optional undefined properties are absent, never passed as invalid AI JSON.
         const latestMessage = [...task.history].reverse().find(h=>h.kind==='user-continuation')?.value as {answer?:string}|undefined;
         const input = JSON.parse(JSON.stringify({ task: latestMessage?.answer ?? task.task, latestMessage: latestMessage ?? task.task, approval:task.approval, currentAuthoring: task.authoring, nextStep: task.nextStep, project: { ...info, root: task.root }, context: projectAIContext(task.history) }));
-        if (Buffer.byteLength(JSON.stringify(input)) > 256 * 1024) { task.state = 'question'; task.message = '去重后的模型上下文达到256KiB范围，完整审计仍保留，未静默裁剪。'; break; }
-        callId=randomUUID();task.history.push({kind:'request-start',value:{callId,transport:nativeProtocol?'native-tool-calls':'structured-json'}});
+        const contextBytes=Buffer.byteLength(JSON.stringify(input));
+        if (contextBytes > 256 * 1024) { task.state = 'question'; task.message = '去重后的模型上下文达到256KiB范围（'+contextBytes+'字节），完整审计仍保留，未静默裁剪。'; break; }
+        callId=randomUUID();task.history.push({kind:'request-start',value:{callId,contextBytes,transport:nativeProtocol?'native-tool-calls':'structured-json'}});
         task.requests++; task.message = '模型请求 ' + task.requests; this.persist(task);
         let response;
         try { response = await generate({ provider, model, instructions: instruction, input: input as any, schema: actionSchema }, key, abort.signal, fetch, [], 'planning', true,
