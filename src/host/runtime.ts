@@ -3426,6 +3426,7 @@ export class Runtime {
           run,
           developmentProject:owners.length===1?{id:owners[0].id}:undefined,
           desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
+          desktopAutomationReceipts:redact(this.store.list<any>('desktop-effect').filter(r=>r.runId===id&&r.version===1&&typeof r.effectId==='string'),this.secrets),
           mcpReceipts: this.mcpRuns
             .receipts(id)
             .map((receipt) => redactMcpReceipt(receipt, this.secrets)),

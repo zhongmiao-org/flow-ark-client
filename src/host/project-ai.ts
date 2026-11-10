@@ -176,7 +176,7 @@ export class ProjectAI {
     let secret = '',callId: string | undefined;
     const actionSchema = { type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'], properties: {
       action: { enum: ['tool', 'complete', 'question'] }, tool: { type: 'string' }, arguments: { type: 'object' }, message: { type: 'string' } }, ...(task.assisted?{allOf:[{if:{properties:{action:{const:'question'}},required:['action']},then:{properties:{arguments:assistedQuestionSchema}}}]}:{}) };
-    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status',task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
+    const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
     const ajv = new Ajv({ strict: false, logger: false }), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
     try {
       let key: string, model: string, provider: 'deepseek' | 'openai-codex', endpoint: { baseUrl: string; protocol: 'responses' | 'chat-completions' } | undefined;
@@ -259,7 +259,7 @@ export class ProjectAI {
         }
         abort.signal.throwIfAborted();
         if(task.assisted){
-          if(action.tool.startsWith('flowark_runtime_')&&!['flowark_runtime_history','flowark_runtime_status'].includes(action.tool)||['flowark_authoring_assemble','flowark_project_write','flowark_project_package','flowark_project_from_zip','flowark_project_init'].includes(action.tool))throw new ProjectDiagnostic('assisted-review-required','本轮协作仅讨论方案或生成本人选定节点；组装和运行使用本人确认按钮');
+          if(action.tool.startsWith('flowark_runtime_')&&!['flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview'].includes(action.tool)||['flowark_authoring_assemble','flowark_project_write','flowark_project_package','flowark_project_from_zip','flowark_project_init'].includes(action.tool))throw new ProjectDiagnostic('assisted-review-required','本轮协作仅讨论方案或生成本人选定节点；组装和运行使用本人确认按钮');
           if(action.tool==='flowark_authoring_plan'&&task.approval)throw new ProjectDiagnostic('assisted-plan-locked','方案已确认，修改方案须先与本人讨论并重新确认');
           if(action.tool==='flowark_authoring_code'){
             const approved=task.approval,key=args.entryId+'/'+args.nodeId;
@@ -276,6 +276,19 @@ export class ProjectAI {
           if (action.tool.startsWith('flowark_runtime_')) {
             const { root, ...rest } = args; result = await this.runtime(runtimeMethods[action.tool.slice(16)], { ...rest, id: task.projectId });
             if(action.tool==='flowark_runtime_status')result=projectRunEvidence(result,this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect'));
+            if(action.tool==='flowark_runtime_instance'){
+              const instance=result.instance;
+              const binding=instance?.id?await this.system('desktop.automation.state',{scopeId:instance.id}):null;
+              result={instanceId:instance?.id,revision:result.revision,entryIds:Object.keys(instance?.entryFlows??{}),configurationFields:Object.keys(instance?.configuration??{}),resourceIds:Object.keys(instance?.resources??{}),grants:instance?.grants??{},desktop:{bound:!!binding,actionsAllowed:binding?.actionsAllowed===true,screenshotAllowed:binding?.screenshotAllowed===true},note:'只返回配置结构和授权状态，不包含资源内容、路径、Key或业务输出。'};
+            }
+            if(action.tool==='flowark_runtime_preview'){
+              const issues=Array.isArray(result.issues)?result.issues:Array.isArray(result.errors)?result.errors:[];
+              result={ready:result.ready===true,issues:issues.map((e:any)=>{
+                const message=typeof e==='string'?e:String(e.message??e.reason??'需要检查运行条件');
+                return {code:e.code??null,message:redactedErrorText(new Error(message)).slice(0,500)};
+              }),requiredCapabilities:result.flow?.requiredCapabilities??[],note:'只读运行条件预览；没有创建Run、批准权限或重放操作。'};
+            }
+
           } else result = await callProjectTool(action.tool, args);
         } catch (error) { result = { error: error instanceof Error ? error.message : String(error), ...(error instanceof ProjectDiagnostic ? { diagnostic: error.toJSON() } : {}), retryExternalEffects: false, suggestion: '按file/field/line定位修复对应规划或脚本，原工程校验通过不代表未组装的草稿通过。' }; }
         if (action.tool.startsWith('flowark_authoring_') && result?.draftId && updatesActiveDraft(task.authoring?.draftId,action.tool,result.draftId)) { const state = result.plan ? result : await getAuthoring(task.root,result.draftId); task.authoring = { draftId: state.draftId, draftRevision: state.draftRevision, stage: state.stage, summary: state.summary, plan: state.plan, scripts: state.scripts, assembledRevision: state.assembledRevision }; }
@@ -291,7 +304,7 @@ export class ProjectAI {
         if(task.assisted&&(result?.error||result?.valid===false)){task.diagnostics=result.diagnostics??[result.diagnostic??{message:result.error??'检查失败'}];task.message='正在根据正式诊断局部修正，原工程和运行记录保留。';}
         const progress=digest({project:(await projectInfo(task.root)).revision, plan:task.authoring?.plan, scripts:task.authoring?.scripts?.map((s:any)=>({entryId:s.entryId,nodeId:s.nodeId,sha256:s.sha256}))});
         if(task.readStall?.progress!==progress)task.readStall=undefined;
-        if(['flowark_authoring_get','flowark_project_context','flowark_project_help','flowark_project_read','flowark_project_open','flowark_project_node_schema','flowark_node_schema','flowark_runtime_history','flowark_runtime_status'].includes(action.tool)&&!result?.error){
+        if(['flowark_authoring_get','flowark_project_context','flowark_project_help','flowark_project_read','flowark_project_open','flowark_project_node_schema','flowark_node_schema','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview'].includes(action.tool)&&!result?.error){
           const fingerprint=digest({tool:action.tool,args,result}),seen=task.readStall?.seen??{};
           seen[fingerprint]=(seen[fingerprint]??0)+1;
           task.readStall={fingerprint,progress,count:seen[fingerprint],seen};

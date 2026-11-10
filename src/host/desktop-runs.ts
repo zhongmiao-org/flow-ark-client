@@ -261,6 +261,6 @@ export class DesktopRuns {
     return { verified: true, message: result.message };
   }
   receipts(runId: string): DesktopReceipt[] {
-    return this.store.list<DesktopReceipt>('desktop-effect').filter((item) => item.runId === runId);
+    return this.store.list<DesktopReceipt>('desktop-effect').filter((item) => item.runId === runId && typeof item.nodeId === 'string' && typeof item.attemptedAt === 'string' && ['verified','not-written','unknown'].includes(item.status));
   }
 }

@@ -1,3 +1,4 @@
+import DesktopActionReceipts from './DesktopActionReceipts';
 import RunFailureNotice from './RunFailureNotice';
 import { runRecordLabel } from './readable-labels';
 import { activateCollapseWithSpace } from './collapseKeyboard';
@@ -461,7 +462,8 @@ export default function TaskRunPage({
           snapshot={detail.snapshot}
           running={!model.terminal && model.view.activity === 'active'}
         />
-        <DesktopRunReceipt
+        <DesktopActionReceipts runId={run.id} receipts={detail.desktopAutomationReceipts} />
+                <DesktopRunReceipt
           runId={run.id}
           receipts={detail.desktopReceipts}
           snapshot={detail.snapshot}

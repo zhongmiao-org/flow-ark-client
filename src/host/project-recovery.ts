@@ -28,7 +28,7 @@ export function projectRunEvidence(detail: any, desktop: any[] = [], effects: an
     inspection: ['运行需要进一步检查','把当前证据接回AI对话，先查明原因和影响范围，不猜测已执行或成功。'],
   };
   const [title, guidanceText] = guidance[category];
-  const summary = { runId: run.id, createdAt:run.createdAt, versionId: run.versionId, state: run.state, error,
+  const summary = { runId: run.id, createdAt:run.createdAt, localTime:new Date(run.createdAt).toLocaleString('zh-CN',{hour12:false}),timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone, versionId: run.versionId, state: run.state, error,
     steps: (detail.events ?? []).filter((e:any) => e.nodeInstance && ['node-start','node-end','error'].includes(e.type)).map((e:any) => ({ nodeId:e.nodeInstance,type:e.type,state:e.data?.state??null })).slice(-100),
     desktopReceipts:receipts, effects:operations, recovery:{category,title,guidance:guidanceText,requiresReconciliation:uncertain,replayAllowed:false},
   };
