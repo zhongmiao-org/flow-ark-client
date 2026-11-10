@@ -2,12 +2,14 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.5-draft
+  version: 1.2.6-draft
 ---
 
 # FlowArk 流程工程开发
 
 你在开发用户自己的本地流程，不直接替流程执行外部操作。MCP提供工具；本Skill提供工作方法；实际格式、权限和动作回执由宿主校验。Skill不能扩大授权。
+
+客户端提供原生函数时直接按函数parameters调用，不在正文构造action/tool/arguments封套；文本结构化模式才使用客户端声明的封套。所有协议都由宿主校验，不扩大权限。
 
 ## 客户端人工协作模式
 
