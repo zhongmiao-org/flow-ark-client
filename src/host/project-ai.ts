@@ -11,7 +11,7 @@ import { resolve, relative, dirname, basename } from 'node:path';
 import { realpath } from 'node:fs/promises';
 import { z } from 'zod';
 import Ajv from 'ajv/dist/2020.js';
-import { generate } from '../ai/providers';
+import { generate, type NativeActionTool } from '../ai/providers';
 import { callProjectTool, projectGuide, projectAITools as projectTools } from '../projects/tools';
 import { ProjectDiagnostic } from '../projects/configuration';
 import type { Store } from './store';
@@ -252,6 +252,8 @@ export class ProjectAI {
         const latestMessage = [...task.history].reverse().find(h=>h.kind==='user-continuation')?.value as {answer?:string}|undefined;
         const context=projectAIContext(task.history);
         let approvedNodeSource:any,sourceProvenance:any;
+        let requestTools:NativeActionTool[]|undefined=nativeActions;
+        let requestSchema:Record<string,any>=actionSchema;
         const repairNode=task.diagnostics?.find(d=>d.code==='node-purpose-gap'&&task.approval?.nodes.includes(d.field))?.field;
         const pendingNode=repairNode??task.approval?.nodes.find(key=>!task.approval!.validated?.[key])??task.approval?.nodes.at(-1);
         if(task.approval&&pendingNode){
@@ -260,8 +262,19 @@ export class ProjectAI {
           if(digest(actual.plan)!==task.approval.planDigest)throw new ProjectDiagnostic('assisted-plan-changed','方案已变化，请重新确认');
           task.authoring={...task.authoring,draftRevision:actual.draftRevision,stage:actual.stage,scripts:actual.scripts};
           const key=actual.draftId+'/'+entryId+'/'+nodeId,prior=context.candidateSources[key] as any;
-          approvedNodeSource={draftId:actual.draftId,draftRevision:actual.draftRevision,entryId,nodeId,sourceSha256:actual.sourceSha256,sourceKind:actual.sourceKind??'new',source:actual.source,note:'宿主按当前已批准节点直接读取的真实源码；已有源码的补丁oldText只能逐字取自此source。历史model-candidate不是已存源码，不必再次get当前节点。'};
+          approvedNodeSource={draftId:actual.draftId,draftRevision:actual.draftRevision,entryId,nodeId,sourceSha256:actual.sourceSha256,sourceKind:actual.sourceKind??'new',source:actual.source,purpose:actual.scripts.find((s:any)=>s.entryId===entryId&&s.nodeId===nodeId)?.purpose,note:'宿主按当前已批准节点直接读取的真实源码；已有源码的补丁oldText只能逐字取自此source。历史model-candidate不是已存源码，不必再次get当前节点。'};
           sourceProvenance={draftId:actual.draftId,node:pendingNode,sourceSha256:actual.sourceSha256,projectionMismatch:!!prior&&prior.sha256!==actual.sourceSha256};
+          const codeName=actual.source?'flowark_authoring_code_patch':'flowark_authoring_code';
+          const definition=availableTools.find(t=>t.name===codeName);
+          if(!definition)throw new ProjectDiagnostic('node-stage-tool','本节点所需生成工具未声明，未请求模型');
+          const parameters=structuredClone(definition.inputSchema) as Record<string,any>;
+          for(const [field,value]of Object.entries({root:task.root,draftId:actual.draftId,draftRevision:actual.draftRevision,entryId,nodeId}))parameters.properties[field]={...parameters.properties[field],const:value};
+          if(actual.source)parameters.properties.patch.properties.baseSourceSha256={...parameters.properties.patch.properties.baseSourceSha256,const:actual.sourceSha256};
+          const canComplete=task.approval.nodes.every(key=>{const script=actual.scripts.find((s:any)=>s.entryId+'/'+s.nodeId===key);return script?.sha256&&task.approval!.validated?.[key]===script.sha256;})&&!task.diagnostics?.length;
+          requestTools=nativeActions?.filter(t=>t.name===codeName||t.action==='question'||t.action==='complete'&&canComplete).map(t=>t.name===codeName?{...t,parameters,description:t.description+' Current approved node only; exact source and purpose are supplied in approvedNodeSource. SDK already supplied; submit code/patch without rereading context.'}:t);
+          requestSchema={...actionSchema,properties:{...actionSchema.properties,action:{enum:['tool','question',...(canComplete?['complete']:[])]},tool:{type:'string',enum:[codeName,'']}},allOf:[{if:{properties:{action:{const:'tool'}},required:['action']},then:{properties:{tool:{const:codeName},arguments:parameters}}}]};
+          approvedNodeSource.allowedTool=codeName;approvedNodeSource.canComplete=canComplete;
+
           if(actual.source){
             context.candidateSources[key]={sha256:actual.sourceSha256,inputSource:'approvedNodeSource',origin:'host-verified-source'};
             for(const document of Object.values(context.documents) as any[])if(document?.name==='flowark_authoring_get'&&document.result?.draftId===actual.draftId&&document.result?.source?.sha256===actual.sourceSha256)document.result.source={sha256:actual.sourceSha256,inputSource:'approvedNodeSource',note:'真实源码正文在顶层approvedNodeSource.source中。'};
@@ -270,11 +283,11 @@ export class ProjectAI {
         const input = JSON.parse(JSON.stringify({ task: latestMessage?.answer ?? task.task, latestMessage: latestMessage ?? task.task, approval:task.approval, nodeCompletion:{validatedMeans:'语法和SDK类型检查通过，仅静态检查，不代表职责完成。',independentReview:task.nodeReview,pendingIssues:task.diagnostics}, currentAuthoring: task.authoring, approvedNodeSource, nextStep: task.nextStep, project: { ...info, root: task.root }, context }));
         const contextBytes=Buffer.byteLength(JSON.stringify(input));
         if (contextBytes > 256 * 1024) { task.state = 'question'; task.message = '去重后的模型上下文达到256KiB范围（'+contextBytes+'字节），完整审计仍保留，未静默裁剪。'; break; }
-        callId=randomUUID();task.history.push({kind:'request-start',value:{callId,contextBytes,sourceProvenance,transport:nativeProtocol?'native-tool-calls':'structured-json'}});
+        callId=randomUUID();task.history.push({kind:'request-start',value:{callId,contextBytes,sourceProvenance,transport:nativeProtocol?'native-tool-calls':'structured-json',stageTools:requestTools?.map(t=>t.name)}});
         task.requests++; task.message = '模型请求 ' + task.requests; this.persist(task);
         let response;
-        try { response = await generate({ provider, model, instructions: instruction, input: input as any, schema: actionSchema }, key, abort.signal, fetch, [], 'planning', true,
-          provider === 'deepseek' ? { thinking: 'disabled', maxOutputTokens: 8192 } : undefined, endpoint, task.diagnostics?.some(d=>d.code==='node-purpose-gap')?nativeActions?.filter(t=>t.action!=='complete'):nativeActions); }
+        try { response = await generate({ provider, model, instructions: instruction, input: input as any, schema: requestSchema }, key, abort.signal, fetch, [], 'planning', true,
+          provider === 'deepseek' ? { thinking: 'disabled', maxOutputTokens: 8192 } : undefined, endpoint, requestTools); }
         catch (error) {
           abort.signal.throwIfAborted();
           if(error instanceof AIRequestFailureError && error.failure.error.code==='invalid-response'){
