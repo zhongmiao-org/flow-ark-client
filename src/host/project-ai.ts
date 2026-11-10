@@ -14,7 +14,6 @@ import { generate } from '../ai/providers';
 import { callProjectTool, projectGuide, projectAITools as projectTools } from '../projects/tools';
 import { ProjectDiagnostic } from '../projects/configuration';
 import type { Store } from './store';
-import type { Json } from '../shared/types';
 import { projectInfo, buildProject } from '../projects/project';
 import { redactedErrorText, digest } from '../shared/utils';
 export const projectAIConnection = z.discriminatedUnion('provider', [
@@ -175,18 +174,10 @@ export class ProjectAI {
   }
   private async execute(task: Task, abort: AbortController) {
     let secret = '',callId: string | undefined;
-    const responseBranch = (action: string, args: Json, tool: Json) => ({
-      type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'],
-      properties: { action: { const: action }, tool, arguments: args, message: { type: 'string' } },
-    });
-    const actionSchema = { type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'],
-      properties: { action: { enum: ['tool', 'complete', 'question'] }, tool: { type: 'string' }, arguments: { type: 'object' }, message: { type: 'string' } }, anyOf: [
-      responseBranch('tool', { type: 'object' }, { type: 'string', minLength: 1 }),
-      responseBranch('complete', { type: 'object', additionalProperties: false }, { const: '' }),
-      responseBranch('question', task.assisted ? assistedQuestionSchema : { type: 'object' }, { const: '' }),
-    ] };
+    const actionSchema = { type: 'object', additionalProperties: false, required: ['action', 'tool', 'arguments', 'message'], properties: {
+      action: { enum: ['tool', 'complete', 'question'] }, tool: { type: 'string' }, arguments: { type: 'object' }, message: { type: 'string' } } };
     const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',task.analysisOnly?'':task.approval?'flowark_authoring_code':'flowark_authoring_plan'].includes(t.name)):projectTools;
-    const ajv = new Ajv({ strict: false, logger: false }), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
+    const ajv = new Ajv({ strict: false, logger: false }), validateQuestion = ajv.compile(assistedQuestionSchema), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
     try {
       let key: string, model: string, provider: 'deepseek' | 'openai-codex', endpoint: { baseUrl: string; protocol: 'responses' | 'chat-completions' } | undefined;
       if (task.connection.provider === 'compatible') {
@@ -234,9 +225,19 @@ export class ProjectAI {
         const action = response.output as any; task.history.push({ kind: 'model', value: { callId, requestId: response.requestId, model: response.model, usage: response.usage, action } }); callId=undefined; this.persist(task);
         if (action.action !== 'tool') {
           if(task.assisted&&action.action==='question'){
-            const choices=action.arguments.choices as AssistedChoice[];
-            if(new Set(choices.map(c=>c.id)).size!==choices.length||new Set(choices.map(c=>c.label.trim())).size!==choices.length||choices.filter(c=>c.recommended).length>1){task.paidRetryRequired=true;throw Error('问题选项的ID与标题必须不同，且最多一个推荐项；未采用本次问题');}
-            task.choices=choices;
+            const choices=action.arguments.choices as AssistedChoice[] | undefined;
+            const valid=validateQuestion(action.arguments)&&Array.isArray(choices)&&
+              new Set(choices.map(c=>c.id)).size===choices.length&&new Set(choices.map(c=>c.label.trim())).size===choices.length&&choices.filter(c=>c.recommended).length<=1;
+            if(valid)task.choices=choices;
+            else {
+              task.choices=[
+                {id:'continue-plan',label:'继续完善局部方案',description:'沿用已确认事实，补齐需要修复的节点与完成条件；不生成代码或运行。',recommended:true},
+                {id:'revise-question',label:'补充或修正要求',description:'根据下方自定义输入继续讨论；不采纳未确认方案。'},
+                {id:'explain-question',label:'先解释原因和范围',description:'说明现有证据、原因与影响，再决定后续处理。'},
+              ];
+              task.history.push({kind:'question-options-fallback',value:{executed:false,diagnostic:'模型补问选项未通过契约校验；已使用客户端固定讨论选项，未采用无效选项或执行工具。'}});
+              task.state='question';task.message=action.message+'\n\n回复选项格式未通过检查，已提供客户端讨论选项；尚未生成代码或执行。';break;
+            }
           }
           if (action.action === 'complete'&&!task.analysisOnly) {
             if (task.authoring?.draftId) { const draft = await getAuthoring(task.root,task.authoring.draftId); if (!draft.assembledRevision) { task.history.push({ kind: 'stage-diagnostic', value: { code: 'authoring-not-assembled', message: '尚未组装当前规划，不能把原工程当作新方案完成', draftId: draft.draftId, draftRevision: draft.draftRevision } }); const stop=this.noProgress(task,'complete',{diagnostics:[{code:'authoring-not-assembled',message:'当前草稿尚未组装'}]},digest({project:info.revision,plan:draft.plan,scripts:draft.scripts}));this.persist(task);if(stop)break;continue; } }
