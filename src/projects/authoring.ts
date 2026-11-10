@@ -166,7 +166,13 @@ export async function patchAuthoring(root:string,draftId:string,revision:string,
   if(!sha||sha!==patch.baseSourceSha256)throw new ProjectDiagnostic('authoring-patch-base','补丁源码摘要不符，请读取准确节点源码');
   const source=await read(join(current.dir,'sources',sha+'.source'));
   if(digest(source)!==sha)throw new ProjectDiagnostic('authoring-source-changed','补丁基准源码摘要变化');
-  const spans=patch.edits.map(e=>{const start=source.indexOf(e.oldText);if(start<0||source.indexOf(e.oldText,start+1)>=0||e.oldText===e.newText)throw new ProjectDiagnostic('authoring-patch-match','原文必须唯一匹配且补丁需有实际变化');return {...e,start,end:start+e.oldText.length};}).sort((a,b)=>a.start-b.start);
+  const spans=patch.edits.map((e,index)=>{
+    const start=source.indexOf(e.oldText),field='patch.edits['+index+'].oldText',label='补丁第'+(index+1)+'项';
+    if(start<0)throw new ProjectDiagnostic('authoring-patch-match',label+'原文未找到（0处）；按刚读取的source正文逐字修正此项，其他项保留。',script!.path,field);
+    if(source.indexOf(e.oldText,start+1)>=0)throw new ProjectDiagnostic('authoring-patch-match',label+'原文至少匹配2处；补充相邻上下文使此项唯一。',script!.path,field);
+    if(e.oldText===e.newText)throw new ProjectDiagnostic('authoring-patch-no-change',label+'原文与新文相同；删除此无效项后提交其余必要补丁。',script!.path,'patch.edits['+index+'].newText');
+    return {...e,start,end:start+e.oldText.length};
+  }).sort((a,b)=>a.start-b.start);
   if(spans.some((e,i)=>i>0&&e.start<spans[i-1].end))throw new ProjectDiagnostic('authoring-patch-overlap','补丁片段重叠，未写出');
   if(spans.reduce((n,e)=>n+e.oldText.length,0)*2>=source.length)throw new ProjectDiagnostic('authoring-patch-scope','局部补丁不得替换半数或更多源码，请重新规划较大改写');
   let updated=source;for(const e of [...spans].reverse())updated=updated.slice(0,e.start)+e.newText+updated.slice(e.end);

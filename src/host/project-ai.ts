@@ -330,6 +330,7 @@ export class ProjectAI {
           const fingerprint=digest({tool:action.tool,args,result}),seen=task.readStall?.seen??{};
           seen[fingerprint]=(seen[fingerprint]??0)+1;
           task.readStall={fingerprint,progress,count:seen[fingerprint],seen};
+          if(task.readStall.count===2)task.nextStep='已重复读取相同资料。源码全文位于context.candidateSources中对应草稿/入口/节点键的source；依据最新诊断修正精确补丁，不再get同一源码。';
           if(task.readStall.count>=3){task.state='question';task.message='三次读取相同资料且开发进度未变化，已暂停模型循环。';task.nextStep='使用当前开发草稿补齐节点，不重新从参考稿开始。';this.persist(task);break;}
         }
         const stopped=this.noProgress(task, action.tool, result, progress);

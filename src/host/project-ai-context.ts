@@ -22,7 +22,7 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
   const lastPlanIndex=history.findLastIndex(item=>item.kind==='model'&&(item.value as any)?.action?.tool==='flowark_authoring_plan');
   const candidatePlan=lastPlanIndex>activeUpdate?(history[lastPlanIndex].value as any)?.action?.arguments?.plan:undefined;
   const candidates = new Map<string, { source: string; sha256: string }>();
-  let lastAction: any;
+  let lastAction: any,lastSourceKey:string|undefined;
   for(const item of history){const v=item.value as any;
     if(item.kind==='model'){
       lastAction=v?.action;const action=lastAction,args=action?.arguments;
@@ -31,12 +31,12 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
     }
     if(item.kind==='tool'&&v?.name==='flowark_authoring_get'&&typeof v.result?.source==='string'){
       const args=lastAction?.arguments,key=v.result.draftId+'/'+args?.entryId+'/'+args?.nodeId;
-      candidates.delete(key);candidates.set(key,{source:v.result.source,sha256:digest(v.result.source)});
+      lastSourceKey=key;candidates.delete(key);candidates.set(key,{source:v.result.source,sha256:digest(v.result.source)});
     }
   }
   const activeId=Object.keys(currentDrafts)[0];
   const candidateSources: Record<string, unknown> = {}; let bytes=0;
-  for(const [key,value]of [...candidates].reverse()){const size=Buffer.byteLength(value.source);if((activeId?key.startsWith(activeId+'/'):key.startsWith('legacy-source/'))&&bytes+size<=64*1024){candidateSources[key]=value;bytes+=size;}else candidateSources[key]={sha256:value.sha256,bytes:size,notIncluded:'历史代码保留在审计/草稿中；通过authoring_get按区块读取'};}
+  for(const [key,value]of [...candidates].reverse()){const size=Buffer.byteLength(value.source);if((key===lastSourceKey||(activeId?key.startsWith(activeId+'/'):key.startsWith('legacy-source/')))&&bytes+size<=64*1024){candidateSources[key]=value;bytes+=size;}else candidateSources[key]={sha256:value.sha256,bytes:size,notIncluded:'历史代码保留在审计/草稿中；通过authoring_get按区块读取'};}
 
   const latestInitial=history.findLastIndex(h=>h.kind==='initial-project-context'||h.kind==='tool'&&(h.value as any)?.name==='flowark_project_context');
   const latestPatch=history.findLastIndex(h=>h.kind==='model'&&(h.value as any)?.action?.tool==='flowark_authoring_code_patch');
@@ -55,7 +55,7 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
     }
     if (item.kind !== 'tool' && item.kind !== 'initial-project-context') return item;
     const value = structuredClone(item.value) as any;
-    if(value?.name?.startsWith('flowark_authoring_')&&value.result?.plan){const r=value.result;value.result={...r,plan:currentDrafts[r.draftId]?{currentDraft:r.draftId}:referenceDraft?.draftId===r.draftId?{referenceDraft:r.draftId}:{historicalDraft:r.draftId},scripts:undefined,source:undefined,historicalRevision:r.draftRevision!==currentDrafts[r.draftId]?.draftRevision,note:'当前规划见currentDrafts，历史正文保留审计，按草稿及区块读取。'};}
+    if(value?.name?.startsWith('flowark_authoring_')&&value.result?.plan){const r=value.result;value.result={...r,plan:currentDrafts[r.draftId]?{currentDraft:r.draftId}:referenceDraft?.draftId===r.draftId?{referenceDraft:r.draftId}:{historicalDraft:r.draftId},scripts:undefined,source:typeof r.source==='string'?{candidateSource:Object.keys(candidateSources).find(k=>k.startsWith(r.draftId+'/')&&(candidateSources[k] as any).source===r.source),sha256:digest(r.source),note:'源码正文只在context.candidateSources对应键的source中提供一次；按该准确原文生成补丁，不重复get。'}:undefined,historicalRevision:r.draftRevision!==currentDrafts[r.draftId]?.draftRevision,note:'当前规划见currentDrafts，历史正文保留审计，按草稿及区块读取。'};}
     if(value?.name==='flowark_project_context'&&value?.result?.currentAuthoring){const r=value.result.currentAuthoring;value.result.currentAuthoring={draftId:r.draftId,draftRevision:r.draftRevision,assembledRevision:r.assembledRevision,note:'当前活动状态见currentDrafts，公开源码已在同一工程上下文提供。'};}
     // Node schemas share recursive Node/Value definitions; send each exact definition once.
     if (value?.name === 'flowark_node_schema' && value.result?.dependencyDefinitions) {
@@ -66,5 +66,5 @@ export function projectAIContext(history: { kind: string; value: unknown }[]) {
     const id = digest(value); documents[id] ??= value;
     return { kind: item.kind, value: { document: id } };
   });
-  return { candidateSources, candidatePlan, currentDrafts, referenceDraft, policy: '完整审计单独保留；documents按内容摘要复用工具结果，schemaDefinitions按摘要提供原始共享定义；contextDefinition为模型上下文引用，不是工程JSON语法。candidateSources仅携带当前活动草稿各区块最新源码一次，草稿状态与历史参考不重复嵌入源码；历史候选仅保留摘要并明确列出未发送正文的代码，旧版本通过审计/草稿读取；没有删除或改写完整历史。', history: projected, documents, schemaDefinitions };
+  return { candidateSources, candidatePlan, currentDrafts, referenceDraft, policy: '完整审计单独保留；documents按内容摘要复用工具结果，schemaDefinitions按摘要提供原始共享定义；contextDefinition为模型上下文引用，不是工程JSON语法。candidateSources携带当前活动草稿最新源码及最近一次明确读取的参考源码各一次，草稿状态与历史参考不重复嵌入源码；历史候选仅保留摘要并明确列出未发送正文的代码，旧版本通过审计/草稿读取；没有删除或改写完整历史。', history: projected, documents, schemaDefinitions };
 }
