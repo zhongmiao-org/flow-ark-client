@@ -1,3 +1,4 @@
+import './generate-desktop-table-range.mjs';
 import './generate-node-validator.mjs';
 import './generate-desktop-sdk.mjs';
 import { build } from 'esbuild';

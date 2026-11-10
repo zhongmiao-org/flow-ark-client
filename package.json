@@ -14,8 +14,13 @@
     "localProjectFormat": {
       "version": 1,
       "status": "draft-unreleased",
-      "authoringSkillVersion": "1.2.18-draft",
-      "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746"
+      "authoringSkillVersion": "1.2.19-draft",
+      "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746",
+      "tableRangeHelper": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "c864b47a30c8940300ceea387e6b893270d1eef2"
+      }
     }
   },
   "packageManager": "pnpm@10.14.0",

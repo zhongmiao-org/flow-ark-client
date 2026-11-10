@@ -1,6 +1,8 @@
+import { desktopTableRangeTypes } from './desktop-table-range.generated';
 import { desktopSdkTypes } from './desktop-sdk.generated';
 /** Installed script-worker surface. Host validates each request using the installed node/SDK contracts. */
 export const scriptSdk = `${desktopSdkTypes}
+${desktopTableRangeTypes}
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export interface FlowArkContext {
@@ -8,6 +10,10 @@ export interface FlowArkContext {
   readonly constants: Readonly<Record<string, Json>>;
   readonly signal: AbortSignal;
   desktop: {
+    /** Uses the caller-prepared effect. Activates and selects the bounded rectangle, then locally parses TSV.
+     * Exact target and window size are checked before every step. Shape, requireBlank and expected mismatch throw.
+     * No model calls, paste, save, effect prepare/resolve or automatic retries. Cells stay local. */
+    readTableRange(request: DesktopTableRangeRequest): Promise<DesktopTableRangeResult>;
     readSelection(request: {observationId: string}): Promise<DesktopSelectionResult>;
     decide(request: {observationId: string; instructions: string; input?: Record<string,Json>; schema: Json; useScreenshot?: boolean}): Promise<{output: Json; requestId: string; model: string; provider: string; usage?: Json}>;
     observe(options?: {screenshot?: boolean}): Promise<DesktopObservation>;

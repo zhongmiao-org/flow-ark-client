@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { readTableRange } from './desktop-table-range';
 import { Rpc } from '../shared/rpc';
 import { verifyScriptBundle } from '../adapters/script-bundle';
 const abort = new AbortController();
@@ -11,14 +12,15 @@ const rpc = new Rpc(
     if (typeof module.default !== 'function')
       throw new Error('脚本必须 default export 一个 async 函数');
     const pending: Promise<any>[] = [];
+    const desktop = {
+      readSelection: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'readSelection', ...request } }),
+      decide: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'decide', ...request } }, 130000),
+      observe: (options: any = {}) => rpc.call('template', { operation: 'desktop', request: { operation: 'observe', ...options } }),
+      act: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'act', ...request } }),
+    };
     const result = await module.default({
       input: args.input,
-      desktop: {
-        readSelection: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'readSelection', ...request } }),
-        decide: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'decide', ...request } }, 130000),
-        observe: (options: any = {}) => rpc.call('template', { operation: 'desktop', request: { operation: 'observe', ...options } }),
-        act: (request: any) => rpc.call('template', { operation: 'desktop', request: { operation: 'act', ...request } }),
-      },
+      desktop: {...desktop, readTableRange: (request: any) => readTableRange(desktop,request,abort.signal)},
       template: {
         configuration: () => rpc.call('template', { operation: 'configuration' }),
         resource: (path: string) => rpc.call('template', { operation: 'resource', path }),

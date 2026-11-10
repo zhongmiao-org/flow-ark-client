@@ -466,7 +466,7 @@ export class ProjectAI {
       task.message = abort.signal.aborted ? '开发任务已停止，已提交操作与记录保留，不自动重试。' : redactedErrorText(error, secret ? [secret] : []);
       if(task.assisted&&task.approval&&task.authoring){const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;}
     } finally {
-      if(task.assisted&&task.approval&&task.authoring&&!task.review&&['question','failed','cancelled','interrupted'].includes(task.state)){const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;}
+      if(task.assisted&&task.approval&&task.authoring&&!task.review&&(!task.choices||task.state!=='question')&&['question','failed','cancelled','interrupted'].includes(task.state)){const message=task.message,state=task.state;this.checkpoint(task,'nodes');task.message=message;task.state=state;}
       this.persist(task);
     }
   }
