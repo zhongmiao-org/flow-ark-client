@@ -140,6 +140,9 @@ export class ProjectAI {
     if (previous.state === 'running') throw Error('请等待当前回复结束');
     if ([...this.active.values()].some(v => v.task.projectId === projectId)) throw Error('本工程已有AI任务');
     if (/\bsk-[a-zA-Z0-9]{24,}|-----BEGIN .*PRIVATE KEY/.test(answer)) throw Error('不要在回答中填写密钥');
+    // Only an exact submitted model choice continues the approved code stage.
+    // Custom corrections and plan/recovery reviews always require fresh approval.
+    approval ??= intent==='plan'&&!previous.review&&previous.state==='question'&&previous.choices?.some(c=>answer==='选择：'+c.label+'。'+c.description)?previous.approval:undefined;
     const task: Task = { ...previous, id: randomUUID(), state: 'running', requests: 0,
       analysisOnly:intent==='analyze', assisted: true, choices:undefined, revising: !approval, approval, review: undefined, paidRetryRequired: false, responseFailures:0, stall: undefined, readStall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
     this.persist(task);
@@ -392,6 +395,13 @@ export class ProjectAI {
             task.approval.completed=[...task.approval.nodes];
             task.history.push({kind:'model-node-review',value:{message:action.message,planDigest:task.approval.planDigest,sources:task.approval.validated,independentReviewDigest:task.nodeReview?.digest,businessAccepted:false}});
             this.checkpoint(task,'nodes');break;
+          }
+          if(action.action==='complete'&&task.assisted&&!task.analysisOnly&&!task.approval&&task.authoring?.draftId){
+            const draft=await getAuthoring(task.root,task.authoring.draftId);
+            if(!draft.assembledRevision){
+              if(draft.projectRevision!==info.revision)throw new ProjectDiagnostic('assisted-plan-changed','现有方案不属于当前工程修订，请重新规划');
+              task.authoring=draft;this.checkpoint(task,'plan');break;
+            }
           }
           if (action.action === 'complete'&&!task.analysisOnly) {
             if (task.authoring?.draftId) { const draft = await getAuthoring(task.root,task.authoring.draftId); if (!draft.assembledRevision) { task.history.push({ kind: 'stage-diagnostic', value: { code: 'authoring-not-assembled', message: '尚未组装当前规划，不能把原工程当作新方案完成', draftId: draft.draftId, draftRevision: draft.draftRevision } }); const stop=this.noProgress(task,'complete',{diagnostics:[{code:'authoring-not-assembled',message:'当前草稿尚未组装'}]},digest({project:info.revision,plan:draft.plan,scripts:draft.scripts}));this.persist(task);if(stop)break;continue; } }
