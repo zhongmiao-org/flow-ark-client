@@ -218,7 +218,7 @@ func jsonStamp(_ value:Any) throws -> String {
         guard CGPreflightPostEventAccess() else {try fault("input-posting-not-authorized")}
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
-        let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
+        guard frame(w.window)==old.frame else { try fault("observation-changed") }
         try checkFocus(w,old)
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID(),str(element as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
@@ -287,7 +287,8 @@ func jsonStamp(_ value:Any) throws -> String {
         // Activation changes no document input and targets the bound native window.
         // Unrelated background AX structure may change before it becomes foreground.
         let current=try tree(w)
-        guard current.0==old.frame,kind=="activate" || current.3==old.stamp else { try fault("observation-changed") }
+        let focusedKey = kind=="key" && command["elementId"] == nil
+        guard current.0==old.frame,kind=="activate" || focusedKey || current.3==old.stamp else { try fault("observation-changed") }
         if kind != "activate" { try focused(w);try checkFocus(w,old) }
         var target:AXUIElement?
         if let id=command["elementId"] as? String {
