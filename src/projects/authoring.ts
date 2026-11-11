@@ -3,6 +3,8 @@ import { mkdir, lstat, open, writeFile, link, rm, readdir } from 'node:fs/promis
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { build } from 'esbuild';
+import Ajv from 'ajv/dist/2020.js';
+import { validateConfigurationSchema } from '../../contracts/configuration-schema';
 import { checkProjectScripts } from './script-check';
 import { z } from 'zod';
 import { projectRoot, localDirectory, snapshotProject, updateProjectFiles } from './project';
@@ -100,6 +102,27 @@ function checkPlan(plan: Plan) {
   if(plan.entries.length*4+scripts.length+5>99)throw new ProjectDiagnostic('authoring-file-limit','本次组装超过单批100文件范围，请拆分入口');
   return scripts;
 }
+/** New-plan preflight only. Historical drafts remain readable without rewriting. */
+function checkPlanInputs(plan:Plan){
+  const schemas:[string,Record<string,unknown>][]=[['configurationSchema',plan.configurationSchema],['stateSchema',plan.stateSchema],...plan.entries.flatMap(e=>[[`entries.${e.id}.inputSchema`,e.inputSchema],[`entries.${e.id}.resultSchema`,e.resultSchema]] as [string,Record<string,unknown>][])];
+  try{validateConfigurationSchema(plan.configurationSchema);}catch(error){throw new ProjectDiagnostic('authoring-configuration-schema',error instanceof Error?error.message:'配置Schema无效',undefined,'configurationSchema');}
+  for(const [field,value]of schemas){try{new Ajv({strict:false,logger:false,validateFormats:false}).compile(value);}catch{throw new ProjectDiagnostic('authoring-schema','Schema无法本地编译；核对类型、约束与本地引用',undefined,field);}}
+  for(const r of plan.resources){
+    const use=['browser','ai'].includes(r.kind),readOnly=['skill','conversation-source','run-result'].includes(r.kind);
+    if(use?r.access!=='use':r.access==='use'||readOnly&&r.access!=='read')throw new ProjectDiagnostic('authoring-resource-access','资源种类与访问方式不符',undefined,'resources.'+r.id);
+  }
+  const inspect=(entry:Plan['entries'][number],steps:Record<string,unknown>[])=>{
+    for(const n of steps){
+      const kind=['file','excel','document'].includes(String(n.type))?'directory':['ai','conversation'].includes(String(n.type))?'ai':undefined;
+      if(kind){
+        const r=plan.resources.find(r=>r.id===n.binding),access=kind==='ai'?'use':n.type==='document'||n.operation==='read'?'read':'write';
+        if(typeof n.binding!=='string'||!entry.resourceIds.includes(n.binding)||!r||r.kind!==kind||r.access!==access&&r.access!=='readwrite')throw new ProjectDiagnostic('authoring-node-resource','节点binding须引用本入口已声明且种类/访问一致的资源',undefined,entry.id+'.'+n.id+'.binding');
+      }
+      for(const branch of ['then','else','body'])if(Array.isArray(n[branch]))inspect(entry,n[branch] as Record<string,unknown>[]);
+    }
+  };
+  for(const e of plan.entries)inspect(e,e.steps);
+}
 function view(draft:Draft,revision:string){return {draftId:draft.id,draftRevision:revision,projectRevision:draft.projectRevision,createdAt:draft.createdAt,stage:draft.assembledRevision?'assembled':draft.assembling?'assembling':draft.scripts.every(s=>s.sha256)?'ready-to-assemble':'coding',summary:draft.plan.summary,plan:draft.plan,scripts:draft.scripts.map(s=>({...s,ready:!!s.sha256})),assembledRevision:draft.assembledRevision,publicFilesWritten:!!draft.assembledRevision};}
 /** Find an exact assembled source baseline; historical drafts never win by recency alone. */
 export async function currentAuthoring(root:string,projectRevision:string){
@@ -120,7 +143,9 @@ export async function planAuthoring(root:string, revision:string, raw:unknown, p
   const previous=previousDraftId?await load(root,previousDraftId,true):undefined;
   if(previousDraftRevision&&previous?.revision!==previousDraftRevision)throw new ProjectDiagnostic('authoring-conflict','参考草稿已变化，请读取新修订再局部规划');
   if(previous&&previous.draft.projectRevision!==revision&&previous.draft.assembledRevision!==revision)throw new ProjectDiagnostic('authoring-stale-base','参考草稿不属于当前公开修订；读取project_context.currentAuthoring后从准确基准局部修改，旧记录保留。',undefined,'previousDraftId');
-  const scripts=checkPlan(plan), draft:Draft={version:1,id:randomUUID(),projectRevision:revision,plan,scripts,createdAt:new Date().toISOString()};
+  const scripts=checkPlan(plan);
+  checkPlanInputs(plan);
+  const draft:Draft={version:1,id:randomUUID(),projectRevision:revision,plan,scripts,createdAt:new Date().toISOString()};
   const dir=await directory(await base(root),draft.id);await directory(dir,'edges');await directory(dir,'sources');
   if(previous){
     const flatten=(steps:any[]):any[]=>steps.flatMap(n=>[n,...flatten(n.then??[]),...flatten(n.else??[]),...flatten(n.body??[])]);
@@ -182,6 +207,7 @@ export async function patchAuthoring(root:string,draftId:string,revision:string,
 export async function codeAuthoring(root:string,draftId:string,revision:string,entryId:string,nodeId:string,source:string){
   const current=await load(root,draftId);if(current.revision!==revision)throw new ProjectDiagnostic('authoring-conflict','草稿已变化，请先读取');
   if(current.draft.assembledRevision||current.draft.assembling)throw new ProjectDiagnostic('authoring-assembled','草稿已组装，后续修改请规划新修订');
+  checkPlanInputs(current.draft.plan);
   const script=current.draft.scripts.find(s=>s.entryId===entryId&&s.nodeId===nodeId);if(!script)throw new ProjectDiagnostic('authoring-script','脚本区块不存在',undefined,entryId+'.'+nodeId);
   if(!source.trim()||Buffer.byteLength(source)>256*1024)throw new ProjectDiagnostic('authoring-code-size','节点代码须为不超过256KiB的完整模块',script.path,nodeId);
   try{const result=await build({stdin:{contents:source,loader:script.language,sourcefile:script.path},format:'esm',target:'es2022',write:false,metafile:true,logLevel:'silent'});if(!Object.values(result.metafile!.outputs).some(o=>o.exports.includes('default')))throw new ProjectDiagnostic('authoring-default-export','脚本需要default export async函数',script.path,nodeId);}
@@ -197,6 +223,7 @@ export async function codeAuthoring(root:string,draftId:string,revision:string,e
 export async function assembleAuthoring(root:string,draftId:string,revision:string){
   let current=await load(root,draftId);if(current.revision!==revision)throw new ProjectDiagnostic('authoring-conflict','草稿已变化，请读取新修订');
   if(current.draft.assembledRevision)return {...view(current.draft,current.revision),alreadyAssembled:true};
+  checkPlanInputs(current.draft.plan);
   const draft=current.draft;const snapshot=await snapshotProject(root);
   const missing=draft.scripts.filter(s=>!s.sha256);if(missing.length)throw new ProjectDiagnostic('authoring-missing-code','尚有脚本未实现：'+missing.map(s=>key(s.entryId,s.nodeId)).join(','));
   const files:Record<string,string>={},m=structuredClone(snapshot.manifest);m.entries=[];m.resources=draft.plan.resources;m.actions=draft.plan.actions.map(a=>({...a,default:'deny'}));m.prompts=[];m.promptBindings={};m.environment=[];
