@@ -246,11 +246,12 @@ export class Runtime {
     readonly dataPath: string,
     private dir: string,
     private executable: string,
-    key: Buffer,
+    key: Buffer | null,
     private system: (method: string, args: any) => Promise<any>,
+    workspace?: {format:'workspace-json-v1';path:string},
   ) {
     this.artifactFiles = new ArtifactFiles(dataPath);
-    this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
+    this.store = workspace ? new Store(workspace.path, null, workspace.format) : new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
     this.projects = new ProjectWorkspace(this.store, () => this.templates, dataPath,
       (method, args) => this.request(method, args),

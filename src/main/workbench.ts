@@ -1,4 +1,5 @@
 import { platformSkillMaxBytes, parsePlatformAuthoringSkill } from '../projects/platform-authoring-skill';
+import { workspaceStorage, prepareWorkspaceStorage, activateWorkspaceStorage, type WorkspaceStorageReview } from '../host/workspace-storage';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { DesktopAutomation } from './desktop-automation';
@@ -59,6 +60,8 @@ let host: Electron.UtilityProcess;
 let startupError = '';
 let embedded: EmbeddedBrowser;
 let hostStopped = false;
+// Only the explicit idle-workspace maintenance path may bypass the normal quit review.
+let workspaceHostExitConfirmed = false;
 const knownSecrets = new Set<string>();
 const publicError = (error: unknown, additional: string[] = []) =>
   redactedErrorText(error, [...knownSecrets, ...additional]);
@@ -103,6 +106,11 @@ async function quit() {
   if (quitting || quitPending) return;
   quitPending = true;
   try {
+    if (workspaceHostExitConfirmed && hostStopped) {
+      quitting = true;
+      app.quit();
+      return;
+    }
     let data: Bootstrap | undefined;
     try {
       data = await rpc.call('bootstrap');
@@ -296,6 +304,15 @@ app
     win.on('closed', () => projectReview?.finish(false));
     app.on('before-quit', () => projectReview?.finish(false));
     let ready: Promise<any>;
+    let legacyWorkspaceKey: Buffer | undefined;
+    let storageCandidate: WorkspaceStorageReview | undefined;
+    let storageBusy = false;
+    let storageStopped = false;
+    const maintenanceIdle = async () => {
+      const data: Bootstrap = await rpc.call('bootstrap');
+      if (!data.execution || data.fault || data.execution.active || data.runOverview.queued || data.schedules.some(s => s.enabled))
+        throw Error('请先停止活动与排队任务、关闭启用计划并恢复存储，再预览工作区');
+    };
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
       const pending =
         method === 'ai.configuration.save' &&
@@ -329,6 +346,69 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (method === 'workspace.storage.status') {
+          await ready;
+          const workspace = await workspaceStorage(app.getPath('userData'));
+          return { mode: workspace ? 'workspace-json-v1' : 'encrypted', path: workspace?.path ?? join(app.getPath('userData'), 'flowark.sqlite'), retainedPath: join(app.getPath('userData'), 'flowark.sqlite'), candidatePath: storageCandidate ? join(app.getPath('userData'), 'workspace-public', storageCandidate.candidateId, 'flowark.sqlite') : undefined, candidate: storageCandidate, stopped: storageStopped, busy: storageBusy };
+        }
+        if (storageBusy) throw Error('工作区维护中，请等待核对完成');
+        if (method === 'workspace.storage.preview' || method === 'workspace.storage.enable') {
+          storageBusy = true;
+          try {
+            await ready;
+            if (startupError || hostStopped || storageStopped) throw Error('本地宿主不可用，请完整退出并重开后重新预览');
+            if (await workspaceStorage(app.getPath('userData'))) throw Error('普通工作区已经启用，未重复迁移');
+            await maintenanceIdle();
+            if (method === 'workspace.storage.preview') {
+              storageCandidate = undefined;
+              if (!legacyWorkspaceKey) throw Error('本会话未解锁原工作区，请重开后重新预览');
+              storageCandidate = await prepareWorkspaceStorage(app.getPath('userData'), legacyWorkspaceKey);
+              return storageCandidate;
+            }
+            const candidate = storageCandidate;
+            if (!candidate || candidate.stamp !== args.stamp) throw Error('工作区预览已变化，请重新核对');
+            // Block further writes before stopping the existing lifecycle. No arbitrary host RPC is exposed.
+            storageStopped = true;
+            projectBridge?.close();
+            await rpc.call('shutdown', {}, 15000);
+            await embedded.close();
+            if (!hostStopped) await new Promise<void>((resolve, reject) => {
+              let settled = false;
+              const finish = (error?: Error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                host.removeListener('exit', exited);
+                error ? reject(error) : resolve();
+              };
+              const exited = () => finish();
+              const timer = setTimeout(() => finish(Error('原宿主退出尚未确认，未启用；请完整退出并重开')), 10000);
+              host.once('exit', exited);
+              if (hostStopped) { finish(); return; }
+              try {
+                // A false return can race a queued exit event; only that event or
+                // the existing stopped flag proves exit, never the kill result.
+                host.kill();
+              } catch {
+                if (hostStopped) finish();
+                else finish(Error('原宿主未停止，未启用；请完整退出并重开'));
+              }
+            });
+            if (!hostStopped) throw Error('原宿主退出尚未确认，未启用');
+            workspaceHostExitConfirmed = true;
+            const result = await activateWorkspaceStorage(app.getPath('userData'), candidate, () => {
+              if (!hostStopped) throw Error('原宿主尚未停止，未启用');
+            });
+            storageCandidate = undefined;
+            legacyWorkspaceKey?.fill(0); legacyWorkspaceKey = undefined;
+            startupError = '普通工作区已启用，请完整退出并重开 FlowArk';
+            return result;
+          } catch (error) {
+            if (storageStopped) startupError = '工作区切换未完成，请完整退出并重开后重新预览；原记录保留';
+            throw error;
+          } finally { storageBusy = false; }
+        }
+        if (storageStopped) throw Error(startupError || '本地宿主已停止，请完整退出并重开 FlowArk');
         if (method.startsWith('desktop.automation.')) {
           if (method === 'desktop.automation.settings') {
             if (args.permission === 'accessibility') systemPreferences.isTrustedAccessibilityClient(true);
@@ -575,8 +655,9 @@ app
     });
     ready = (async () => {
       try {
-        const key = await vault.key();
-        knownSecrets.add(key);
+        const workspace = await workspaceStorage(app.getPath('userData'));
+        const key = workspace ? undefined : await vault.key();
+        if (key) { knownSecrets.add(key); legacyWorkspaceKey = Buffer.from(key, 'base64'); }
         host = utilityProcess.fork(join(__dirname, 'host.cjs'), [], {
           serviceName: 'FlowArk Local Host',
           stdio: 'pipe',
@@ -861,6 +942,8 @@ app
         await rpc.call('init', {
           dataPath: app.getPath('userData'),
           key,
+          storageMode: workspace?.format ?? 'encrypted',
+          databasePath: workspace?.path,
           executable: app.getPath('exe'),
         });
       } catch (e) {

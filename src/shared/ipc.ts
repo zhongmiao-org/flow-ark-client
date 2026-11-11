@@ -119,6 +119,9 @@ const resourceExtensionApply = resourceExtensionPreview
   .extend({ requestId: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/) })
   .strict();
 export const methods = {
+  'workspace.storage.status': empty,
+  'workspace.storage.preview': empty,
+  'workspace.storage.enable': z.object({ stamp: z.string().regex(/^[a-f0-9]{64}$/), ordinaryReadable: z.literal(true) }).strict(),
   ...desktopAutomationMethods,
   ...projectMethods,
   ...batchMethods,

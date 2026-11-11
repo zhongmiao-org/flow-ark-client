@@ -39,7 +39,7 @@ export function initializeStore(db: DatabaseSync) {
 }
 export class Store {
   private db: DatabaseSync;
-  private key: Buffer;
+  private key: Buffer | null;
   private transactionDepth = 0;
   private writeGeneration = 0;
   private cacheReferenceGeneration = 0;
@@ -64,8 +64,8 @@ export class Store {
   }
   readonly resultLedgers: RunResultLedgerStore;
   fault?: string;
-  constructor(path: string, key: Buffer) {
-    if (key.length !== 32) throw new Error('受保护的数据密钥不可用');
+  constructor(path: string, key: Buffer | null, private storageMode: 'encrypted' | 'workspace-json-v1' = 'encrypted') {
+    if (storageMode === 'encrypted' && key?.length !== 32) throw new Error('受保护的数据密钥不可用');
     this.key = key;
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     this.db = new DatabaseSync(path);
@@ -80,6 +80,8 @@ export class Store {
     this.resultLedgers = new RunResultLedgerStore(this);
   }
   private seal(v: any): string {
+    if (this.storageMode === 'workspace-json-v1') return 'workspace-json-v1:' + JSON.stringify(v);
+    if (!this.key) throw new Error('受保护的数据密钥不可用');
     const iv = randomBytes(12);
     const c = createCipheriv('aes-256-gcm', this.key, iv);
     return Buffer.concat([
@@ -90,6 +92,11 @@ export class Store {
     ]).toString('base64');
   }
   private open(s: string): any {
+    if (this.storageMode === 'workspace-json-v1') {
+      if (!s.startsWith('workspace-json-v1:')) throw new Error('普通工作区格式不符，未尝试解密或重建');
+      return JSON.parse(s.slice('workspace-json-v1:'.length));
+    }
+    if (!this.key || s.startsWith('workspace-json-v1:')) throw new Error('加密工作区格式或密钥不符');
     const b = Buffer.from(s, 'base64');
     const c = createDecipheriv('aes-256-gcm', this.key, b.subarray(0, 12));
     c.setAuthTag(b.subarray(-16));
@@ -507,6 +514,6 @@ export class Store {
     this.protectedRows.clear();
     this.protectedRowsWeight = 0;
     this.db.close();
-    this.key.fill(0);
+    this.key?.fill(0);
   }
 }
