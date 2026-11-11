@@ -46,6 +46,17 @@ import {
   verifyResourceExtension,
 } from './resource-extension';
 
+// Exact old-host fingerprint only; never used for new initialization.
+function legacySchemaDefaults(schema: any): any {
+  if (Object.hasOwn(schema, 'const')) return structuredClone(schema.const);
+  if (Object.hasOwn(schema, 'default')) return structuredClone(schema.default);
+  if (schema.type === 'object') return Object.fromEntries(Object.entries(schema.properties ?? {}).map(([k, child]) => [k, legacySchemaDefaults(child)]));
+  if (schema.type === 'array') return [];
+  if (schema.type === 'boolean') return false;
+  if (schema.type === 'integer' || schema.type === 'number') return schema.minimum ?? 0;
+  return schema.enum?.[0] ?? schema.oneOf?.[0]?.const ?? '';
+}
+
 const extensionOperationKind = 'template-resource-extension-operation';
 
 function actionConfirmation(pkg: PackageData, entry: Entry, id: string) {
@@ -432,22 +443,70 @@ export class Templates {
       entryFlows: Object.fromEntries(m.entries.map((e) => [e.id, randomUUID()])),
       createdAt: new Date().toISOString(),
     };
+    let initialState = schemaDefaults(jsonFile(pkg.files, m.stateSchema)), statePending = false;
+    try { validateData(jsonFile(pkg.files, m.stateSchema), initialState); }
+    catch { initialState = null; statePending = true; }
     this.store.tx(() => {
       this.store.put('template-instance', instance.id, instance);
       this.writeFlows(pkg, instance);
       this.store.put(
         'template-state',
         instance.id,
-        schemaDefaults(jsonFile(pkg.files, m.stateSchema)),
+        initialState,
       );
       this.store.put('template-state-meta', instance.id, {
         revision: 0,
         updatedAt: new Date().toISOString(),
+        ...(statePending ? {uninitialized:true} : {}),
       });
     });
     return instance;
   }
-  rebuildProjectInstance(id: string, key: string, revision: string, assertIdle: () => void) {
+  /** Only explicit project rebuild can recover exact, never-used legacy seeds. */
+  private initialDefaultsPlan(id: string, old: PackageData, next: PackageData) {
+    const before = this.snapshot(id), configuration = before.instance.configuration,
+      state = this.store.get<unknown>('template-state', id),
+      meta = this.store.get<{revision: number; updatedAt: string; uninitialized?: boolean}>('template-state-meta', id);
+    const oldConfigurationSchema = jsonFile(old.files, old.manifest.configurationSchema), oldStateSchema = jsonFile(old.files, old.manifest.stateSchema),
+      configurationSchema = jsonFile(next.files, next.manifest.configurationSchema), stateSchema = jsonFile(next.files, next.manifest.stateSchema);
+    if (canonical(oldConfigurationSchema) !== canonical(configurationSchema) || canonical(oldStateSchema) !== canonical(stateSchema)) throw Error('配置或状态Schema变化，不识别为旧默认值纠正');
+    if (state === undefined) throw Error('初始状态记录缺失，不按旧默认值自动纠正');
+    const valid = (schema: unknown, value: unknown) => {try {validateData(schema, value);return true;} catch {return false;}};
+    const configurationInvalid = !valid(configurationSchema, configuration),
+      uninitialized = state === null && meta?.revision === 0 && meta.uninitialized === true,
+      stateInvalid = !uninitialized && !valid(stateSchema, state);
+    if (!configurationInvalid && !stateInvalid && !uninitialized) return undefined;
+    if (!meta || meta.revision !== 0) throw Error('配置或状态不是未使用的初始值，保留原数据，未纠正');
+    if (configurationInvalid && canonical(configuration) !== canonical(legacySchemaDefaults(oldConfigurationSchema))) throw Error('无效配置并非旧宿主的准确初始值，请先核对本人配置');
+    if (stateInvalid && canonical(state) !== canonical(legacySchemaDefaults(oldStateSchema))) throw Error('无效状态并非旧宿主的准确初始值，不恢复或清空');
+    const runRows: {id: string; state: string; versionId: string}[] = [], runIds = new Set<string>(), flowIds = new Set(Object.values(before.instance.entryFlows));
+    for (const run of this.store.list<Run>('run')) {
+      const snapshot = this.store.get<FlowRecord>('snapshot', run.id), ref = snapshot?.bindings.template;
+      if (!flowIds.has(run.flowId) && ref?.instanceId !== id) continue;
+      if (!snapshot || !ref || ref.instanceId !== id || !['SUCCEEDED','FAILED','CANCELLED'].includes(run.state)) throw Error('初始值纠正要求所有原运行已结束并有固定来源');
+      const installed = this.store.get<InstalledPackage>('template-package', ref.packageKey), entry = installed?.manifest.entries.find(e => e.id === ref.entryId);
+      if (!entry || entry.actions.length || entry.capabilities.some(c => !['script','desktop-automation-v1','value'].includes(c))) throw Error('存在非只读入口运行，不纠正初始值');
+      runIds.add(run.id);runRows.push({id: run.id, state: run.state, versionId: run.versionId});
+    }
+    if (this.store.list<{instanceId?: string}>('template-effect').some(e => e.instanceId === id) ||
+      ['desktop-effect','mcp-effect'].some(kind => this.store.list<{runId?: string;instanceId?: string}>(kind).some(e => e.instanceId === id || !!e.runId && runIds.has(e.runId)))) throw Error('存在动作回执或unknown，禁止初始值纠正');
+    const contextIds = new Set(this.store.list<{id: string; owner?:{instanceId?: string}}>('template-data-context').filter(c => c.owner?.instanceId === id).map(c => c.id));
+    if (this.store.list<{runId?: string;receipt?:{contextId?: string}}>('template-data-operation').some(op => !!op.runId && runIds.has(op.runId) || !!op.receipt?.contextId && contextIds.has(op.receipt.contextId))) throw Error('存在模板状态提交，禁止初始值纠正');
+    const nextConfiguration = configurationInvalid ? schemaDefaults(configurationSchema) : configuration;
+    if (!valid(configurationSchema, nextConfiguration)) throw Error('缺少本人必须填写的配置；未伪造布局或业务值，请先配置原实例');
+    const stateSeed = stateInvalid ? schemaDefaults(stateSchema) : state,
+      statePending = uninitialized || stateInvalid && !valid(stateSchema, stateSeed),
+      nextState = statePending ? null : stateSeed;
+    const stamp = sha256(canonical({instanceRevision: before.revision, beforePackage: before.instance.packageKey, afterPackage: next.manifest.contentDigest, configuration, state, meta, runRows:runRows.sort((a,b)=>a.id.localeCompare(b.id)), configurationInvalid, stateInvalid, uninitialized, nextConfiguration, nextState, statePending}));
+    return {stamp, configurationInvalid, stateInvalid, uninitialized, statePending, nextConfiguration, nextState, beforeState: state, beforeMeta: meta,
+      preview:{stamp, operation:'仅纠正旧宿主的无效初始默认值', configuration:configurationInvalid?'移除旧宿主生造的可选占位值':'保留本人配置', state:stateInvalid?(statePending?'保留未初始化槽，首次state.set仍须完整Schema校验':'纠正nullable等初始默认值'):uninitialized?'保留未初始化槽':'保留', stateRevision:0, readOnlyRuns:runRows.length, noEffectReceipts:true, historyPreserved:true}};
+  }
+  async previewProjectInitialDefaults(id: string, key: string, revision: string) {
+    const before = this.snapshot(id);if (before.revision !== revision) throw Error('实例已变化，未准备初始值纠正');
+    const old = await this.library.load(before.instance.packageKey), next = await this.library.load(key);
+    return this.initialDefaultsPlan(id,old,next)?.preview;
+  }
+  rebuildProjectInstance(id: string, key: string, revision: string, assertIdle: () => void, initialDefaultsStamp?: string) {
     return this.exclusive(async () => {
       assertIdle();
       const before = this.snapshot(id);
@@ -473,19 +532,30 @@ export class Templates {
         // The selected entry is fully validated by normal run preparation.
         inputs[entry.id] = structuredClone(record.flow.parameters);
       }
-      validateData(jsonFile(next.files, next.manifest.configurationSchema), before.instance.configuration);
-      validateData(jsonFile(next.files, next.manifest.stateSchema), this.store.get('template-state', id));
-      const instance = { ...before.instance, packageKey: key }, operationId = randomUUID();
+      const defaultsPlan = this.initialDefaultsPlan(id,old,next);
+      if (defaultsPlan && defaultsPlan.stamp !== initialDefaultsStamp) throw Error('初始默认值纠正未获准确确认，未修改实例');
+      const instance = { ...before.instance, packageKey: key,
+        ...(defaultsPlan?.configurationInvalid ? {configuration: defaultsPlan.nextConfiguration, configurationRevision:(before.instance.configurationRevision ?? 1)+1} : {}) }, operationId = randomUUID();
+      if (!Number.isSafeInteger(instance.configurationRevision ?? 1) || (instance.configurationRevision ?? 1) < 1) throw Error('配置修订无效或已达上限，未修改实例');
       let rebuildReceipt: Record<string, unknown>;
       this.store.tx(() => {
         assertIdle();
         if (this.snapshot(id).revision !== revision) throw Error('重建前实例变化，未覆盖');
+        const liveDefaultsPlan = this.initialDefaultsPlan(id,old,next);
+        if (liveDefaultsPlan?.stamp !== defaultsPlan?.stamp) throw Error('确认后初始值或运行记录变化，未纠正');
+        if (defaultsPlan?.stateInvalid) {
+          this.store.put('project-initial-defaults-repair', operationId, {version:1, operationId, instanceId:id, stamp:defaultsPlan.stamp, beforeConfiguration:before.instance.configuration, beforeState:defaultsPlan.beforeState, beforeStateMeta:defaultsPlan.beforeMeta, afterConfiguration:instance.configuration, afterState:defaultsPlan.nextState, statePending:defaultsPlan.statePending, at:new Date().toISOString()});
+          this.store.put('template-state', id, defaultsPlan.nextState);
+          this.store.put('template-state-meta', id, {revision:0, updatedAt:new Date().toISOString(), ...(defaultsPlan.statePending?{uninitialized:true}:{})});
+        } else if (defaultsPlan?.configurationInvalid) {
+          this.store.put('project-initial-defaults-repair', operationId, {version:1, operationId, instanceId:id, stamp:defaultsPlan.stamp, beforeConfiguration:before.instance.configuration, beforeState:defaultsPlan.beforeState, beforeStateMeta:defaultsPlan.beforeMeta, afterConfiguration:instance.configuration, afterState:defaultsPlan.nextState, at:new Date().toISOString()});
+        }
         rebaseProjectDataContext(this.store, id, old, next);
         this.store.put('template-instance', id, instance);
         this.writeFlows(next, instance, inputs, true);
         rebuildReceipt = { version: 1, operationId, instanceId: id, beforeRevision: revision,
           afterRevision: this.snapshot(id).revision, beforePackage: before.instance.packageKey, afterPackage: key,
-          historyPreserved: true, retainedResultRefs: Object.entries(before.instance.resources).filter(([, binding]) => binding.result).map(([resourceId, binding]) => ({ resourceId, refSha256: sha256(canonical(binding.result)) })), at: new Date().toISOString() };
+          historyPreserved: true, ...(defaultsPlan ? {initialDefaultsRepair:defaultsPlan.preview} : {}), retainedResultRefs: Object.entries(before.instance.resources).filter(([, binding]) => binding.result).map(([resourceId, binding]) => ({ resourceId, refSha256: sha256(canonical(binding.result)) })), at: new Date().toISOString() };
         this.store.put('project-instance-rebuild', operationId, rebuildReceipt);
       });
       return { ...await this.detail(id), rebuildReceipt: rebuildReceipt! };

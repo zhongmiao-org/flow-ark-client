@@ -7,7 +7,7 @@ import type { z } from 'zod';
 type Observation = z.infer<typeof desktopObservation>;
 type Command = z.infer<typeof desktopCommand>;
 type Driver = {
-  observe(options: {screenshot: false}): Promise<Observation>;
+  observe(options: {screenshot: boolean}): Promise<Observation>;
   act(request: {effectId: string; observationId: string; effectKey: string; command: Command}): Promise<{status: 'performed'|'not-executed'|'unknown'}>;
   readSelection(request: {observationId: string}): Promise<{text: string}>;
 };
@@ -48,7 +48,7 @@ export async function readTableRange(driver: Driver, raw: DesktopTableRangeReque
   if(q.selection==='drag'&&(!q.to||((q.rows>1||q.columns>1)&&q.from.x===q.to.x&&q.from.y===q.to.y)))throw Error('table-range:empty-rectangle');
   let size: {width:number;height:number}|undefined;
   const observe=async()=>{
-    signal.throwIfAborted();const o=await driver.observe({screenshot:false});signal.throwIfAborted();
+    signal.throwIfAborted();const o=await driver.observe({screenshot:true});signal.throwIfAborted();
     if(o.application!==q.target.application||o.title!==q.target.title)throw Error('table-range:target-changed');
     if(size&&(size.width!==o.bounds.width||size.height!==o.bounds.height))throw Error('table-range:window-resized');
     size={width:o.bounds.width,height:o.bounds.height};

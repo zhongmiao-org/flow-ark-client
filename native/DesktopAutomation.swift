@@ -80,8 +80,8 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let bounds=frame(w.window) else { try fault("window-changed") }
         var rows=[[String:Any]](), refs=[String:AXUIElement](), queue:[(AXUIElement,Int)]=[(w.window,0)], cursor=0
         var truncated=false
-        let deadline=Date().addingTimeInterval(2)
-        while cursor<queue.count && rows.count<800 && Date()<deadline {
+        let deadline=Date().addingTimeInterval(3)
+        while cursor<queue.count && rows.count<2000 && Date()<deadline {
             let (e,depth)=queue[cursor];cursor+=1
             let role=str(e,kAXRoleAttribute), sub=str(e,kAXSubroleAttribute)
             let secure=sub==kAXSecureTextFieldSubrole || role=="AXSecureTextField"
@@ -90,9 +90,11 @@ func jsonStamp(_ value:Any) throws -> String {
             if let b=box { row["bounds"]=rectJSON(CGRect(x:b.minX-bounds.minX,y:b.minY-bounds.minY,width:b.width,height:b.height)) }
             if !secure { refs[id]=e }
             rows.append(row)
-            if !secure && depth<20, let children=ax(e,kAXChildrenAttribute) as? [AXUIElement] {
-                if children.count>1000-queue.count {truncated=true}
-                for child in children.prefix(1000-queue.count) { queue.append((child,depth+1)) }
+            if !secure && depth<60, let children=ax(e,kAXChildrenAttribute) as? [AXUIElement] {
+                if children.count>3000-queue.count {truncated=true}
+                for child in children.prefix(3000-queue.count) { queue.append((child,depth+1)) }
+            } else if !secure && depth>=60, let children=ax(e,kAXChildrenAttribute) as? [AXUIElement], !children.isEmpty {
+                truncated=true
             }
         }
         // Unrelated live text is not the identity of every control in the window.

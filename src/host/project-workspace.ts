@@ -80,10 +80,11 @@ export class ProjectWorkspace {
         if (current.prepared && !args.isolate) {
           const previous = await this.templates().detail(current.prepared.instanceId);
           this.assertIdle(previous.instance.id);
+          const initialDefaultsRepair = await this.templates().previewProjectInitialDefaults(previous.instance.id, installed.key, previous.revision);
           if (!await this.confirm({ kind: 'project-rebuild', project: record.root, oldRevision: current.prepared.revision, newRevision: snapshot.revision,
-            oldPackage: previous.instance.packageKey, newPackage: installed.key, preserve: ['实例/流程标识', '配置/输入/资源/权限', '状态与修订', '回执/unknown/历史Run'] }))
+            oldPackage: previous.instance.packageKey, newPackage: installed.key, ...(initialDefaultsRepair ? {initialDefaultsRepair} : {}), preserve: ['实例/流程标识', '配置/输入/资源/权限', '状态与修订', '回执/unknown/历史Run'] }))
             throw new ProjectDiagnostic('project-rebuild-cancelled', '未确认重建，原实例与历史保持');
-          const rebuilt = await this.templates().rebuildProjectInstance(previous.instance.id, installed.key, previous.revision, () => this.assertIdle(previous.instance.id));
+          const rebuilt = await this.templates().rebuildProjectInstance(previous.instance.id, installed.key, previous.revision, () => this.assertIdle(previous.instance.id), initialDefaultsRepair?.stamp);
           instance = rebuilt.instance; rebuildReceipt = rebuilt.rebuildReceipt;
         } else {
           if (args.isolate && !await this.confirm({ kind: 'project-rebuild', project: record.root, operation: '新建隔离调试实例', package: installed.key,
