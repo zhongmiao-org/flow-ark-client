@@ -259,8 +259,11 @@ func jsonStamp(_ value:Any) throws -> String {
         guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
         let pointer=CGEvent(source:nil)?.location ?? .zero
         guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else { try fault("user-intervention") }
-        let current=try tree(w);guard current.0==old.frame,current.3==old.stamp else { try fault("observation-changed") }
         guard let command=args["command"] as? [String:Any],let kind=command["kind"] as? String else { try fault("invalid-command") }
+        // Activation changes no document input and targets the bound native window.
+        // Unrelated background AX structure may change before it becomes foreground.
+        let current=try tree(w)
+        guard current.0==old.frame,kind=="activate" || current.3==old.stamp else { try fault("observation-changed") }
         if kind != "activate" { try focused(w);try checkFocus(w,old) }
         var target:AXUIElement?
         if let id=command["elementId"] as? String {
