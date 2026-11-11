@@ -475,7 +475,8 @@ export class Templates {
     const configurationInvalid = !valid(configurationSchema, configuration),
       uninitialized = state === null && meta?.revision === 0 && meta.uninitialized === true,
       stateInvalid = !uninitialized && !valid(stateSchema, state);
-    if (!configurationInvalid && !stateInvalid && !uninitialized) return undefined;
+    // A legitimate host-marked null slot is preserved, not repaired again.
+    if (!configurationInvalid && !stateInvalid) return undefined;
     if (!meta || meta.revision !== 0) throw Error('配置或状态不是未使用的初始值，保留原数据，未纠正');
     if (configurationInvalid && canonical(configuration) !== canonical(legacySchemaDefaults(oldConfigurationSchema))) throw Error('无效配置并非旧宿主的准确初始值，请先核对本人配置');
     if (stateInvalid && canonical(state) !== canonical(legacySchemaDefaults(oldStateSchema))) throw Error('无效状态并非旧宿主的准确初始值，不恢复或清空');
