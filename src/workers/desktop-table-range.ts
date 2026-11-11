@@ -65,7 +65,7 @@ export async function readTableRange(driver: Driver, raw: DesktopTableRangeReque
   else {
     await act('anchor',{kind:'click',point:q.from});
     if(q.selectionPreparation==='tab-roundtrip'){
-      await act('prepare-tab',{kind:'key',key:'Tab'});
+      await act('prepare-tab',{kind:'key',key:'Tab',modifiers:[]});
       await act('prepare-shift-tab',{kind:'key',key:'Tab',modifiers:['shift']});
     }
     for(let row=1;row<q.rows;row++)await act('down-'+row,{kind:'key',key:'Down',modifiers:['shift']});

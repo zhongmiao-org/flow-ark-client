@@ -54,7 +54,10 @@ func same(_ a: AXUIElement,_ b: AXUIElement) -> Bool { CFEqual(a,b) }
 // Remove only that exact decoration; owner, geometry and uniqueness still match.
 func captureTitle(_ title:String,_ appName:String) -> String {
     let suffix=" - " + appName
-    return !appName.isEmpty && title.hasSuffix(suffix) ? String(title.dropLast(suffix.count)) : title
+    let base = !appName.isEmpty && title.hasSuffix(suffix) ? String(title.dropLast(suffix.count)) : title
+    // Read-only AX/SC metadata proved Chrome adds this decoration only to AX.
+    // Keep the exact PID/frame and both uniqueness guards below unchanged.
+    return appName=="Google Chrome" ? base.replacingOccurrences(of:" - 内存用量高 - [0-9]+(?:\\.[0-9]+)? MB$",with:"",options:.regularExpression) : base
 }
 func jsonStamp(_ value:Any) throws -> String {
     let bytes=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
