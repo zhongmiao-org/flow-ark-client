@@ -285,10 +285,22 @@ func jsonStamp(_ value:Any) throws -> String {
         try postForeground(up,pid:pid)
         released=true
         // HID delivery is asynchronous. Wait briefly for release, never resend input.
-        let deadline=Date().addingTimeInterval(0.15)
+        let deadline=ProcessInfo.processInfo.systemUptime+0.25
         let modifiers:CGEventFlags=[.maskCommand,.maskShift,.maskAlternate,.maskControl]
-        while !CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty && Date()<deadline {Thread.sleep(forTimeInterval:0.005)}
-        guard CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty else {try fault("input-modifier-release-unconfirmed")}
+        var quietSince:TimeInterval?=nil
+        while ProcessInfo.processInfo.systemUptime<deadline {
+            let current=try check()
+            guard current.app.processIdentifier==pid else {try fault("input-window-changed")}
+            try focused(current)
+            let now=ProcessInfo.processInfo.systemUptime
+            guard now<deadline else {try fault("input-modifier-release-unconfirmed")}
+            if CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty {
+                if let since=quietSince,now-since>=0.04 {return}
+                if quietSince==nil {quietSince=now}
+            } else {quietSince=nil}
+            Thread.sleep(forTimeInterval:0.005)
+        }
+        try fault("input-modifier-release-unconfirmed")
     }
     static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[],pid:pid_t) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }

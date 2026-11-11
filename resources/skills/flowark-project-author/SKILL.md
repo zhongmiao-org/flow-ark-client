@@ -76,7 +76,8 @@ metadata:
 - 先observe，优先控件引用。截图像素坐标须按image与bounds尺寸转换成窗口局部逻辑点，不加全局窗口原点。
 - 需要点击或输入的脚本在第一次交互前，先核对本人绑定窗口的准确标题及应用，在已正式预留且 execute=true 的同一 effect 下以独立稳定子键调用 `act({command:{kind:'activate'},...})`；随后 fresh observe 再核对标题、应用与目标控件，才点击或输入。不假定点击客户端 Run 后业务窗口仍在前台，不让用户手动补代码或靠抢焦点绕过宿主保护。纯只读 observe 不为此触发激活动作。
 - 窗口绑定固定原生窗口与进程，不等于固定网页、表格或聊天对象。每次外部写入前，按当前观察核对准确页面/会话及业务目标；标题变化后重新观察，不沿用旧目标。
-- `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。
+- `effect.prepare.review` 仅接受正式人工核对结构 `{version:1,target,content}`，且需入口声明 `human-review-v1`；它不是任意元数据。无需此类核对时省略该字段，操作说明放 description，回执证据放 resolve.evidence，不为错误参数扩大能力。
+- `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。 `effect.prepare.review`是安装Schema定义的结构化人工复核内容，不是任意metadata；没有该复核需求时省略，不把布尔说明塞入review或为参数误用增加human-review-v1能力。说明放description，证据在核验后按规范resolve。
 - 使用SDK确定返回类型，不把观察/回执转成any或Record来绕过字段校验。控件标识是element.id，角色是原生AX角色（如AXCell/AXTextField），可读名称使用title/description/value。AXCheckBox的value可为规范字符串0（关闭）、1（开启）、2（混合）；空值或其他值不能当作关闭，点击后必须重新观察。act回执读取status，decide读取output；effect.resolve提交{id,state,evidence}。
 - 每个动作前重新观察；act与readSelection都会消费观察，下一动作必须重新observe。unknown不重发、不换键、不换实例规避防重。
 - effectKey唯一标识一个原生命令。同一业务effectId下的激活、定位点击、粘贴和保存按键分别使用稳定子键；不同命令不可共用effectKey，恢复时不可换键重放unknown。
