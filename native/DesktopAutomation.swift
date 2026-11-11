@@ -33,7 +33,14 @@ func ax(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
     guard AXUIElementCopyAttributeValue(e, key as CFString, &value) == .success else { return nil }
     return value
 }
-func str(_ e: AXUIElement, _ key: String) -> String { (ax(e,key) as? String).map { String($0.prefix(4000)) } ?? "" }
+func str(_ e: AXUIElement, _ key: String) -> String {
+    let primary = ax(e,key) as? String ?? ""
+    // Chromium inputs expose their accessible search hint as a placeholder.
+    // Never replace a nonempty native description or expose protected input.
+    let value = primary.isEmpty && key == kAXDescriptionAttribute
+        ? (ax(e,"AXPlaceholderValue") as? String ?? "") : primary
+    return String(value.prefix(4000))
+}
 func frame(_ e: AXUIElement) -> CGRect? {
     guard let pv=ax(e,kAXPositionAttribute), CFGetTypeID(pv)==AXValueGetTypeID(),
           let sv=ax(e,kAXSizeAttribute), CFGetTypeID(sv)==AXValueGetTypeID() else { return nil }
