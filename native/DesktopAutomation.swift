@@ -34,7 +34,17 @@ func ax(_ e: AXUIElement, _ key: String) -> CFTypeRef? {
     return value
 }
 func str(_ e: AXUIElement, _ key: String) -> String {
-    let primary = ax(e,key) as? String ?? ""
+    let raw = ax(e,key)
+    var primary = raw as? String ?? ""
+    // AX checkbox values may be CFBoolean or CFNumber rather than CFString.
+    // Preserve mixed (2) as distinct; callers must never treat it as unchecked.
+    if primary.isEmpty, key == kAXValueAttribute,
+       ax(e,kAXRoleAttribute) as? String == kAXCheckBoxRole,
+       let raw, CFGetTypeID(raw) == CFBooleanGetTypeID() || CFGetTypeID(raw) == CFNumberGetTypeID(),
+       let number = raw as? NSNumber {
+        let value = number.doubleValue
+        if value == 0 || value == 1 || value == 2 { primary = String(Int(value)) }
+    }
     // Chromium inputs expose their accessible search hint as a placeholder.
     // Never replace a nonempty native description or expose protected input.
     let value = primary.isEmpty && key == kAXDescriptionAttribute
