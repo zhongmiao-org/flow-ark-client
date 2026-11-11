@@ -157,6 +157,7 @@ type Invocation = {
 };
 
 export class ScriptProcesses {
+  get maintenanceBusyCount() { return [...this.invocations.values()].filter(x => !x.confirmed || !x.settled).length; }
   readonly ready: Promise<void>;
   private block?: string;
   private boot?: string;

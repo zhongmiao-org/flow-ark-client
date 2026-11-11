@@ -47,6 +47,7 @@ type Job = { abort: boolean; done: Promise<void> };
 const key = (...parts: (string | number)[]) => digest(parts);
 const same = (a: unknown, b: unknown) => digest(a) === digest(b);
 export class ConversationArchives {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<string, Job>();
   private grants = new Map<
     string,

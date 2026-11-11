@@ -85,6 +85,7 @@ function until<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
 
 /** Finite batches only. Provider calls, durable intent and cursor advancement stay in the host. */
 export class SourceReductions {
+  get maintenanceBusyCount() { return this.live.size; }
   private live = new Map<string, Live>();
   constructor(
     private store: Store,

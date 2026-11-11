@@ -1,3 +1,4 @@
+import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
 import { z } from 'zod';
 import { workbookHeaders } from '../adapters/files';
 import { DesktopAutomationRuns } from './desktop-automation';
@@ -183,6 +184,7 @@ import { AISettings } from './ai-settings';
 import { LocalCredentialSettings } from './local-credentials';
 
 export class Runtime {
+  private maintenance = new WorkspaceMaintenanceGate();
   readonly projects: ProjectWorkspace;
   readonly projectAI: ProjectAI;
   readonly store: Store;
@@ -1464,6 +1466,7 @@ export class Runtime {
     const blocked = this.executionBlock();
     if (blocked) throw new Error(blocked);
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
+    if (this.maintenance.held) throw Error('工作区维护中，请等待核对完成');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
   }
   private assertAdmission(epoch: number) {
@@ -2767,11 +2770,12 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
-    if (this.suspended) return;
+    if (this.suspended || this.maintenance.held) return;
     const epoch = this.admissionEpoch;
     await this.ready;
     if (
       epoch !== this.admissionEpoch ||
+      this.maintenance.held ||
       this.stopping ||
       this.suspended ||
       this.ticking ||
@@ -2911,7 +2915,21 @@ export class Runtime {
       throw new AggregateError(errors, '休眠收尾遇到本地记录错误，请核对最后保存的状态与运行结果');
     return true;
   }
+  private assertWorkspaceIdle() {
+    if (this.recovering || this.stopping || this.suspended || this.ticking || this.active || this.handoffId || this.compiling || this.pendingCapabilities.size || this.store.fault || this.executionBlock() || runOverview(this.store.list<Run>('run')).queued || this.store.list<Schedule>('schedule').some(s => s.enabled))
+      throw Error('请先完成活动、排队任务与恢复，并关闭启用计划，再维护工作区');
+    const managers = [this.projectAI, this.aiSettings, this.toolConnections, this.planning, this.desktopPlanning, this.desktopRuns, this.mcpRuns, this.conversations, this.threads, this.archives, this.reductions, this.skills, this.author, this.batches, this.scripts, this.sessions];
+    if (managers.some(manager => manager.maintenanceBusyCount > 0)) throw Error('仍有 AI、工具、编辑或资源活动，请完成后再维护工作区');
+  }
+  holdWorkspaceMaintenance() { return { nonce: this.maintenance.hold(() => this.assertWorkspaceIdle()) }; }
+  assertWorkspaceMaintenance(nonce: string) { this.maintenance.assert(nonce, () => this.assertWorkspaceIdle()); return true; }
+  releaseWorkspaceMaintenance(nonce: string) { this.maintenance.release(nonce); return true; }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'shutdown') return this.dispatchRequest(method, args);
+    const leave = this.maintenance.enter(method);
+    try { return await this.dispatchRequest(method, args); } finally { leave(); }
+  }
+  private async dispatchRequest(method: string, args: any = {}): Promise<any> {
     if (method === 'project.ai.workbook') {
       await this.ready;
       const value=z.object({id:z.string().min(1).max(100),path:z.string().min(1).max(4096)}).strict().parse(args);

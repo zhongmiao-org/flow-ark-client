@@ -35,6 +35,7 @@ async function readUntil<T>(read: Promise<T>, signal: AbortSignal): Promise<T> {
   }
 }
 export class AISettings {
+  get maintenanceBusyCount() { return this.operations.size; }
   private operations = new Map<AIProviderId, Operation>();
   private epochs = new Map<string, number>();
   constructor(

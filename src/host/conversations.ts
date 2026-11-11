@@ -33,6 +33,7 @@ type Saved = { scope: string; key: string; snapshot: ConversationSnapshot };
 type Job = { id: string; provider: string; abort: AbortController; done: Promise<void> };
 const kind = 'guided-conversation';
 export class Conversations {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<string, Job>();
   private capacity: ConversationCapacity;
   constructor(

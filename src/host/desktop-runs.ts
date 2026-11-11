@@ -32,6 +32,8 @@ export function desktopStep(record: FlowRecord) {
 }
 type BindJob = { cancelled: boolean; bindingId: string };
 export class DesktopRuns {
+  private activeBindings = new Set<string>();
+  get maintenanceBusyCount() { return this.activeBindings.size; }
   private jobs = new Map<string, BindJob>();
   private requests = new Map<string, number>();
   constructor(
@@ -77,6 +79,7 @@ export class DesktopRuns {
     this.remember(args.requestId);
     const job = { cancelled: false, bindingId: uid() };
     this.jobs.set(args.requestId, job);
+    this.activeBindings.add(args.requestId);
     const current = () => {
       this.deps.available();
       this.deps.idle();
@@ -139,7 +142,7 @@ export class DesktopRuns {
         .system('desktop.binding.release', { bindingId: job.bindingId })
         .catch(() => {});
       throw error;
-    }
+    } finally { this.activeBindings.delete(args.requestId); }
     // Retain a bounded cancellation handle for a reply that arrived after the page left.
   }
   async verify(record: FlowRecord, runId?: string) {

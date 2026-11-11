@@ -69,6 +69,7 @@ function combined(results: CleanupResult[]): CleanupResult {
   };
 }
 export class Sessions {
+  get maintenanceBusyCount() { return this.closing.size + [...this.sessions.values()].filter(x => !!x.owner).length + Number(!!this.embedded && (!!this.embedded.owner || this.embedded.phase === 'starting' || this.embedded.phase === 'closing')); }
   private selectedPages = new Map<string, WebPageIdentity>();
   selectedPage(runId: string) {
     return this.selectedPages.get(runId);

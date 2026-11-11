@@ -38,6 +38,7 @@ type Task = { id: string; projectId: string; root: string; task: string; state: 
   message: string; history: { kind: string; value: unknown }[]; paidRetryRequired?: boolean };
 const readToolNames=new Set(['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview']);
 export class ProjectAI {
+  get maintenanceBusyCount() { return this.active.size; }
   private active = new Map<string, { task: Task; abort: AbortController; done: Promise<void> }>();
   constructor(private store: Store, private system: (method: string, args: any) => Promise<any>,
     private project: (id: string) => Promise<{ root: string }>,

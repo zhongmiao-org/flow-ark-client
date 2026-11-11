@@ -1,3 +1,4 @@
+import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
 import { platformSkillMaxBytes, parsePlatformAuthoringSkill } from '../projects/platform-authoring-skill';
 import { workspaceStorage, prepareWorkspaceStorage, activateWorkspaceStorage, type WorkspaceStorageReview } from '../host/workspace-storage';
 import { stat } from 'node:fs/promises';
@@ -308,12 +309,9 @@ app
     let storageCandidate: WorkspaceStorageReview | undefined;
     let storageBusy = false;
     let storageStopped = false;
-    const maintenanceIdle = async () => {
-      const data: Bootstrap = await rpc.call('bootstrap');
-      if (!data.execution || data.fault || data.execution.active || data.runOverview.queued || data.schedules.some(s => s.enabled))
-        throw Error('请先停止活动与排队任务、关闭启用计划并恢复存储，再预览工作区');
-    };
+    const ordinaryRequests = new WorkspaceMaintenanceGate();
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
+      let leaveOrdinary: (() => void) | undefined;
       const pending =
         method === 'ai.configuration.save' &&
         raw &&
@@ -346,6 +344,7 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (!['workspace.storage.status', 'workspace.storage.preview', 'workspace.storage.enable'].includes(method)) leaveOrdinary = ordinaryRequests.enter(method);
         if (method === 'workspace.storage.status') {
           await ready;
           const workspace = await workspaceStorage(app.getPath('userData'));
@@ -354,11 +353,14 @@ app
         if (storageBusy) throw Error('工作区维护中，请等待核对完成');
         if (method === 'workspace.storage.preview' || method === 'workspace.storage.enable') {
           storageBusy = true;
+          let mainNonce: string | undefined;
+          let hostNonce: string | undefined;
           try {
+            mainNonce = ordinaryRequests.hold(() => {});
             await ready;
             if (startupError || hostStopped || storageStopped) throw Error('本地宿主不可用，请完整退出并重开后重新预览');
             if (await workspaceStorage(app.getPath('userData'))) throw Error('普通工作区已经启用，未重复迁移');
-            await maintenanceIdle();
+            hostNonce = (await rpc.call('workspace.maintenance.hold')).nonce;
             if (method === 'workspace.storage.preview') {
               storageCandidate = undefined;
               if (!legacyWorkspaceKey) throw Error('本会话未解锁原工作区，请重开后重新预览');
@@ -367,6 +369,7 @@ app
             }
             const candidate = storageCandidate;
             if (!candidate || candidate.stamp !== args.stamp) throw Error('工作区预览已变化，请重新核对');
+            await rpc.call('workspace.maintenance.assert', { nonce: hostNonce });
             // Block further writes before stopping the existing lifecycle. No arbitrary host RPC is exposed.
             storageStopped = true;
             projectBridge?.close();
@@ -406,7 +409,17 @@ app
           } catch (error) {
             if (storageStopped) startupError = '工作区切换未完成，请完整退出并重开后重新预览；原记录保留';
             throw error;
-          } finally { storageBusy = false; }
+          } finally {
+            try {
+              if (hostNonce && !storageStopped && !hostStopped) {
+                try { await rpc.call('workspace.maintenance.release', { nonce: hostNonce }); }
+                catch (error) { storageStopped = true; startupError = '维护许可释放未确认，请完整退出并重开；原记录保留'; throw error; }
+              }
+            } finally {
+              if (mainNonce) ordinaryRequests.release(mainNonce);
+              storageBusy = false;
+            }
+          }
         }
         if (storageStopped) throw Error(startupError || '本地宿主已停止，请完整退出并重开 FlowArk');
         if (method.startsWith('desktop.automation.')) {
@@ -651,7 +664,7 @@ app
         );
       } catch (error) {
         throw new Error(publicError(error, pending));
-      }
+      } finally { leaveOrdinary?.(); }
     });
     ready = (async () => {
       try {

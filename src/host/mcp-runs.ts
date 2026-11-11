@@ -55,6 +55,7 @@ function instanceMatches(steps: Step[], nodeId: string, instance: string, prefix
   });
 }
 export class McpRuns {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<
     string,
     { runId: string; abort: AbortController; promise: Promise<any> }

@@ -44,6 +44,9 @@ const rpc = new Rpc(
       return true;
     }
     if (!runtime) throw new Error('宿主尚未就绪');
+    if (method === 'workspace.maintenance.hold') return runtime.holdWorkspaceMaintenance();
+    if (method === 'workspace.maintenance.assert') return runtime.assertWorkspaceMaintenance(args?.nonce);
+    if (method === 'workspace.maintenance.release') return runtime.releaseWorkspaceMaintenance(args?.nonce);
     return runtime.request(method, args);
   },
   (error) => (runtime ? runtime.redactError(error) : redactedErrorText(error)),

@@ -34,6 +34,7 @@ type Job = {
   promise: Promise<ConnectionCandidate | OAuthInspection>;
 };
 export class ToolConnections {
+  get maintenanceBusyCount() { return this.jobs.size + this.calls.size; }
   private inspections = new Map<string, OAuthInspection>();
   private jobs = new Map<string, Job>();
   private calls = new Map<
