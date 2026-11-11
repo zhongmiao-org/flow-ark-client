@@ -224,6 +224,8 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let element=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(element)==AXUIElementGetTypeID(),str(element as! AXUIElement,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-or-missing-input") }
         let board=NSPasteboard.general
         let (snapshot,before)=try clipboardSnapshot(board)
+        let pointer=CGEvent(source:nil)?.location ?? .zero
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention")}
         observation=nil
         try key(8,.maskCommand,pid:w.app.processIdentifier)
         let deadline=Date().addingTimeInterval(1)
@@ -239,17 +241,39 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let p=raw as? [String:Any],let x=p["x"] as? Double,let y=p["y"] as? Double,x.isFinite,y.isFinite,x>=0,y>=0,x<bounds.width,y<bounds.height else { try fault("point-outside-window") }
         return CGPoint(x:bounds.minX+x,y:bounds.minY+y)
     }
+    // The WindowServer foreground route is required for real pointer/keyboard UI input.
+    // PID posting alone was observed to leave the bound browser selection unchanged.
+    static func postForeground(_ event:CGEvent,pid:pid_t) throws {
+        let w=try check()
+        guard w.app.processIdentifier==pid,CGPreflightPostEventAccess(),let beforeFrame=frame(w.window) else {try fault("input-window-changed")}
+        let beforeTitle=str(w.window,kAXTitleAttribute)
+        try focused(w)
+        let current=try check()
+        guard same(current.window,w.window),frame(w.window)==beforeFrame,str(w.window,kAXTitleAttribute)==beforeTitle else {try fault("input-window-changed")}
+        event.post(tap:.cghidEventTap)
+        // A later failure is uncertain: the event may already have been handled.
+        let after=try check();try focused(w)
+        guard same(after.window,w.window),frame(w.window)==beforeFrame,str(w.window,kAXTitleAttribute)==beforeTitle else {try fault("input-window-changed-after-post")}
+    }
     static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1,pid:pid_t) throws {
         guard let event=CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:p,mouseButton:.left) else { try fault("input-unavailable") }
         guard let number=capturedWindowNumber else {try fault("input-window-unavailable")}
         event.setIntegerValueField(.mouseEventClickState,value:Int64(count))
         event.setIntegerValueField(.mouseEventWindowUnderMousePointer,value:Int64(number))
         event.setIntegerValueField(.mouseEventWindowUnderMousePointerThatCanHandleThisEvent,value:Int64(number))
-        event.postToPid(pid)
+        try postForeground(event,pid:pid)
+    }
+    static func keyPair(_ down:CGEvent,_ up:CGEvent,pid:pid_t) throws {
+        // Release only to the still-bound foreground window, even if post-check failed.
+        var released=false
+        defer {if !released {try? postForeground(up,pid:pid)}}
+        try postForeground(down,pid:pid)
+        try postForeground(up,pid:pid)
+        released=true
     }
     static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[],pid:pid_t) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
-        down.flags=flags;up.flags=[];down.postToPid(pid);up.postToPid(pid)
+        down.flags=flags;up.flags=[];try keyPair(down,up,pid:pid)
     }
     static func act(_ args:[String:Any]) async throws -> Any {
         let w=try check()
@@ -280,6 +304,11 @@ func jsonStamp(_ value:Any) throws -> String {
             let pointer=CGEvent(source:nil)?.location ?? .zero
             guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention")}
         }
+        if kind != "activate" {
+            try focused(w)
+            let dispatchPointer=CGEvent(source:nil)?.location ?? .zero
+            guard abs(dispatchPointer.x-old.pointer.x)<1,abs(dispatchPointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention")}
+        }
         // Consume before the first native event. Any subsequent failure is unknown, never retried.
         consumed.insert(actionId);observation=nil
         do {
@@ -304,7 +333,7 @@ func jsonStamp(_ value:Any) throws -> String {
                 for chunk in unicodeChunks(text) {
                     try focused(w)
                     guard let event=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:false) else { try fault("input-unavailable") }
-                    event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);event.postToPid(w.app.processIdentifier);up.postToPid(w.app.processIdentifier)
+                    event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);try keyPair(event,up,pid:w.app.processIdentifier)
                 }
             case "paste":
                 guard let text=command["text"] as? String,text.utf16.count<=20000 else { try fault("text-limit") }
@@ -334,7 +363,7 @@ func jsonStamp(_ value:Any) throws -> String {
                 let p=try point(command["point"],old.frame);try mouse(.mouseMoved,p,pid:w.app.processIdentifier)
                 guard let dy=command["deltaY"] as? Int,abs(dy)<=1000,let dx=command["deltaX"] as? Int,abs(dx)<=1000,
                       let e=CGEvent(scrollWheelEvent2Source:nil,units:.pixel,wheelCount:2,wheel1:Int32(dy),wheel2:Int32(dx),wheel3:0) else { try fault("invalid-scroll") }
-                e.location=p;e.postToPid(w.app.processIdentifier)
+                e.location=p;try postForeground(e,pid:w.app.processIdentifier)
             case "drag":
                 let from=try point(command["from"],old.frame),to=try point(command["to"],old.frame)
                 try mouse(.leftMouseDown,from,pid:w.app.processIdentifier)
