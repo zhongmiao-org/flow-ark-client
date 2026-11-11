@@ -1,5 +1,6 @@
 import { projectDevelopmentBaseMatches } from '../host/project-development';
 import { assertSkillRef } from '../shared/skill';
+import { projectRebuildCompatibility } from './project-rebuild';
 import { setInstanceState, rebaseProjectDataContext } from '../host/template-data';
 import { resolveParameterSources } from '../shared/parameter-sources';
 import type { TemplateSource } from '../shared/template-source';
@@ -502,30 +503,52 @@ export class Templates {
     return {stamp, configurationInvalid, stateInvalid, uninitialized, statePending, nextConfiguration, nextState, beforeState: state, beforeMeta: meta,
       preview:{stamp, operation:'仅纠正旧宿主的无效初始默认值', configuration:configurationInvalid?'移除旧宿主生造的可选占位值':'保留本人配置', state:stateInvalid?(statePending?'保留未初始化槽，首次state.set仍须完整Schema校验':'纠正nullable等初始默认值'):uninitialized?'保留未初始化槽':'保留', stateRevision:0, readOnlyRuns:runRows.length, noEffectReceipts:true, historyPreserved:true}};
   }
+  private projectCompatibilityPlan(id:string,old:PackageData,next:PackageData){
+    const shape=projectRebuildCompatibility(old,next);
+    if(!shape.changed)return undefined;
+    const before=this.snapshot(id),state=this.store.get<unknown>('template-state',id),meta=this.store.get<{revision:number;updatedAt:string;uninitialized?:boolean}>('template-state-meta',id);
+    if(state===undefined||!meta||!Number.isSafeInteger(meta.revision)||meta.revision<0||meta.uninitialized)throw Error('兼容重建需要准确已初始化的真实状态与修订，不初始化或迁移');
+    validateData(jsonFile(old.files,old.manifest.configurationSchema),before.instance.configuration);
+    validateData(jsonFile(next.files,next.manifest.configurationSchema),before.instance.configuration);
+    validateData(jsonFile(old.files,old.manifest.stateSchema),state);
+    validateData(jsonFile(next.files,next.manifest.stateSchema),state);
+    const flowIds=new Set(Object.values(before.instance.entryFlows)),runs:{id:string;state:string;versionId:string;snapshotSha256:string}[]=[];
+    for(const run of this.store.list<Run>('run')){
+      const snapshot=this.store.get<FlowRecord>('snapshot',run.id),ref=snapshot?.bindings.template;
+      if(!flowIds.has(run.flowId)&&ref?.instanceId!==id)continue;
+      if(!snapshot||ref?.instanceId!==id||!['SUCCEEDED','FAILED','CANCELLED'].includes(run.state))throw Error('兼容重建要求所有原运行已终止且无可恢复运行；保留原快照');
+      runs.push({id:run.id,state:run.state,versionId:run.versionId,snapshotSha256:sha256(canonical(snapshot))});
+    }
+    const context=this.store.get<any>('template-data-context','instance:'+id);
+    if(this.store.list<any>('template-data-operation').some(op=>['prepared','unknown'].includes(op.receipt?.status)&&(context&&op.receipt?.contextId===context.id||runs.some(r=>r.id===op.runId))))throw Error('存在未核对的状态提交，不能兼容重建');
+    const stateSha256=sha256(canonical(state)),stamp=sha256(canonical({instanceId:id,instanceRevision:before.revision,beforePackage:before.instance.packageKey,beforeDigest:old.manifest.contentDigest,afterPackage:next.manifest.id+'@'+next.manifest.version,afterDigest:next.manifest.contentDigest,stateSha256,meta,shape,context:context??null,runs:runs.sort((a,b)=>a.id.localeCompare(b.id))}));
+    return {stamp,preview:{compatibilityStamp:stamp,operation:'同实例有限兼容扩展（无状态迁移）',beforePackage:before.instance.packageKey,afterPackage:next.manifest.id+'@'+next.manifest.version,beforeDigest:old.manifest.contentDigest,afterDigest:next.manifest.contentDigest,instanceRevision:before.revision,stateRevision:meta.revision,stateSha256,newOptionalStateProperties:shape.stateProperties,addedLocalAttentionEntries:shape.attentionEntries,resultSchemas:shape.resultSchemas,grantsUnchanged:true,stateUnchanged:true,historyPreserved:true,unknownPreserved:true,runsChecked:runs.length}};
+  }
+  async previewProjectRebuild(id:string,key:string,revision:string){
+    const before=this.snapshot(id);if(before.revision!==revision||before.instance.templateResourceExtension)throw Error('实例已变化或含额外声明，未准备重建');
+    const old=await this.library.load(before.instance.packageKey),next=await this.library.load(key),compatibility=this.projectCompatibilityPlan(id,old,next);
+    return {compatibility:compatibility?.preview,initialDefaultsRepair:compatibility?undefined:this.initialDefaultsPlan(id,old,next)?.preview};
+  }
   async previewProjectInitialDefaults(id: string, key: string, revision: string) {
-    const before = this.snapshot(id);if (before.revision !== revision) throw Error('实例已变化，未准备初始值纠正');
-    const old = await this.library.load(before.instance.packageKey), next = await this.library.load(key);
+    const before=this.snapshot(id);if(before.revision!==revision)throw Error('实例已变化，未准备初始值纠正');
+    const old=await this.library.load(before.instance.packageKey),next=await this.library.load(key);
     return this.initialDefaultsPlan(id,old,next)?.preview;
   }
-  rebuildProjectInstance(id: string, key: string, revision: string, assertIdle: () => void, initialDefaultsStamp?: string) {
+  rebuildProjectInstance(id: string, key: string, revision: string, assertIdle: () => void, initialDefaultsStamp?: string, compatibilityStamp?:string) {
     return this.exclusive(async () => {
       assertIdle();
       const before = this.snapshot(id);
       if (before.revision !== revision || before.instance.templateResourceExtension) throw Error('调试实例已变化或含额外目录声明，请重新核对');
       const old = await this.library.load(before.instance.packageKey), next = await this.library.load(key);
-      if (old.manifest.id !== next.manifest.id) throw Error('不能将调试实例改为另一工程');
-      for (const field of ['resources', 'actions'] as const)
-        if (canonical(old.manifest[field]) !== canonical(next.manifest[field])) throw Error('资源或权限声明变化，请新建实例并明确配置');
-      for (const field of ['configurationSchema', 'stateSchema'] as const)
-        if (canonical(jsonFile(old.files, old.manifest[field])) !== canonical(jsonFile(next.files, next.manifest[field]))) throw Error('配置或状态Schema变化，未覆盖调试实例');
-      if (old.manifest.entries.length !== next.manifest.entries.length) throw Error('入口集合变化，请新建实例并核对');
+      const compatibility=this.projectCompatibilityPlan(id,old,next);
+      if(compatibility?.stamp!==compatibilityStamp)throw Error('兼容扩展未获准确确认或已变化，未修改实例');
       const inputs: Record<string, unknown> = {};
       for (const entry of next.manifest.entries) {
         const original = old.manifest.entries.find(e => e.id === entry.id), record = before.records[entry.id];
         if (!original || !record) throw Error('入口或原流程缺失');
-        for (const field of ['resources', 'actions', 'capabilities', 'batching'] as const)
+        for (const field of ['resources', 'actions', 'batching'] as const)
           if (canonical(original[field] ?? null) !== canonical(entry[field] ?? null)) throw Error('入口资源、动作或连续执行边界变化，请新建实例');
-        for (const field of ['inputSchema', 'resultSchema'] as const)
+        for (const field of ['inputSchema'] as const)
           if (canonical(jsonFile(old.files, original[field])) !== canonical(jsonFile(next.files, entry[field]))) throw Error('入口Schema变化，未覆盖');
         const source = materializeFlow(old, original.id);
         if (canonical(record.flow.steps) !== canonical(source.steps)) throw Error('客户端已有本地流程编辑，请先合并至工程源码');
@@ -533,7 +556,7 @@ export class Templates {
         // The selected entry is fully validated by normal run preparation.
         inputs[entry.id] = structuredClone(record.flow.parameters);
       }
-      const defaultsPlan = this.initialDefaultsPlan(id,old,next);
+      const defaultsPlan = compatibility?undefined:this.initialDefaultsPlan(id,old,next);
       if (defaultsPlan && defaultsPlan.stamp !== initialDefaultsStamp) throw Error('初始默认值纠正未获准确确认，未修改实例');
       const instance = { ...before.instance, packageKey: key,
         ...(defaultsPlan?.configurationInvalid ? {configuration: defaultsPlan.nextConfiguration, configurationRevision:(before.instance.configurationRevision ?? 1)+1} : {}) }, operationId = randomUUID();
@@ -542,7 +565,9 @@ export class Templates {
       this.store.tx(() => {
         assertIdle();
         if (this.snapshot(id).revision !== revision) throw Error('重建前实例变化，未覆盖');
-        const liveDefaultsPlan = this.initialDefaultsPlan(id,old,next);
+        const liveCompatibility=this.projectCompatibilityPlan(id,old,next);
+        if(liveCompatibility?.stamp!==compatibility?.stamp)throw Error('确认后状态、运行或兼容边界变化，未重建');
+        const liveDefaultsPlan = liveCompatibility?undefined:this.initialDefaultsPlan(id,old,next);
         if (liveDefaultsPlan?.stamp !== defaultsPlan?.stamp) throw Error('确认后初始值或运行记录变化，未纠正');
         if (defaultsPlan?.stateInvalid) {
           this.store.put('project-initial-defaults-repair', operationId, {version:1, operationId, instanceId:id, stamp:defaultsPlan.stamp, beforeConfiguration:before.instance.configuration, beforeState:defaultsPlan.beforeState, beforeStateMeta:defaultsPlan.beforeMeta, afterConfiguration:instance.configuration, afterState:defaultsPlan.nextState, statePending:defaultsPlan.statePending, at:new Date().toISOString()});
@@ -551,12 +576,12 @@ export class Templates {
         } else if (defaultsPlan?.configurationInvalid) {
           this.store.put('project-initial-defaults-repair', operationId, {version:1, operationId, instanceId:id, stamp:defaultsPlan.stamp, beforeConfiguration:before.instance.configuration, beforeState:defaultsPlan.beforeState, beforeStateMeta:defaultsPlan.beforeMeta, afterConfiguration:instance.configuration, afterState:defaultsPlan.nextState, at:new Date().toISOString()});
         }
-        rebaseProjectDataContext(this.store, id, old, next);
+        const contextRebase=rebaseProjectDataContext(this.store, id, old, next, compatibility?.stamp);
         this.store.put('template-instance', id, instance);
         this.writeFlows(next, instance, inputs, true);
         rebuildReceipt = { version: 1, operationId, instanceId: id, beforeRevision: revision,
           afterRevision: this.snapshot(id).revision, beforePackage: before.instance.packageKey, afterPackage: key,
-          historyPreserved: true, ...(defaultsPlan ? {initialDefaultsRepair:defaultsPlan.preview} : {}), retainedResultRefs: Object.entries(before.instance.resources).filter(([, binding]) => binding.result).map(([resourceId, binding]) => ({ resourceId, refSha256: sha256(canonical(binding.result)) })), at: new Date().toISOString() };
+          historyPreserved: true, ...(contextRebase?{dataContext:contextRebase}:{}), ...(compatibility?{compatibility:compatibility.preview}:{}), ...(defaultsPlan ? {initialDefaultsRepair:defaultsPlan.preview} : {}), retainedResultRefs: Object.entries(before.instance.resources).filter(([, binding]) => binding.result).map(([resourceId, binding]) => ({ resourceId, refSha256: sha256(canonical(binding.result)) })), at: new Date().toISOString() };
         this.store.put('project-instance-rebuild', operationId, rebuildReceipt);
       });
       return { ...await this.detail(id), rebuildReceipt: rebuildReceipt! };
