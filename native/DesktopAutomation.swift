@@ -69,6 +69,12 @@ func captureTitle(_ title:String,_ appName:String) -> String {
     // Keep the exact PID/frame and both uniqueness guards below unchanged.
     return appName=="Google Chrome" ? base.replacingOccurrences(of:" - 内存用量高 - [0-9]+(?:\\.[0-9]+)? MB$",with:"",options:.regularExpression) : base
 }
+// Only the independently observed Chrome memory decoration is non-contextual.
+// Other apps and the complete document title remain exact; PID/window/frame checks stay separate.
+func sameContextTitle(_ current:String,_ previous:String,_ app:NSRunningApplication) -> Bool {
+    let name=app.localizedName ?? ""
+    return name=="Google Chrome" ? captureTitle(current,name)==captureTitle(previous,name) : current==previous
+}
 func jsonStamp(_ value:Any) throws -> String {
     let bytes=try JSONSerialization.data(withJSONObject:value,options:[.sortedKeys])
     return SHA256.hash(data:bytes).map{String(format:"%02x",$0)}.joined()
@@ -230,7 +236,7 @@ func jsonStamp(_ value:Any) throws -> String {
         let w=try check();try focused(w)
         guard CGPreflightPostEventAccess() else {try fault("input-posting-not-authorized")}
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
-        guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
+        guard sameContextTitle(str(w.window,kAXTitleAttribute),old.title,w.app) else {try fault("window-context-changed")}
         guard frame(w.window)==old.frame else { try fault("observation-changed") }
         try checkFocus(w,old)
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
@@ -263,11 +269,11 @@ func jsonStamp(_ value:Any) throws -> String {
         let beforeTitle=str(w.window,kAXTitleAttribute)
         try focused(w)
         let current=try check()
-        guard same(current.window,w.window),frame(w.window)==beforeFrame,str(w.window,kAXTitleAttribute)==beforeTitle else {try fault("input-window-changed")}
+        guard same(current.window,w.window),frame(w.window)==beforeFrame,sameContextTitle(str(w.window,kAXTitleAttribute),beforeTitle,w.app) else {try fault("input-window-changed")}
         event.post(tap:.cghidEventTap)
         // A later failure is uncertain: the event may already have been handled.
         let after=try check();try focused(w)
-        guard same(after.window,w.window),frame(w.window)==beforeFrame,str(w.window,kAXTitleAttribute)==beforeTitle else {try fault("input-window-changed-after-post")}
+        guard same(after.window,w.window),frame(w.window)==beforeFrame,sameContextTitle(str(w.window,kAXTitleAttribute),beforeTitle,w.app) else {try fault("input-window-changed-after-post")}
     }
     static func mouse(_ type:CGEventType,_ p:CGPoint,_ count:Int=1,pid:pid_t) throws {
         guard let event=CGEvent(mouseEventSource:nil,mouseType:type,mouseCursorPosition:p,mouseButton:.left) else { try fault("input-unavailable") }
@@ -311,7 +317,7 @@ func jsonStamp(_ value:Any) throws -> String {
         guard CGPreflightPostEventAccess() else {try fault("input-posting-not-authorized")}
         guard let actionId=args["actionId"] as? String,UUID(uuidString:actionId) != nil,!consumed.contains(actionId) else { try fault("action-already-consumed") }
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
-        guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
+        guard sameContextTitle(str(w.window,kAXTitleAttribute),old.title,w.app) else {try fault("window-context-changed")}
         let pointer=CGEvent(source:nil)?.location ?? .zero
         guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
         guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
