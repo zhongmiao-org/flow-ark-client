@@ -1,3 +1,6 @@
+import { platformSkillMaxBytes, parsePlatformAuthoringSkill } from '../projects/platform-authoring-skill';
+import { stat } from 'node:fs/promises';
+import { basename } from 'node:path';
 import { DesktopAutomation } from './desktop-automation';
 import { assertReductionOutput } from '../shared/source-reduction';
 import { ProjectBridge } from './project-bridge';
@@ -349,6 +352,16 @@ app
           const pending = projectReview;
           if (!pending || pending.id !== args.reviewId || pending.readStamp !== args.readStamp || Date.now() >= pending.expiresAt) throw Error('工程核对已过期，不执行');
           pending.finish(args.approved); return { accepted: true };
+        }
+        if (method === 'project.ai.platformSkill.choose') {
+          await ready;
+          await rpc.call('project.get', {id:args.id});
+          const picked=await dialog.showOpenDialog(win,{title:'选择平台作者 Skill（仅导入 Markdown 正文）',properties:['openFile'],filters:[{name:'Skill Markdown',extensions:['md']}]});
+          if(picked.canceled||!picked.filePaths[0])return null;
+          const path=picked.filePaths[0],info=await stat(path);
+          if(!info.isFile()||info.size>platformSkillMaxBytes)throw Error('Skill 必须是小于 48 KiB 的 Markdown 文件');
+          const snapshot=parsePlatformAuthoringSkill(new TextDecoder('utf-8',{fatal:true}).decode(await readFile(path)),basename(path));
+          return rpc.call(method,{id:args.id,content:snapshot.content,sourceName:snapshot.sourceName});
         }
         if (method === 'project.ai.chooseWorkbook') {
           await ready;

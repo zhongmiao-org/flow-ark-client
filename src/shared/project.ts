@@ -22,6 +22,8 @@ export const projectMethods = {
   'project.run.history': z.object({ id }).strict(),
   'project.run.status': z.object({ id, runId: z.string().min(1).max(100) }).strict(),
   'project.run.control': z.object({ id, runId: z.string().min(1).max(100), action: z.enum(['pause', 'resume', 'step', 'cancel']) }).strict(),
+  'project.ai.platformSkill.choose': z.object({ id, content:z.string().max(49152).optional(), sourceName:z.string().max(120).optional() }).strict(),
+  'project.ai.platformSkill.clear': z.object({ id }).strict(),
   'project.ai.chooseWorkbook': z.object({ id }).strict(),
   'project.ai.runEvidence': z.object({ id, runId: z.string().min(1).max(100) }).strict(),
   'project.ai.get': z.object({ id }).strict(),

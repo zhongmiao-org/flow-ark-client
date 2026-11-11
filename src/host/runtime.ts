@@ -2962,6 +2962,8 @@ export class Runtime {
         if(digest(this.store.get('project-ai-recovery',value.id)??null)!==digest(recovery))this.store.put('project-ai-recovery',value.id,recovery);
         return {...this.projectAI.get(value.id),recovery};
       }
+      if (method === 'project.ai.platformSkill.choose') return this.projectAI.selectPlatformSkill(value.id,value.content,value.sourceName);
+      if (method === 'project.ai.platformSkill.clear') return this.projectAI.selectPlatformSkill(value.id);
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
       if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.intent);
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
