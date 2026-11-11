@@ -64,6 +64,10 @@ export async function readTableRange(driver: Driver, raw: DesktopTableRangeReque
   if(q.selection==='drag'&&(q.rows>1||q.columns>1))await act('select',{kind:'drag',from:q.from,to:q.to!});
   else {
     await act('anchor',{kind:'click',point:q.from});
+    if(q.selectionPreparation==='tab-roundtrip'){
+      await act('prepare-tab',{kind:'key',key:'Tab'});
+      await act('prepare-shift-tab',{kind:'key',key:'Tab',modifiers:['shift']});
+    }
     for(let row=1;row<q.rows;row++)await act('down-'+row,{kind:'key',key:'Down',modifiers:['shift']});
     for(let column=1;column<q.columns;column++)await act('right-'+column,{kind:'key',key:'Right',modifiers:['shift']});
   }

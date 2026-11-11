@@ -29,6 +29,10 @@ export type DesktopTableRangeRequest = {
    * Default keyboard: click anchor then Shift+Down/Right. Drag only for a target explicitly known to select a rectangle.
    */
   selection?: "keyboard" | "drag";
+  /**
+   * Explicitly verified empty/nonediting anchor only: Tab then Shift+Tab returns to grid navigation before keyboard selection. No input/paste/save. Not valid with drag.
+   */
+  selectionPreparation?: "tab-roundtrip";
 };
 
 export interface DesktopTableRangeResult {

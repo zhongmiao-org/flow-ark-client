@@ -225,7 +225,8 @@ func jsonStamp(_ value:Any) throws -> String {
         let board=NSPasteboard.general
         let (snapshot,before)=try clipboardSnapshot(board)
         let pointer=CGEvent(source:nil)?.location ?? .zero
-        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention")}
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
+        guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
         observation=nil
         try key(8,.maskCommand,pid:w.app.processIdentifier)
         let deadline=Date().addingTimeInterval(1)
@@ -270,6 +271,11 @@ func jsonStamp(_ value:Any) throws -> String {
         try postForeground(down,pid:pid)
         try postForeground(up,pid:pid)
         released=true
+        // HID delivery is asynchronous. Wait briefly for release, never resend input.
+        let deadline=Date().addingTimeInterval(0.15)
+        let modifiers:CGEventFlags=[.maskCommand,.maskShift,.maskAlternate,.maskControl]
+        while !CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty && Date()<deadline {Thread.sleep(forTimeInterval:0.005)}
+        guard CGEventSource.flagsState(.combinedSessionState).intersection(modifiers).isEmpty else {try fault("input-modifier-release-unconfirmed")}
     }
     static func key(_ code:CGKeyCode,_ flags:CGEventFlags=[],pid:pid_t) throws {
         guard let down=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:code,keyDown:false) else { try fault("input-unavailable") }
@@ -282,7 +288,8 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         guard str(w.window,kAXTitleAttribute)==old.title else {try fault("window-context-changed")}
         let pointer=CGEvent(source:nil)?.location ?? .zero
-        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else { try fault("user-intervention") }
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
+        guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
         guard let command=args["command"] as? [String:Any],let kind=command["kind"] as? String else { try fault("invalid-command") }
         // Activation changes no document input and targets the bound native window.
         // Unrelated background AX structure may change before it becomes foreground.
@@ -308,7 +315,8 @@ func jsonStamp(_ value:Any) throws -> String {
         if kind != "activate" {
             try focused(w)
             let dispatchPointer=CGEvent(source:nil)?.location ?? .zero
-            guard abs(dispatchPointer.x-old.pointer.x)<1,abs(dispatchPointer.y-old.pointer.y)<1,CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention")}
+            guard abs(dispatchPointer.x-old.pointer.x)<1,abs(dispatchPointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
+            guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
         }
         // Consume before the first native event. Any subsequent failure is unknown, never retried.
         consumed.insert(actionId);observation=nil
