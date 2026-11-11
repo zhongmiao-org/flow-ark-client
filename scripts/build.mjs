@@ -1,4 +1,5 @@
 import './generate-desktop-table-range.mjs';
+import { checkRendererIPC } from './check-renderer-ipc.mjs';
 import './generate-node-validator.mjs';
 import './generate-desktop-sdk.mjs';
 import { build } from 'esbuild';
@@ -8,6 +9,7 @@ import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
+await checkRendererIPC();
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 if (process.platform === 'darwin') {

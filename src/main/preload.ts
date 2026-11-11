@@ -4,6 +4,8 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'workspace.storage.status', 'workspace.storage.preview', 'workspace.storage.enable',
+  'project.ai.platformSkill.choose', 'project.ai.platformSkill.clear',
   'desktop.automation.list', 'desktop.automation.state', 'desktop.automation.bind', 'desktop.automation.release', 'desktop.automation.settings',
   'project.review.get', 'project.review.respond',
   'project.choose', 'project.create', 'project.list', 'project.get', 'project.read',
