@@ -215,7 +215,7 @@ func jsonStamp(_ value:Any) throws -> String {
         var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
         let focus=try captureFocus(w)
         // Expose only nontext metadata; the complete stamp above remains private.
-        if w.app.isActive,let focus,focus.2 != "AXSecureTextField",focus.3 != kAXSecureTextFieldSubrole {
+        if NSWorkspace.shared.frontmostApplication?.processIdentifier==w.app.processIdentifier,let focus,focus.2 != "AXSecureTextField",focus.3 != kAXSecureTextFieldSubrole {
             var snapshot:[String:Any]=["role":focus.2,"subrole":focus.3]
             let matchingIds=refs.compactMap { same($0.value,focus.0) ? $0.key:nil }
             if matchingIds.count==1 {snapshot["elementId"]=matchingIds[0]}
