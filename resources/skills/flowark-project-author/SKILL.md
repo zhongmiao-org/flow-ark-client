@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.25-draft
+  version: 1.2.26-draft
 ---
 
 # FlowArk 流程工程开发
@@ -44,6 +44,7 @@ metadata:
 - 资源类型、访问方式及动作由工具格式约束。桌面窗口是本人私有运行绑定，不是名为desktop-window的公开资源类型。
 - 动作默认deny。声明能力不等于允许外发，配置值不能授予权限。
 - 生成调用 `ctx.desktop.act` 或 `ctx.desktop.readTableRange` 的节点前，逐项核对入口同时声明 `desktop-automation-v1` 与 `effect`，当前动作ID在包 actions 及该入口 actionIds 中，正式实例 grant 已核定，且先 prepare 并要求 execute=true。只声明桌面能力或动作名不能取得正式effect凭据；缺少 effect 时即使编译通过也不能运行。纯 observe 入口不因此增加 effect 或动作权限。普通文件/浏览器资源依各自SDK声明，不能用虚构桌面资源替代本人窗口绑定。
+- 桌面写入顺序为真实业务`effect.prepare`→完成宿主运行级scope及当前操作准备确认→要求execute=true→fresh observe→act。不要先观察再跨人工等待复用observationId，也不预留虚构空写操作来预授权。宿主会在prepare返回前和动作执行前复验当前权限、配置、资源及Run；旧effect返回execute=false仍停止，不用新键重放。纯observe/readSelection不为此增加写scope确认。
 - 修改草稿和工程均使用准确修订；冲突时保留双方内容，不覆盖外部编辑。
 
 ## 先检查能力，再生成实现

@@ -14,7 +14,7 @@
     "localProjectFormat": {
       "version": 1,
       "status": "draft-unreleased",
-      "authoringSkillVersion": "1.2.25-draft",
+      "authoringSkillVersion": "1.2.26-draft",
       "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746",
       "tableRangeHelper": {
         "version": 1,
@@ -25,6 +25,11 @@
         "version": 1,
         "status": "draft-unreleased",
         "governanceCommit": "91f673c4d7c1dde465711a1215f495b10bd2e3da"
+      },
+      "desktopEffectScopePreparation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "2f1b2dc941f47156923390e0cdf2fad542dc7812"
       }
     }
   },

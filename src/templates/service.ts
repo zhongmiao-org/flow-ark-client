@@ -1123,6 +1123,9 @@ export class Templates {
     const id = sha256(ref.instanceId + ':' + q.action + ':' + q.key),
       old = this.store.get<any>('template-effect', id);
     if (old) return { ...old, execute: false };
+    // Complete the existing run scope review before the caller obtains a fresh
+    // desktop observation. act still rechecks authority before native dispatch.
+    const recheck = await this.writeGuard(record, runId, signal, active, pkg);
     if (grant === 'confirm') {
       const confirmation = actionConfirmation(pkg, entry, q.action);
       const accepted = await this.human(
@@ -1141,11 +1144,14 @@ export class Templates {
       );
       check();
       if (!accepted) throw Error('用户未确认动作');
+      recheck();
       this.store.put('template-approval', runId + ':' + q.action, { runId, action: q.action });
     }
     check();
+    recheck();
     return this.store.tx(() => {
       check();
+      recheck();
       const existing = this.store.get<any>('template-effect', id);
       if (existing) return { ...existing, execute: false };
       const effect = {
