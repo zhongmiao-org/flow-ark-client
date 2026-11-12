@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.27-draft
+  version: 1.2.28-draft
 ---
 
 # FlowArk 流程工程开发
@@ -78,6 +78,7 @@ metadata:
 
 - 先observe，优先控件引用。截图像素坐标须按image与bounds尺寸转换成窗口局部逻辑点，不加全局窗口原点。
 - 需要点击或输入的脚本在第一次交互前，先核对本人绑定窗口的准确标题及应用，在已正式预留且 execute=true 的同一 effect 下以独立稳定子键调用 `act({command:{kind:'activate'},...})`；随后 fresh observe 再核对标题、应用与目标控件，才点击或输入。不假定点击客户端 Run 后业务窗口仍在前台，不让用户手动补代码或靠抢焦点绕过宿主保护。纯只读 observe 不为此触发激活动作。
+- activate的performed只表示宿主已确认前台App及准确绑定窗口获得焦点，不表示某输入框或网格模式就绪；仍需fresh observe核对控件focus。激活请求、窗口属性或有界焦点确认不确定时unknown停止，保留原动作键，不反复activate、点击标题栏、按键或切换其他窗口兜底。当前前台窗口与预期不符时只报告实证，不推断用户干预。
 - 窗口绑定固定原生窗口与进程，不等于固定网页、表格或聊天对象。每次外部写入前，按当前观察核对准确页面/会话及业务目标；标题变化后重新观察，不沿用旧目标。
 - `effect.prepare.review` 仅接受正式人工核对结构 `{version:1,target,content}`，且需入口声明 `human-review-v1`；它不是任意元数据。无需此类核对时省略该字段，操作说明放 description，回执证据放 resolve.evidence，不为错误参数扩大能力。
 - `ctx.desktop.act`要求本Run正式预留的effectId。先 `ctx.template.effect.prepare({action,key,description})`，仅execute===true才动作。业务核验后才能effect.resolve；performed只代表原生输入。 `effect.prepare.review`是安装Schema定义的结构化人工复核内容，不是任意metadata；没有该复核需求时省略，不把布尔说明塞入review或为参数误用增加human-review-v1能力。说明放description，证据在核验后按规范resolve。

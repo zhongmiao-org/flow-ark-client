@@ -97,10 +97,55 @@ func jsonStamp(_ value:Any) throws -> String {
               frame(w.window) != nil else { try fault("window-changed") }
         return w
     }
-    static func focused(_ w:DesktopWindow) throws {
+    static func focused(_ w:DesktopWindow,timeout:Float?=nil) throws {
+        let root=AXUIElementCreateApplication(w.app.processIdentifier)
+        if let timeout {guard AXUIElementSetMessagingTimeout(root,timeout) == .success else {try fault("focus-read-timeout-unavailable")}}
         guard NSWorkspace.shared.frontmostApplication?.processIdentifier==w.app.processIdentifier,
-              let f=ax(AXUIElementCreateApplication(w.app.processIdentifier),kAXFocusedWindowAttribute),
+              let f=ax(root,kAXFocusedWindowAttribute),
               CFGetTypeID(f)==AXUIElementGetTypeID(), same(f as! AXUIElement,w.window) else { try fault("focus-changed") }
+    }
+    static func activateBoundWindow(_ w:DesktopWindow) async throws {
+        guard w.app.activate(options:[]) else {try fault("activation-phase:app-request-unconfirmed")}
+        for (attribute,phase) in [(kAXMainAttribute,"main"),(kAXFocusedAttribute,"focused")] {
+            var settable:DarwinBoolean=false
+            let result=AXUIElementIsAttributeSettable(w.window,attribute as CFString,&settable)
+            if result == .attributeUnsupported {continue}
+            guard result == .success else {try fault("activation-phase:"+phase+"-attribute-query-unconfirmed")}
+            if settable.boolValue {
+                guard AXUIElementSetAttributeValue(w.window,attribute as CFString,kCFBooleanTrue) == .success else {try fault("activation-phase:"+phase+"-attribute-request-unconfirmed")}
+            }
+        }
+        guard AXUIElementPerformAction(w.window,kAXRaiseAction as CFString) == .success else {try fault("activation-phase:raise-request-unconfirmed")}
+        // App activation and AXRaise do not establish which app window owns input.
+        // Only observe the postcondition; never activate again or send fallback input.
+        let deadline=ProcessInfo.processInfo.systemUptime+1.5
+        var phase="activation-phase:focused-window-unconfirmed"
+        while ProcessInfo.processInfo.systemUptime<deadline {
+            let remaining=deadline-ProcessInfo.processInfo.systemUptime
+            if remaining<=0 {break}
+            if NSWorkspace.shared.frontmostApplication?.processIdentifier != w.app.processIdentifier {
+                phase="activation-phase:foreground-pid-unconfirmed"
+            } else {
+                var confirmed=false
+                do {
+                    try focused(w,timeout:Float(min(0.1,remaining)))
+                    confirmed=ProcessInfo.processInfo.systemUptime<deadline
+                } catch {phase="activation-phase:focused-window-unconfirmed"}
+                if confirmed {
+                    let current:DesktopWindow
+                    do {current=try check()} catch {try fault("activation-phase:binding-unconfirmed")}
+                    guard current.app.processIdentifier==w.app.processIdentifier,current.born==w.born,same(current.window,w.window) else {try fault("activation-phase:binding-unconfirmed")}
+                    if ProcessInfo.processInfo.systemUptime<deadline {return}
+                    phase="activation-phase:confirmation-timeout"
+                }
+            }
+            let delay=min(0.02,deadline-ProcessInfo.processInfo.systemUptime)
+            if delay>0 {
+                do {try await Task.sleep(nanoseconds:UInt64(delay*1_000_000_000))}
+                catch {try fault("activation-phase:confirmation-interrupted")}
+            }
+        }
+        try fault(phase)
     }
     static func tree(_ w:DesktopWindow) throws -> (CGRect,[[String:Any]],[String:AXUIElement],String,Bool) {
         guard let bounds=frame(w.window) else { try fault("window-changed") }
@@ -363,7 +408,7 @@ func jsonStamp(_ value:Any) throws -> String {
         do {
             switch kind {
             case "activate":
-                guard w.app.activate(options:[]), AXUIElementPerformAction(w.window,kAXRaiseAction as CFString) == .success else { try fault("activation-failed") }
+                try await activateBoundWindow(w)
             case "click", "doubleClick":
                 var p:CGPoint
                 if let e=target,let box=frame(e) { p=CGPoint(x:box.midX,y:box.midY);guard old.frame.contains(p) else { try fault("element-outside-window") } }
