@@ -129,18 +129,19 @@ func jsonStamp(_ value:Any) throws -> String {
         let stamp=try jsonStamp(["bounds":rectJSON(bounds),"rows":structure])
         return (bounds,rows,refs,stamp,truncated || cursor<queue.count)
     }
-    static func captureFocus(_ w:DesktopWindow) throws -> (AXUIElement,String)? {
+    static func captureFocus(_ w:DesktopWindow) throws -> (AXUIElement,String,String,String,CGRect?)? {
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         guard let fw=ax(root,kAXFocusedWindowAttribute),CFGetTypeID(fw)==AXUIElementGetTypeID(),same(fw as! AXUIElement,w.window),
               let focused=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(focused)==AXUIElementGetTypeID() else {return nil}
         let e=focused as! AXUIElement
         guard str(e,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else {return nil}
-        var attributes:[String:Any]=["role":str(e,kAXRoleAttribute),"subrole":str(e,kAXSubroleAttribute),"title":str(e,kAXTitleAttribute),"description":str(e,kAXDescriptionAttribute),"value":str(e,kAXValueAttribute),"selection":str(e,kAXSelectedTextAttribute)]
-        if let box=frame(e) {attributes["bounds"]=rectJSON(box)}
+        let role=str(e,kAXRoleAttribute), subrole=str(e,kAXSubroleAttribute), box=frame(e)
+        var attributes:[String:Any]=["role":role,"subrole":subrole,"title":str(e,kAXTitleAttribute),"description":str(e,kAXDescriptionAttribute),"value":str(e,kAXValueAttribute),"selection":str(e,kAXSelectedTextAttribute)]
+        if let box {attributes["bounds"]=rectJSON(box)}
         if let raw=ax(e,kAXSelectedTextRangeAttribute),CFGetTypeID(raw)==AXValueGetTypeID() {
             var range=CFRange();if AXValueGetValue(raw as! AXValue,.cfRange,&range){attributes["range"]=[range.location,range.length]}
         }
-        return (e,try jsonStamp(attributes))
+        return (e,try jsonStamp(attributes),role,subrole,box)
     }
     static func checkFocus(_ w:DesktopWindow,_ old:DesktopObservation) throws {
         guard let e=old.focus,let stamp=old.focusStamp,let current=try captureFocus(w),same(e,current.0),stamp==current.1 else {try fault("focus-or-selection-changed")}
@@ -213,6 +214,14 @@ func jsonStamp(_ value:Any) throws -> String {
         let id=result["observationId"] as! String
         var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
         let focus=try captureFocus(w)
+        // Expose only nontext metadata; the complete stamp above remains private.
+        if w.app.isActive,let focus,focus.2 != "AXSecureTextField",focus.3 != kAXSecureTextFieldSubrole {
+            var snapshot:[String:Any]=["role":focus.2,"subrole":focus.3]
+            let matchingIds=refs.compactMap { same($0.value,focus.0) ? $0.key:nil }
+            if matchingIds.count==1 {snapshot["elementId"]=matchingIds[0]}
+            if let box=focus.4 {snapshot["bounds"]=rectJSON(CGRect(x:box.minX-bounds.minX,y:box.minY-bounds.minY,width:box.width,height:box.height))}
+            result["focus"]=snapshot
+        }
         observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)},windowNumber:capturedWindowNumber)
         return result
     }
