@@ -434,9 +434,11 @@ app
           if (method === 'desktop.automation.bind') {
             await ready; await rpc.call('desktop.automation.scope', { scopeId: args.scopeId });
             const binding = await desktopAutomation.bind(args);
-            try { await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, durationMs: args.durationMs, bindingId: binding!.bindingId }); }
-            catch (error) { desktopAutomation.release(args.scopeId); throw error; }
-            return binding;
+            try {
+              await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, durationMs: args.durationMs, bindingId: binding.bindingId });
+              return desktopAutomation.commitBinding(args.scopeId, binding.bindingId);
+            }
+            catch (error) { desktopAutomation.release(args.scopeId, binding.bindingId); throw error; }
           }
           throw Error('未知桌面接口');
         }
@@ -910,11 +912,15 @@ app
               }
               return true;
             }
+            if (method === 'credentials.identity') {
+              try { return await vault.identity(args.id); }
+              catch { throw new Error('凭据身份读取未完成，请重新核对'); }
+            }
             if (method === 'credentials.get') {
               let value: string;
               if (localCredentialId.safeParse(args.id).success) {
                 try {
-                  value = await localCredentials.key(args.id);
+                  value = await localCredentials.key(args.id, args.revision);
                 } catch {
                   throw new Error('本机凭据读取未完成，请检查系统保护存储或重新绑定');
                 }

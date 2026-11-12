@@ -5,6 +5,17 @@ import { join } from 'node:path';
 import { localCredentialId } from '../shared/local-credentials';
 export class Vault {
   constructor(private dir: string) {}
+  async identity(id: string) {
+    if (!['deepseek', 'openai-codex'].includes(id)) localCredentialId.parse(id);
+    try {
+      // Ciphertext identity never requests Keychain access or creates storage.
+      const encrypted = await readFile(this.path(id));
+      return { configured: true, revision: createHash('sha256').update(encrypted).digest('hex') };
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return { configured: false, revision: null };
+      throw error;
+    }
+  }
   async readEntry(id: string) {
     await this.available();
     let encrypted: Buffer;

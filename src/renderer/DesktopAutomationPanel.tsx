@@ -4,8 +4,8 @@ const api = (method: string, args: unknown = {}): Promise<any> => window.flowark
 export default function DesktopAutomationPanel({ scopeId, connection }: { scopeId: string; connection?: any }) {
   const [discovery, setDiscovery] = useState<any>(), [selection, setSelection] = useState<string>();
   const [binding, setBinding] = useState<any>(), [images, setImages] = useState(false), [actions, setActions] = useState(false), [reviewed, setReviewed] = useState(false);
-  const [modelLabel, setModelLabel] = useState('当前工程已保存的 AI 服务');
-  useEffect(() => { let live = true; if (connection?.provider === 'compatible') { setModelLabel(connection.model + ' · ' + connection.baseUrl); return; } void api('ai.configuration.get', { provider: connection?.provider ?? 'deepseek' }).then(c => { if (live) setModelLabel((c.provider ?? connection?.provider ?? 'deepseek') + ' · ' + c.model); }).catch(() => {}); return () => { live = false; }; }, [connection?.provider, connection?.model, connection?.baseUrl]);
+  const modelLabel = connection?.provider === 'compatible'
+    ? connection.model + ' · ' + connection.baseUrl : '当前工程已保存的 AI 服务';
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const perform = async (fn: () => Promise<void>) => { setBusy(true); setError(''); try { await fn(); } catch (e) { setError(e instanceof Error ? e.message : '操作失败'); } finally { setBusy(false); } };
   useEffect(() => { let live = true; void api('desktop.automation.state', { scopeId }).then(v => { if (live) setBinding(v); }).catch(e => { if (live) setError(e.message); }); return () => { live = false; }; }, [scopeId]);

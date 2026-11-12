@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
 import { AIRequestFailureError } from '../ai/request-failure';
 import { generate } from '../ai/providers';
 import { assertAISchema } from '../shared/ai-node';
@@ -7,12 +8,17 @@ import { desktopAutomationCapability, desktopSdkRequest } from '../shared/deskto
 import type { FlowRecord, PreparedScripts, DesktopAutomationContext } from '../shared/types';
 import type { Store } from './store';
 import { digest, uid, now } from '../shared/utils';
+const credentialIdentity = z.discriminatedUnion('configured', [
+  z.object({ configured: z.literal(true), revision: z.string().regex(/^[a-f0-9]{64}$/) }).strict(),
+  z.object({ configured: z.literal(false), revision: z.null() }).strict(),
+]);
 
 /** Desktop effects are host-owned. A key is consumed before dispatch, including lost replies. */
 export class DesktopAutomationRuns {
   private pending = new Set<string>();
   private observations = new Map<string, any>();
-  private budgets = new Map<string, { scopeId: string; projectId: string; bindingId: string; requests: number; expiresAt: number; connection: any; blocked?: boolean }>();
+  private budgets = new Map<string, { scopeId: string; projectId: string; bindingId: string; requests: number; expiresAt: number; connection: any; credentialIdentity: z.infer<typeof credentialIdentity>; blocked?: boolean }>();
+  private configuring = new Map<string, symbol>();
   constructor(private store: Store, private system: (method: string, args: any) => Promise<any>) {}
   async binding(record: FlowRecord): Promise<DesktopAutomationContext | undefined> {
     if (!record.flow.requiredCapabilities.includes(desktopAutomationCapability)) return;
@@ -21,21 +27,28 @@ export class DesktopAutomationRuns {
     if (!state || state.expiresAt <= Date.now()) throw Error('请在本实例绑定当前macOS桌面窗口后再核对运行');
     const { active, ...context } = state; return context;
   }
-  async configure(scopeId: string, bindingId: string, durationMs: number) {
+  private selectedConnection(scopeId: string) {
     const project = this.store.list<any>('local-project').find(p => p.instances?.includes(scopeId));
-
     const connection = projectAIConnection.parse((project ? this.store.get('project-ai-connection', project.id) : undefined) ?? { provider: 'deepseek' });
-    const projectId = project?.id ?? scopeId;
-    const previous = [...this.budgets.values()].find(b => b.projectId === projectId && b.expiresAt > Date.now());
-    if (connection.provider !== 'compatible') {
-      const config = await this.system('ai.configuration.read', { provider: connection.provider });
-      if (!config.configured) throw Error('请先配置本人的AI服务和Key');
-      (connection as any).configurationRevision = config.revision; (connection as any).fixedModel = config.model;
+    return { projectId: project?.id ?? scopeId, connection };
+  }
+  async configure(scopeId: string, bindingId: string, durationMs: number) {
+    const { projectId, connection } = this.selectedConnection(scopeId), attempt = Symbol();
+    this.configuring.set(projectId, attempt);
+    try {
+      const id = connection.provider === 'compatible' ? connection.credentialId : connection.provider;
+      const identity = credentialIdentity.parse(await this.system('credentials.identity', { id }));
+      if (this.configuring.get(projectId) !== attempt) throw Error('本次桌面绑定准备已被替换');
+      const current = this.selectedConnection(scopeId);
+      if (current.projectId !== projectId || digest(current.connection) !== digest(connection)) throw Error('本次模型连接已变化，请重新核对');
+      const previous = [...this.budgets.values()].find(b => b.projectId === projectId && b.expiresAt > Date.now());
+      if (previous && (digest(previous.connection) !== digest(connection) || digest(previous.credentialIdentity) !== digest(identity))) throw Error('本批模型配置发生变化，请先结束原任务并重新核对AI服务');
+      for (const [id, budget] of this.budgets) if (budget.projectId === projectId) this.budgets.delete(id);
+      this.budgets.set(scopeId, { scopeId, projectId, bindingId, requests: previous?.requests ?? 0, expiresAt: Date.now() + durationMs, connection, credentialIdentity: identity });
+      return { durationMs, connection };
+    } finally {
+      if (this.configuring.get(projectId) === attempt) this.configuring.delete(projectId);
     }
-    if (previous && digest(previous.connection) !== digest(connection)) throw Error('本批模型配置发生变化，请先结束原任务并重新核对AI服务');
-    for (const [id, budget] of this.budgets) if (budget.projectId === projectId) this.budgets.delete(id);
-    this.budgets.set(scopeId, { scopeId, projectId, bindingId, requests: previous?.requests ?? 0, expiresAt: Date.now() + durationMs, connection });
-    return { durationMs, connection };
   }
   private charge(scopeId: string) {
     const budget = this.budgets.get(scopeId);
@@ -53,10 +66,27 @@ export class DesktopAutomationRuns {
     if (!budget) throw Error('请重新绑定窗口并核对AI服务');
     const connection = budget.connection;
     const credentialId = connection.provider === 'compatible' ? connection.credentialId : connection.provider;
-    const saved = ['deepseek','openai-codex'].includes(credentialId) ? await this.system('ai.configuration.read', { provider: credentialId }) : undefined;
-    if (saved && connection.configurationRevision && saved.revision !== connection.configurationRevision) throw Error('AI配置已变化，请重新核对窗口与服务');
-    if (saved && !saved.configured) throw Error('本人AI服务尚未配置');
-    const key = await this.system('credentials.get', { id: credentialId, ...(saved ? { revision: saved.revision } : {}) });
+    const checkConnection = () => {
+      active(); signal.throwIfAborted();
+      const current = this.selectedConnection(scopeId);
+      if (this.budgets.get(scopeId) !== budget || current.projectId !== budget.projectId || digest(current.connection) !== digest(connection))
+        throw Error('模型连接已变化，请重新核对窗口与服务');
+    };
+    const checkIdentity = async () => {
+      checkConnection();
+      const current = credentialIdentity.parse(await this.system('credentials.identity', { id: credentialId }));
+      checkConnection();
+      if (digest(current) !== digest(budget.credentialIdentity)) throw Error('AI凭据已变化，请重新核对窗口与服务');
+      if (!current.configured) throw Error('本人AI服务尚未配置');
+      return current.revision;
+    };
+    const revision = await checkIdentity();
+    // Only an actual model request may decrypt protected configuration and Key.
+    const saved = connection.provider !== 'compatible' ? await this.system('ai.configuration.read', { provider: credentialId }) : undefined;
+    checkConnection();
+    if (saved && (!saved.configured || saved.revision !== revision)) throw Error('AI配置已变化或尚未配置，请重新核对窗口与服务');
+    const key = await this.system('credentials.get', { id: credentialId, revision });
+    await checkIdentity();
     const provider = connection.provider === 'compatible' ? 'openai-codex' : connection.provider;
     const model = connection.provider === 'compatible' ? connection.model : saved.model;
     const { image, ...metadata } = observation;

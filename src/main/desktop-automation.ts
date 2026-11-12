@@ -9,12 +9,14 @@ export class DesktopAutomation {
   private child?: ChildProcessWithoutNullStreams;
   private rpc?: Rpc;
   private binding?: z.infer<typeof bindingSchema> & { scopeId: string; screenshotAllowed: boolean; actionsAllowed: boolean };
+  private staging?: { token: symbol; scopeId: string; bindingId?: string };
+  private bindingReady = false;
   private owner?: string;
   private busy = false;
   private expiry?: NodeJS.Timeout;
   constructor(private executable: string) {}
   stop() {
-    clearTimeout(this.expiry); this.binding = undefined; this.owner = undefined;
+    clearTimeout(this.expiry); this.binding = undefined; this.staging = undefined; this.bindingReady = false; this.owner = undefined;
     this.rpc?.close(); this.rpc = undefined; this.child?.kill(); this.child = undefined;
   }
   private async call(method: string, args: unknown = {}): Promise<any> {
@@ -35,26 +37,40 @@ export class DesktopAutomation {
         }
       });
     }
+    const rpc = this.rpc, child = this.child;
     try {
-      const result = await this.rpc.call(method, args, 15000);
+      const result = await rpc.call(method, args, 15000);
       if (result?.error) throw new NativeNotExecuted('桌面操作未执行：' + String(result.error));
       return result;
-    } catch (error) { this.stop(); throw error; }
+    } catch (error) { if (this.rpc === rpc && this.child === child) this.stop(); throw error; }
   }
-  permission(permission: string) { if (this.owner || this.busy) throw Error('请先结束桌面运行'); return this.call('permissions', { request: permission }); }
+  permission(permission: string) { if (this.owner || this.busy || this.staging) throw Error('请先结束桌面运行或绑定准备'); return this.call('permissions', { request: permission }); }
   state(scopeId: string) {
     if (this.binding && this.binding.expiresAt <= Date.now()) this.stop();
-    return this.binding?.scopeId === scopeId ? { ...this.binding, active: !!this.owner } : null;
+    return this.bindingReady && !this.staging && this.binding?.scopeId === scopeId ? { ...this.binding, active: !!this.owner } : null;
   }
-  async list() { if (this.owner || this.busy) throw Error('桌面运行中不能重新发现或切换窗口'); this.stop(); return desktopDiscovery.parse(await this.call('list')); }
+  async list() { if (this.owner || this.busy || this.staging) throw Error('桌面运行或绑定准备中不能重新发现或切换窗口'); this.stop(); return desktopDiscovery.parse(await this.call('list')); }
   async bind(args: { scopeId: string; windowId: string; screenshotAllowed: boolean; actionsAllowed: boolean; durationMs: number }) {
-    if (this.owner || this.busy) throw Error('桌面运行中不能更换绑定');
-    const bound = bindingSchema.parse(await this.call('bind', { windowId: args.windowId, durationMs: args.durationMs }));
-    this.binding = { ...bound, scopeId: args.scopeId, screenshotAllowed: args.screenshotAllowed, actionsAllowed: args.actionsAllowed };
-    clearTimeout(this.expiry);this.expiry = setTimeout(() => this.stop(), Math.max(0, bound.expiresAt - Date.now())); this.expiry.unref();
-    return this.state(args.scopeId);
+    if (this.owner || this.busy || this.staging) throw Error('桌面运行或绑定准备中不能更换绑定');
+    const attempt = { token: Symbol(), scopeId: args.scopeId } as { token: symbol; scopeId: string; bindingId?: string };
+    this.staging = attempt; this.bindingReady = false; this.binding = undefined; clearTimeout(this.expiry);
+    try {
+      const bound = bindingSchema.parse(await this.call('bind', { windowId: args.windowId, durationMs: args.durationMs }));
+      if (this.staging?.token !== attempt.token) throw Error('本次窗口绑定准备已失效');
+      attempt.bindingId = bound.bindingId;
+      this.binding = { ...bound, scopeId: args.scopeId, screenshotAllowed: args.screenshotAllowed, actionsAllowed: args.actionsAllowed };
+      this.expiry = setTimeout(() => { if (this.staging?.token === attempt.token || this.binding?.bindingId === bound.bindingId) this.stop(); }, Math.max(0, bound.expiresAt - Date.now())); this.expiry.unref();
+      return { ...this.binding, active: false };
+    } catch (error) { if (this.staging?.token === attempt.token) this.stop(); throw error; }
   }
-  release(scopeId: string) { if (this.binding?.scopeId !== scopeId) return false; if (this.owner) throw Error('请先取消桌面运行'); this.stop(); return true; }
+  commitBinding(scopeId: string, bindingId: string) {
+    if (this.staging?.scopeId !== scopeId || this.staging.bindingId !== bindingId || this.binding?.scopeId !== scopeId || this.binding.bindingId !== bindingId)
+      throw Error('本次窗口绑定准备已失效');
+    if (this.binding.expiresAt <= Date.now()) { this.stop(); throw Error('本次窗口绑定已过期'); }
+    this.staging = undefined; this.bindingReady = true;
+    const ready = this.state(scopeId); if (!ready) throw Error('本次窗口绑定未就绪'); return ready;
+  }
+  release(scopeId: string, bindingId?: string) { if ((this.binding?.scopeId !== scopeId && this.staging?.scopeId !== scopeId) || (bindingId !== undefined && this.binding?.bindingId !== bindingId)) return false; if (this.owner) throw Error('请先取消桌面运行'); this.stop(); return true; }
   finish(runId: string) { if (this.owner === runId) this.stop(); return { confirmed: true }; }
   async command(scopeId: string, runId: string, raw: unknown, actionId?: string) {
     const request = desktopSdkRequest.parse(raw);
