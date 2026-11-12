@@ -270,6 +270,17 @@ func jsonStamp(_ value:Any) throws -> String {
         observation=DesktopObservation(id:id,title:result["title"] as! String,stamp:stamp,at:Date(),frame:bounds,elements:refs,pointer:CGEvent(source:nil)?.location ?? .zero,targetStamps:targets,focus:focus?.0,focusStamp:focus?.1,image:(result["image"] as? [String:Any]).flatMap{image($0)},windowNumber:capturedWindowNumber)
         return result
     }
+    enum InputGuardPhase:String {case initial;case afterScreenshot="after-screenshot";case beforeDispatch="before-dispatch";case copy}
+    static func pointerGuardReason(_ phase:InputGuardPhase,_ pointer:CGPoint,_ reference:CGPoint) -> String {
+        // Diagnostics only: guard comparisons retain full-precision coordinates.
+        let dx=String(format:"%.3f",pointer.x-reference.x),dy=String(format:"%.3f",pointer.y-reference.y)
+        return "user-intervention:pointer-changed;phase="+phase.rawValue+";dx="+dx+";dy="+dy
+    }
+    static func modifierGuardReason(_ phase:InputGuardPhase,_ flags:CGEventFlags) -> String {
+        let names=[(CGEventFlags.maskCommand,"Command"),(.maskShift,"Shift"),(.maskAlternate,"Option"),(.maskControl,"Control")]
+            .filter{flags.contains($0.0)}.map{$0.1}.joined(separator:",")
+        return "user-intervention:modifier-held;phase="+phase.rawValue+";held="+names
+    }
     static func clipboardSnapshot(_ board:NSPasteboard) throws -> ([[NSPasteboard.PasteboardType:Data]],Int) {
         let count=board.changeCount
         var snapshot=[[NSPasteboard.PasteboardType:Data]](),total=0
@@ -298,8 +309,9 @@ func jsonStamp(_ value:Any) throws -> String {
         let board=NSPasteboard.general
         let (snapshot,before)=try clipboardSnapshot(board)
         let pointer=CGEvent(source:nil)?.location ?? .zero
-        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
-        guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault(pointerGuardReason(.copy,pointer,old.pointer))}
+        let heldModifiers=CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl])
+        guard heldModifiers.isEmpty else {try fault(modifierGuardReason(.copy,heldModifiers))}
         observation=nil
         try key(8,.maskCommand,pid:w.app.processIdentifier)
         let deadline=Date().addingTimeInterval(1)
@@ -373,8 +385,9 @@ func jsonStamp(_ value:Any) throws -> String {
         guard let old=observation,args["observationId"] as? String==old.id,Date().timeIntervalSince(old.at)<30 else { try fault("observation-expired") }
         guard sameContextTitle(str(w.window,kAXTitleAttribute),old.title,w.app) else {try fault("window-context-changed")}
         let pointer=CGEvent(source:nil)?.location ?? .zero
-        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
-        guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
+        guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault(pointerGuardReason(.initial,pointer,old.pointer))}
+        let initialModifiers=CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl])
+        guard initialModifiers.isEmpty else {try fault(modifierGuardReason(.initial,initialModifiers))}
         guard let command=args["command"] as? [String:Any],let kind=command["kind"] as? String else { try fault("invalid-command") }
         // Activation changes no document input and targets the bound native window.
         // Unrelated background AX structure may change before it becomes foreground.
@@ -395,13 +408,14 @@ func jsonStamp(_ value:Any) throws -> String {
             for p in points {guard try patch(before,p,old.frame)==patch(after,p,old.frame) else {try fault("image-target-changed")}}
             try focused(w);try checkFocus(w,old)
             let pointer=CGEvent(source:nil)?.location ?? .zero
-            guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault("user-intervention")}
+            guard abs(pointer.x-old.pointer.x)<1,abs(pointer.y-old.pointer.y)<1 else {try fault(pointerGuardReason(.afterScreenshot,pointer,old.pointer))}
         }
         if kind != "activate" {
             try focused(w)
             let dispatchPointer=CGEvent(source:nil)?.location ?? .zero
-            guard abs(dispatchPointer.x-old.pointer.x)<1,abs(dispatchPointer.y-old.pointer.y)<1 else {try fault("user-intervention:pointer-changed")}
-            guard CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl]).isEmpty else {try fault("user-intervention:modifier-held")}
+            guard abs(dispatchPointer.x-old.pointer.x)<1,abs(dispatchPointer.y-old.pointer.y)<1 else {try fault(pointerGuardReason(.beforeDispatch,dispatchPointer,old.pointer))}
+            let dispatchModifiers=CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl])
+            guard dispatchModifiers.isEmpty else {try fault(modifierGuardReason(.beforeDispatch,dispatchModifiers))}
         }
         // Consume before the first native event. Any subsequent failure is unknown, never retried.
         consumed.insert(actionId);observation=nil
