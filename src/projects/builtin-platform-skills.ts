@@ -32,7 +32,7 @@ export function routePlatformSkill(text:string,previous?:PlatformAuthoringSkill)
   }
   if(/通用本地任务|不使用平台\s*Skill/i.test(text))return {status:'generic',message:'已选择通用本地任务，不使用平台 Skill；不得套用未支持站点操作规则。'};
   if(/钉钉|企业微信|微信|企微|notion|airtable|google\s*sheets|腾讯文档|飞书电子表格|飞书文档|飞书聊天/i.test(text)||(feishu&&/电子表格|普通表格|文档|聊天/.test(text)))return {status:'unsupported',message:'当前内置目录尚未支持该平台或视图。请纠正平台，或明确改为通用本地任务；不会套用飞书多维表格 Skill。'};
-  if(negated||feishu||bitable||/更换平台|纠正平台|改用平台|平台[改换]|[改换](?:用|为|成).{0,20}(?:平台|表格|文档)|石墨|语雀/.test(text))return {status:'question',message:'请确认具体平台与视图：是否为飞书多维表格？也可以自定义说明其他平台与操作对象。'};
+  if(negated||feishu||bitable||/更换平台|纠正平台|改用平台|平台(?:是|为|改为|改成|换成|[：:])|平台[改换]|[改换](?:用|为|成).{0,20}(?:平台|表格|文档)|石墨|语雀/.test(text))return {status:'question',message:'请确认具体平台与视图：是否为飞书多维表格？也可以自定义说明其他平台与操作对象。'};
   if(previous&&previous.sourceName==='builtin:'+previous.id){
     const e=catalog.find(e=>e.id===previous.id);if(e){const skill=parsePlatformAuthoringSkill(readFileSync(join(resourceRoot,e.id,'SKILL.md'),'utf8'),'builtin:'+e.id);return {status:'matched',skill,message:`沿用内置平台 Skill：${e.summary} · ${e.version} · SHA-256 ${e.sha256}`};}
   }
