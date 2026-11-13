@@ -2,7 +2,7 @@
 name: flowark-project-author
 description: 通过 FlowArk 正式工具规划节点、分阶段生成 JS/TS、修复编译诊断并打包本地流程工程；用于创建和修改工程，不用于直接执行外部业务动作。
 metadata:
-  version: 1.2.30-draft
+  version: 1.2.31-draft
 ---
 
 # FlowArk 流程工程开发
@@ -65,7 +65,7 @@ metadata:
 先完成以下适用项，再生成对应写入节点。缺少事实时先生成只读核对节点，不生成假定可运行的写入实现。类型检查不能判断站点是否接受输入或是否发送通知。
 
 - 新plan由宿主提前校验Schema语法、配置支持子集、内置节点binding对应的入口资源及访问方式。资源ID使用同一份声明，不把目录资源写成文件资源，不在purpose里替代结构声明。脚本资源ID仍要与声明逐项核对，动态调用最终由宿主强制准入。
-- `defaults`是待配置种子；不为通过编译伪造URL、坐标、verified=true或用户事实。检查有效配置是否满足完整Schema。optional字段不生造，nullable用null；业务state无合法初值时使用宿主未初始化槽，首次state.get为null必须以完整合法state.set初始化，不绕过Schema、不清旧状态。
+- `defaults`是待配置种子；不为通过编译伪造URL、坐标、verified=true或用户事实。检查有效配置是否满足完整Schema。optional字段不生造，nullable用null；state.get返回原始持久业务状态，不是value/state封套；新实例可能由Schema的const/default等产生非空初始种子，不假定只有null或{}。先核对准确Schema种子，只在无业务进度且精确符合该种子时初始化；已有部分状态不得清空。业务state无合法初值时使用宿主未初始化槽，首次state.get为null须以完整合法state.set初始化。state capability只声明能力，state.set仍需入口专用写入动作及当前授权；没有网页/文件也不能省略动作。所有新增动作默认deny，确认范围后走正式grants和Run核对，不绕过writeGuard。
 - Excel先核对原始类型及必要格式证据，再确定转换。字符串电话原样保留；数值不能仅因目标是电话就拒绝所有值，也不能擅补前导零。明确允许时只映射可精确表示的存储值；无法从已提供格式恢复的显示值保留为缺口。真实数据不发送模型以补猜。
 - 选区策略不是平台保证。先只读证明锚点、退出编辑方式、实际行列数、回读值和保护范围；Canvas缺少AX文本时不反复增加遍历深度。安装SDK提供`selectionPreparation:'tab-roundtrip'`仅在现场验证Tab/Shift+Tab安全返回原格且没有待提交编辑时显式使用；不得套用到未知站点或待提交内容。
 - 安装SDK的`observe`可提供`focus`（role/subrole及可选elementId、窗口局部bounds），不含新增正文或选中文字；elementId只在本次观察树中唯一匹配时存在。依赖焦点模式时先核对当前SDK及本次focus，缺失或歧义就停止该操作。焦点不变只证明同一控件未变，AXTextField等角色本身不能区分网格导航、隐藏输入框与正在编辑的字段；须结合已实证的平台规则。只读选区成功不证明后续多格粘贴模式；额外点击可能进入编辑。发现或不能排除待提交编辑时，不用Tab/Shift+Tab或重新选区来试探，不自动提交、清空或重放unknown。
