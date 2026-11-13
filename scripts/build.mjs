@@ -44,6 +44,19 @@ for (const [name, root] of Object.entries({typescript: dirname(resolveBuild.reso
 }
 await mkdir('dist/skills/flowark-project-author', { recursive: true });
 await copyFile('resources/skills/flowark-project-author/SKILL.md', 'dist/skills/flowark-project-author/SKILL.md');
+const {default:PlatformCatalogAjv}=await import('ajv/dist/2020.js');
+const platformCatalogSchema=JSON.parse(await readFile('contracts/platform-skill-catalog-v1.schema.json','utf8'));
+const platformCatalog=JSON.parse(await readFile('resources/skills/platform-catalog.json','utf8'));
+if(!new PlatformCatalogAjv({strict:false}).validate(platformCatalogSchema,platformCatalog))throw Error('平台 Skill 目录不符合契约');
+await copyFile('resources/skills/platform-catalog.json','dist/skills/platform-catalog.json');
+for(const entry of platformCatalog){
+  if(!/^[a-z][a-z0-9-]{0,63}$/.test(entry.id))throw Error('平台 Skill 路径无效');
+  const content=await readFile(`resources/skills/${entry.id}/SKILL.md`,'utf8');
+  const {createHash}=await import('node:crypto');
+  if(createHash('sha256').update(content).digest('hex')!==entry.sha256||!content.includes(`name: ${entry.id}\n`)||!content.includes(`version: ${entry.version}\n`))throw Error('平台 Skill 身份或摘要不符');
+  await mkdir(`dist/skills/${entry.id}`,{recursive:true});
+  await copyFile(`resources/skills/${entry.id}/SKILL.md`,`dist/skills/${entry.id}/SKILL.md`);
+}
 await mkdir('dist/licenses', { recursive: true });
 for (const font of ['inter', 'noto-sans-sc']) {
   await copyFile(

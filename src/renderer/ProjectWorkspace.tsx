@@ -166,9 +166,9 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
             </Space>}
             cost={<p>API Key 产生的费用由用户自行承担。</p>}
             settings={<Space direction="vertical" style={{width:'100%'}}>
-            <Space wrap><Button disabled={busy||ai?.tasks?.some((t:any)=>t.state==='running')} onClick={()=>void perform(async()=>{const selected=await api('project.ai.platformSkill.choose',{id:info.id});if(selected)setAi(await api('project.ai.get',{id:info.id}));})}>选择平台作者 Skill.md</Button><Button disabled={busy||!ai?.platformSkill||ai?.tasks?.some((t:any)=>t.state==='running')} onClick={()=>void perform(async()=>{await api('project.ai.platformSkill.clear',{id:info.id});setAi(await api('project.ai.get',{id:info.id}));})}>清除平台 Skill</Button></Space>
-            <p>{ai?.platformSkill?`${ai.platformSkill.id} · ${ai.platformSkill.version} · ${ai.platformSkill.sourceName} · SHA-256 ${ai.platformSkill.sha256}`:'未选择平台作者 Skill'}</p>
-            <p>仅导入正文，不执行代码或读取依赖；固定用于本轮生成与独立复核。更换后需重新核对方案。个人运行 Skill 独立保留。</p>
+            <p>平台 Skill 随客户端提供；描述需求后自动匹配。平台不明确时会追问，可在对话中纠正。</p>
+            <p>{ai?.platformSkill?`${ai.platformSkill.id} · ${ai.platformSkill.version} · SHA-256 ${ai.platformSkill.sha256}`:'尚未匹配平台 Skill'}</p>
+            <p>固定正文用于生成与独立复核；更换后重新核对方案。个人运行 Skill 独立保留。</p>
             <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
             {aiProvider === 'compatible' && <>
               <Input aria-label="兼容接口 Base URL" placeholder="https://example.com/v1" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />

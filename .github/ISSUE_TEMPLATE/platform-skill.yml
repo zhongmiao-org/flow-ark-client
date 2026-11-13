@@ -1,0 +1,35 @@
+name: 平台 Skill 与控件问题
+description: 反馈平台定位、输入、下拉、搜索或保存问题
+title: "[平台 Skill] "
+body:
+  - type: markdown
+    attributes:
+      value: "请脱敏，不要提交业务数据、凭据、Token、登录态或私人文档链接。反馈由你主动提交。"
+  - type: input
+    id: versions
+    attributes:
+      label: 客户端版本与 Skill 标识、版本、摘要
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 系统、浏览器及执行模式
+    validations:
+      required: true
+  - type: input
+    id: control
+    attributes:
+      label: 平台、视图与控件类型
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 复现步骤、预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 脱敏诊断与错误阶段
