@@ -28,7 +28,7 @@ function failureReason(model: Model, error: string) {
     };
   if (
     model.node?.type === 'browser' &&
-    ['浏览器命令超时（含框架定位）', '网页操作超时'].includes(error)
+    ['浏览器命令超时（含框架定位）', '网页操作超时'].some(prefix => error.startsWith(prefix))
   )
     return {
       title: '网页操作超时',

@@ -55,6 +55,11 @@
         "version": 1,
         "status": "draft-unreleased",
         "governanceCommit": "7c908b3648155332c267339397b749cc1c082196"
+      },
+      "embeddedOperationDiagnostics": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "eb91c6b7fc7591f2cf7a1846ff446db04dadd68d"
       }
     }
   },

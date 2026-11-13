@@ -48,6 +48,9 @@ const query = `(selector) => {
 /** CDP transport is restricted to one unprivileged website WebContents, never the workbench. */
 export class EmbeddedPage {
   readonly picker: EmbeddedPicker;
+  private diagnosticPhase = '尚未派发网页命令';
+  /** Literal-only local phase snapshot: never includes page text, selectors or values. */
+  get operationPhase() { return this.diagnosticPhase; }
   private abort = new AbortController();
   private frames = new Map<string, string>();
   private documentEpoch = 0;
@@ -188,6 +191,7 @@ export class EmbeddedPage {
     return { context: result.executionContextId, session, x: 0, y: 0, ancestors: [] };
   }
   private async element(scope: Scope, selector: string, remaining: () => number) {
+    this.diagnosticPhase = '等待唯一目标元素';
     while (true) {
       remaining();
       this.abort.signal.throwIfAborted();
@@ -218,6 +222,7 @@ export class EmbeddedPage {
     return result.result.value;
   }
   private async scope(path: string[], remaining: () => number, scroll = true) {
+    this.diagnosticPhase = '定位网页与框架';
     const { frameTree } = await this.send('Page.getFrameTree');
     let scope = await this.world(frameTree.frame.id);
     for (const selector of path) {
@@ -252,6 +257,7 @@ export class EmbeddedPage {
     enabled = false,
     scroll = true,
   ) {
+    this.diagnosticPhase = enabled ? '等待目标可见且可用' : '等待目标可见';
     while (true) {
       remaining();
       const box = await this.call(
@@ -354,6 +360,7 @@ export class EmbeddedPage {
     selector?: string,
   ) {
     await this.visible(scope, objectId, remaining, true);
+    this.diagnosticPhase = '准备可信点击核对';
     const guard = await this.pointerGuard(scope, objectId, selector);
     let navigated = false;
     const navigation = () => {
@@ -364,25 +371,35 @@ export class EmbeddedPage {
       let point: { x: number; y: number };
       for (;;) {
         remaining();
+        this.diagnosticPhase = '核对点击前置条件';
         await beforePress?.();
+        this.diagnosticPhase = '核验点击目标几何';
         point = await this.pointerPoint(scope, objectId);
+        this.diagnosticPhase = '准备可信悬停核对';
         await this.call(scope, guard, 'function(){this.reset();}');
         // A trusted hover proves that Chromium has routed input into the target
         // frame after scrolling. Unlike rAF, this works in hidden native views.
         // Only moves repeat; a press/release is never retried.
+        this.diagnosticPhase = '派发鼠标悬停';
         await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
+        this.diagnosticPhase = '等待可信悬停回执';
         const state = await this.call(scope, guard, 'function(){return this.read();}');
         if (state.hovered) {
+          this.diagnosticPhase = '复核悬停目标几何';
           const current = await this.pointerPoint(scope, objectId);
           if (Math.abs(current.x - point.x) < 0.5 && Math.abs(current.y - point.y) < 0.5) break;
         }
         await new Promise((resolve) => setTimeout(resolve, Math.min(20, remaining())));
       }
       remaining();
+      this.diagnosticPhase = '核对鼠标按下前置条件';
       await beforePress?.();
       const input = { ...point, button: 'left', clickCount: 1 };
+      this.diagnosticPhase = '派发鼠标按下';
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
+      this.diagnosticPhase = '派发鼠标释放';
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mouseReleased' });
+      this.diagnosticPhase = '核对可信点击回执';
       let state;
       try {
         state = await this.call(scope, guard, 'function(){return this.read();}');
@@ -417,6 +434,7 @@ export class EmbeddedPage {
   }
 
   async perform(command: BrowserCommand): Promise<any> {
+    this.diagnosticPhase = '校验网页命令';
     validateFormCommand(command);
     const path = framePathOf(command),
       remaining = commandBudget(
@@ -425,17 +443,27 @@ export class EmbeddedPage {
           : command.timeoutMs,
       );
     this.abort.signal.throwIfAborted();
-    if (command.version === 8 || command.version === 12)
+    if (command.version === 8 || command.version === 12) {
+      this.diagnosticPhase = '核验固定网页目标';
       return this.target(command, path, remaining);
-    if (command.operation === 'collect') return this.collect(command, path, remaining);
+    }
+    if (command.operation === 'collect') {
+      this.diagnosticPhase = '采集网页字段';
+      return this.collect(command, path, remaining);
+    }
     if (command.operation === 'navigate') {
       const url = new URL(String(command.value));
       if (!['https:', 'http:'].includes(url.protocol)) throw new Error('只支持 HTTP(S) 网页');
+      this.diagnosticPhase = '等待网页导航完成';
       await this.contents.loadURL(url.href);
       return { url: this.contents.getURL(), title: this.contents.getTitle() };
     }
-    if (command.operation === 'url') return this.contents.getURL();
+    if (command.operation === 'url') {
+      this.diagnosticPhase = '读取当前网页身份';
+      return this.contents.getURL();
+    }
     if (command.operation === 'screenshot') {
+      this.diagnosticPhase = '获取网页截图';
       const image = await this.contents.capturePage(undefined, {
         stayHidden: false,
         stayAwake: true,
@@ -482,8 +510,10 @@ export class EmbeddedPage {
     try {
       switch (command.operation) {
         case 'read':
+          this.diagnosticPhase = '读取目标文字';
           return this.call(scope, element, 'function(){ return this.innerText; }');
         case 'attribute':
+          this.diagnosticPhase = '读取目标属性';
           return this.call(
             scope,
             element,
@@ -491,6 +521,7 @@ export class EmbeddedPage {
             String(command.value),
           );
         case 'inputValue':
+          this.diagnosticPhase = '读取实际输入值';
           return this.call(
             scope,
             element,
@@ -542,6 +573,7 @@ export class EmbeddedPage {
         }
         case 'fill': {
           await this.visible(scope, element, remaining, true);
+          this.diagnosticPhase = '聚焦并选择输入目标';
           const native = await this.call(
             scope,
             element,
@@ -560,11 +592,13 @@ export class EmbeddedPage {
           }`,
             String(command.value),
           );
+          this.diagnosticPhase = '派发文本输入';
           if (native) await this.send('Input.insertText', { text: String(command.value) });
           return { filled: true };
         }
         case 'press': {
           await this.visible(scope, element, remaining, true);
+          this.diagnosticPhase = '聚焦按键目标';
           await this.call(scope, element, 'function(){this.focus();}');
           const key = command.value as (typeof formKeys)[number];
           const codes: Record<string, number> = {
@@ -582,6 +616,7 @@ export class EmbeddedPage {
             Delete: 46,
           };
           const actual = key === 'Space' ? ' ' : key;
+          this.diagnosticPhase = '派发按键按下';
           await this.send('Input.dispatchKeyEvent', {
             type: 'keyDown',
             key: actual,
@@ -589,6 +624,7 @@ export class EmbeddedPage {
             windowsVirtualKeyCode: codes[key],
             ...(key === 'Enter' ? { text: '\r' } : key === 'Space' ? { text: ' ' } : {}),
           });
+          this.diagnosticPhase = '派发按键释放';
           await this.send('Input.dispatchKeyEvent', {
             type: 'keyUp',
             key: actual,
