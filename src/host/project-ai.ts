@@ -1,4 +1,4 @@
-import { builtinPlatformSkills, routePlatformSkill, type PlatformRoute } from '../projects/builtin-platform-skills';
+import { builtinPlatformSkills, platformRequirementText, routePlatformSkill, type PlatformRoute } from '../projects/builtin-platform-skills';
 import { parsePlatformAuthoringSkill, checkedPlatformSkill, type PlatformAuthoringSkill } from '../projects/platform-authoring-skill';
 import { projectAIUsage } from './project-ai-usage';
 import { projectRunEvidence } from './project-recovery';
@@ -173,10 +173,11 @@ export class ProjectAI {
     // Only an exact submitted model choice continues the approved code stage.
     // Custom corrections and plan/recovery reviews always require fresh approval.
     approval ??= intent==='plan'&&!previous.review&&previous.state==='question'&&previous.choices?.some(c=>answer==='选择：'+c.label+'。'+c.description)?previous.approval:undefined;
-    const priorRequests=[previous.task,...previous.history.filter(h=>h.kind==='user-continuation').map(h=>(h.value as any).answer)].join('\n');
-    let routingText=answer;
-    if(previous.platformRoute?.status==='generic'&&!/飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|平台/i.test(answer))routingText='通用本地任务';
-    else if(!previous.platformRoute&&!/平台|飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|腾讯文档|石墨|语雀/i.test(answer))routingText=previous.task;
+    const priorRequests=[previous.task,...previous.history.filter(h=>h.kind==='user-continuation').map(h=>(h.value as any).answer)].map(platformRequirementText).join('\n');
+    const requirementText=platformRequirementText(answer);
+    let routingText=requirementText;
+    if(previous.platformRoute?.status==='generic'&&!/飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|平台/i.test(requirementText))routingText='通用本地任务';
+    else if(!previous.platformRoute&&!/平台|飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|腾讯文档|石墨|语雀/i.test(requirementText))routingText=previous.task;
     else if(previous.platformRoute?.status==='question'&&/^(?:多维表格|bitable)[。！!\s]*$/i.test(answer)&&/飞书|feishu|lark/i.test(priorRequests))routingText='飞书多维表格';
     const route=routePlatformSkill(routingText,previous.platformSkill);
     const platformSkill=route.skill, platformChanged=previous.platformSkill?.sha256!==platformSkill?.sha256;

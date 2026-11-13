@@ -18,9 +18,15 @@ export function builtinPlatformSkills():PlatformSkillEntry[] {
   return entries;
 }
 export type PlatformRoute={status:'matched'|'generic'|'question'|'unsupported';skill?:PlatformAuthoringSkill;message:string};
+/** Preserve the dialogue audit, but route only the explicitly prioritized custom requirement. */
+export function platformRequirementText(text:string) {
+  const marker='\n自定义修正（优先）：',at=text.lastIndexOf(marker);
+  return at<0?text:text.slice(at+marker.length).split('\n先核对修正内容，不批准旧方案的代码生成或组装。')[0];
+}
 /** Local routing never opens credentials or invokes a model. Latest explicit platform wins. */
 export function routePlatformSkill(text:string,previous?:PlatformAuthoringSkill):PlatformRoute {
   const catalog=builtinPlatformSkills();
+  text=platformRequirementText(text);
   const negated=/(?:不是|不再使用|不要使用|并非)[，、\s]*(?:飞书|feishu|lark)/i.test(text);
   text=text.replace(/(?:不是|不再使用|不要使用|并非)[，、\s]*(?:飞书|feishu|lark)[，、\s]*(?:多维表格|bitable)/gi,'');
   if(/其他平台或视图|(?:平台|改用|改为|换成)[：:\s]*[A-Za-z][A-Za-z0-9_-]+/i.test(text)&&!/feishu|lark|bitable/i.test(text))return {status:'unsupported',message:'该平台尚无匹配的内置 Skill，请自定义说明平台或选择通用本地任务。'};
