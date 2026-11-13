@@ -1,4 +1,4 @@
-import { builtinPlatformSkills, platformRequirementText, routePlatformSkill, type PlatformRoute } from '../projects/builtin-platform-skills';
+import { builtinPlatformSkills, hasPlatformIntent, platformRequirementText, routePlatformSkill, type PlatformRoute } from '../projects/builtin-platform-skills';
 import { parsePlatformAuthoringSkill, checkedPlatformSkill, type PlatformAuthoringSkill } from '../projects/platform-authoring-skill';
 import { projectAIUsage } from './project-ai-usage';
 import { projectRunEvidence } from './project-recovery';
@@ -173,17 +173,23 @@ export class ProjectAI {
     // Only an exact submitted model choice continues the approved code stage.
     // Custom corrections and plan/recovery reviews always require fresh approval.
     approval ??= intent==='plan'&&!previous.review&&previous.state==='question'&&previous.choices?.some(c=>answer==='选择：'+c.label+'。'+c.description)?previous.approval:undefined;
-    const priorRequests=[previous.task,...previous.history.filter(h=>h.kind==='user-continuation').map(h=>(h.value as any).answer)].map(platformRequirementText).join('\n');
     const requirementText=platformRequirementText(answer);
     let routingText=requirementText;
-    if(previous.platformRoute?.status==='generic'&&!/飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|平台/i.test(requirementText))routingText='通用本地任务';
-    else if(!previous.platformRoute&&!/平台|飞书|feishu|lark|多维表格|钉钉|微信|notion|airtable|腾讯文档|石墨|语雀/i.test(requirementText))routingText=previous.task;
-    else if(previous.platformRoute?.status==='question'&&/^(?:多维表格|bitable)[。！!\s]*$/i.test(answer)&&/飞书|feishu|lark/i.test(priorRequests))routingText='飞书多维表格';
+    if(previous.platformRoute?.status==='generic'&&!hasPlatformIntent(requirementText))routingText='通用本地任务';
+    else if(!previous.platformRoute&&!hasPlatformIntent(requirementText))routingText=previous.task;
+    else if(previous.platformRoute?.status==='question'&&previous.platformRoute.platform==='feishu'){
+      if(/^(?:多维表格|bitable)[。！!\s]*$/i.test(requirementText))routingText='飞书多维表格';
+      else if(!hasPlatformIntent(requirementText))routingText='飞书\n'+requirementText;
+    }
     const route=routePlatformSkill(routingText,previous.platformSkill);
     const platformSkill=route.skill, platformChanged=previous.platformSkill?.sha256!==platformSkill?.sha256;
-    if(platformChanged)approval=undefined;
-    const task: Task = { ...previous, platformSkill, nodeReview:platformChanged?undefined:previous.nodeReview, id: randomUUID(), state: 'running', requests: 0,
+    // An explicit saved service change applies to the next request, never to old audit rows.
+    const connection=this.get(projectId).connection as Connection;
+    const connectionChanged=digest(connection)!==digest(previous.connection);
+    if(platformChanged||connectionChanged)approval=undefined;
+    const task: Task = { ...previous, connection, platformSkill, nodeReview:platformChanged||connectionChanged?undefined:previous.nodeReview, id: randomUUID(), state: 'running', requests: 0,
       analysisOnly:intent==='analyze', assisted: true, choices:undefined, revising: !approval, approval, review: undefined, paidRetryRequired: false, responseFailures:0, stall: undefined, readStall: undefined, diagnostics: undefined, nextStep: undefined, at: new Date().toISOString(), history: [...previous.history, { kind: 'user-continuation', value: { parentTaskId: previous.id, answer } }], message: '从已保存进度继续；不重放已有工具' };
+    if(connectionChanged)task.history.push({kind:'development-connection-changed',value:{previousProvider:previous.connection.provider,currentProvider:connection.provider,message:'已采用本工程显式保存的新服务；旧节点确认及源码复核失效，历史请求配置不变。'}});
     if(platformChanged)task.history.push({kind:'platform-skill-changed',value:{previous:previous.platformSkill?.sha256??null,current:platformSkill?.sha256??null,message:'平台作者 Skill 已改变；旧方案确认及节点复核失效，需重新核对。'}});
     const routed=this.applyPlatformRoute(task,answer,previous.platformSkill,route);
     this.persist(task);
@@ -258,6 +264,8 @@ export class ProjectAI {
     const availableTools=task.assisted?projectTools.filter(t=>['flowark_project_context','flowark_project_help','flowark_project_open','flowark_project_read','flowark_project_node_schema','flowark_authoring_get','flowark_runtime_history','flowark_runtime_status','flowark_runtime_instance','flowark_runtime_preview',...(!task.analysisOnly&&task.approval?['flowark_authoring_code_patch']:[]),...(!task.analysisOnly&&!task.approval?['flowark_authoring_revise']:[]),task.analysisOnly?'':task.approval?(needsFullCode?'flowark_authoring_code':''):'flowark_authoring_plan'].includes(t.name)):projectTools;
     const ajv = new Ajv({ strict: false, logger: false }), validateQuestion = ajv.compile(assistedQuestionSchema), validators = new Map(availableTools.map(t => [t.name, ajv.compile(t.inputSchema)]));
     try {
+      const savedConnection=this.store.get<Connection>('project-ai-connection',task.projectId)??{provider:'deepseek'};
+      if(digest(savedConnection)!==digest(task.connection))throw new ProjectDiagnostic('development-connection-changed','工程服务已变化，旧请求停止；请重新提交以采用当前已保存服务。未读取旧凭据。');
       let key: string, model: string, provider: 'deepseek' | 'openai-codex', endpoint: { baseUrl: string; protocol: 'responses' | 'chat-completions' } | undefined;
       if (task.connection.provider === 'compatible') {
         const id = task.connection.credentialId;
