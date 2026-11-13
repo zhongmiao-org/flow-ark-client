@@ -60,6 +60,11 @@
         "version": 1,
         "status": "draft-unreleased",
         "governanceCommit": "eb91c6b7fc7591f2cf7a1846ff446db04dadd68d"
+      },
+      "embeddedInputPresentation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "a45b3b0e7b524016eb368ea2233a175a512aa6fe"
       }
     }
   },

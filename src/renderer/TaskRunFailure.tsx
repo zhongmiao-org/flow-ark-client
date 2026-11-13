@@ -8,6 +8,11 @@ type Model = ReturnType<typeof taskRunPresentation>;
 
 function failureReason(model: Model, error: string) {
   const guidance=runFailureGuidance(error);if(guidance)return guidance;
+  if (error.includes('未执行本次输入，请展开内置网页面板并重新核对'))
+    return {
+      title: '内置网页尚未准备好输入',
+      explanation: '展开内置网页面板，并确保工作台没有隐藏或最小化，再核对目标与已执行步骤。本次输入未派发，不代表本轮此前操作未发生；结果未知的操作不会自动重试。',
+    };
   if (model.node?.type === 'assert' && error === `结果断言失败：${model.node.id}`)
     return {
       title: '结果没有通过检查',

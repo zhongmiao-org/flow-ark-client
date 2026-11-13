@@ -195,6 +195,20 @@ export class EmbeddedBrowser {
     this.assertResource(resource);
     if (resource.operation !== operation) throw new Error('网页操作已失效');
   }
+  private assertInputPresented(resource: Resource, operation?: Operation) {
+    if (operation) this.assertOperation(resource, operation);
+    else this.assertResource(resource);
+    const presented = this.reconcilePresentation();
+    if (!presented || resource.presented !== true || resource.capture || !resource.view!.getVisible())
+      throw new Error('未执行本次输入，请展开内置网页面板并重新核对');
+    const bounds = resource.view!.getBounds(), [width, height] = this.window.getContentSize();
+    if (
+      ![bounds.x, bounds.y, bounds.width, bounds.height, width, height].every(Number.isFinite) ||
+      bounds.x < 0 || bounds.y < 0 || bounds.width <= 1 || bounds.height <= 1 ||
+      bounds.x + bounds.width > width || bounds.y + bounds.height > height
+    )
+      throw new Error('未执行本次输入，请展开内置网页面板并重新核对');
+  }
   private notifyLost(resource: Resource, reason: string, destroyed: boolean) {
     if (resource.lostNotified) return;
     resource.lostNotified = true;
@@ -754,6 +768,8 @@ export class EmbeddedBrowser {
         : !['read', 'wait'].includes(command.operation))
     )
       throw new Error('操作超出所选网页的只读范围');
+    const needsInput = ['click', 'fill', 'select', 'check', 'press', 'upload', 'download'].includes(command.operation);
+    if (needsInput) this.assertInputPresented(resource);
     let stop!: () => void;
     const stopped = new Promise<never>(
       (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -761,6 +777,7 @@ export class EmbeddedBrowser {
     const operation = { stop };
     resource.operation = operation;
     const page = resource.page;
+    const beforeInput = needsInput ? () => this.assertInputPresented(resource, operation) : undefined;
     const diagnosticOperation = ['navigate', 'url', 'read', 'count', 'attribute', 'inputValue', 'wait', 'click', 'fill', 'select', 'check', 'press', 'upload', 'download', 'screenshot', 'collect', 'scroll'].includes(command.operation) ? command.operation : 'unknown';
     let diagnosticPhase = '等待网页观察就绪';
     let driverStarted = false;
@@ -805,7 +822,7 @@ export class EmbeddedBrowser {
       }
       if (command.operation !== 'download') {
         driverStarted = true;
-        const result = await page.perform(command);
+        const result = await page.perform(command, beforeInput);
         driverStarted = false;
         diagnosticPhase = '等待导航结束';
         // loadURL resolves at did-finish-load, before isLoading necessarily clears.
@@ -835,7 +852,7 @@ export class EmbeddedBrowser {
         reject,
       };
       driverStarted = true;
-      await page.perform({ ...command, operation: 'click' });
+      await page.perform({ ...command, operation: 'click' }, beforeInput);
       driverStarted = false;
       diagnosticPhase = '等待下载完成';
       await done;

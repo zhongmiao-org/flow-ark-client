@@ -358,6 +358,7 @@ export class EmbeddedPage {
     remaining: () => number,
     beforePress?: () => Promise<void>,
     selector?: string,
+    beforeInput?: () => void,
   ) {
     await this.visible(scope, objectId, remaining, true);
     this.diagnosticPhase = '准备可信点击核对';
@@ -377,10 +378,11 @@ export class EmbeddedPage {
         point = await this.pointerPoint(scope, objectId);
         this.diagnosticPhase = '准备可信悬停核对';
         await this.call(scope, guard, 'function(){this.reset();}');
-        // A trusted hover proves that Chromium has routed input into the target
-        // frame after scrolling. Unlike rAF, this works in hidden native views.
+        // A trusted hover checks input routing to this target after scrolling.
+        // The native view must still be presented before input is dispatched.
         // Only moves repeat; a press/release is never retried.
         this.diagnosticPhase = '派发鼠标悬停';
+        beforeInput?.();
         await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
         this.diagnosticPhase = '等待可信悬停回执';
         const state = await this.call(scope, guard, 'function(){return this.read();}');
@@ -396,6 +398,7 @@ export class EmbeddedPage {
       await beforePress?.();
       const input = { ...point, button: 'left', clickCount: 1 };
       this.diagnosticPhase = '派发鼠标按下';
+      beforeInput?.();
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
       this.diagnosticPhase = '派发鼠标释放';
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mouseReleased' });
@@ -433,7 +436,7 @@ export class EmbeddedPage {
     }
   }
 
-  async perform(command: BrowserCommand): Promise<any> {
+  async perform(command: BrowserCommand, beforeInput?: () => void): Promise<any> {
     this.diagnosticPhase = '校验网页命令';
     validateFormCommand(command);
     const path = framePathOf(command),
@@ -445,7 +448,7 @@ export class EmbeddedPage {
     this.abort.signal.throwIfAborted();
     if (command.version === 8 || command.version === 12) {
       this.diagnosticPhase = '核验固定网页目标';
-      return this.target(command, path, remaining);
+      return this.target(command, path, remaining, beforeInput);
     }
     if (command.operation === 'collect') {
       this.diagnosticPhase = '采集网页字段';
@@ -528,7 +531,7 @@ export class EmbeddedPage {
             `function(){ if (!['INPUT','TEXTAREA','SELECT'].includes(this.tagName)) throw new Error('目标没有输入值'); return this.value; }`,
           );
         case 'click':
-          await this.click(scope, element, remaining);
+          await this.click(scope, element, remaining, undefined, undefined, beforeInput);
           return { clicked: true, verified: false };
         case 'check': {
           await this.visible(scope, element, remaining, true);
@@ -538,7 +541,7 @@ export class EmbeddedPage {
             `function(value){ if (this.tagName!=='INPUT' || !['checkbox','radio'].includes(this.type) || (this.type==='radio' && !value)) throw new Error('check 仅支持原生 checkbox 或选中 radio'); return this.checked; }`,
             command.value,
           );
-          if (current !== command.value) await this.click(scope, element, remaining);
+          if (current !== command.value) await this.click(scope, element, remaining, undefined, undefined, beforeInput);
           const checked = await this.call(scope, element, 'function(){return this.checked;}');
           if (checked !== command.value) throw new Error('勾选结果与目标状态不一致');
           return { checked };
@@ -548,6 +551,7 @@ export class EmbeddedPage {
           const values = typeof command.value === 'string' ? [command.value] : command.value;
           while (true) {
             remaining();
+            beforeInput?.();
             const selected = await this.call(
               scope,
               element,
@@ -574,6 +578,7 @@ export class EmbeddedPage {
         case 'fill': {
           await this.visible(scope, element, remaining, true);
           this.diagnosticPhase = '聚焦并选择输入目标';
+          beforeInput?.();
           const native = await this.call(
             scope,
             element,
@@ -593,12 +598,16 @@ export class EmbeddedPage {
             String(command.value),
           );
           this.diagnosticPhase = '派发文本输入';
-          if (native) await this.send('Input.insertText', { text: String(command.value) });
+          if (native) {
+            beforeInput?.();
+            await this.send('Input.insertText', { text: String(command.value) });
+          }
           return { filled: true };
         }
         case 'press': {
           await this.visible(scope, element, remaining, true);
           this.diagnosticPhase = '聚焦按键目标';
+          beforeInput?.();
           await this.call(scope, element, 'function(){this.focus();}');
           const key = command.value as (typeof formKeys)[number];
           const codes: Record<string, number> = {
@@ -617,6 +626,7 @@ export class EmbeddedPage {
           };
           const actual = key === 'Space' ? ' ' : key;
           this.diagnosticPhase = '派发按键按下';
+          beforeInput?.();
           await this.send('Input.dispatchKeyEvent', {
             type: 'keyDown',
             key: actual,
@@ -634,6 +644,7 @@ export class EmbeddedPage {
           return { pressed: true };
         }
         case 'upload':
+          beforeInput?.();
           await this.send(
             'DOM.setFileInputFiles',
             { objectId: element, files: [String(command.value)] },
@@ -649,7 +660,7 @@ export class EmbeddedPage {
       );
     }
   }
-  private async target(command: BrowserCommand, path: string[], remaining: () => number) {
+  private async target(command: BrowserCommand, path: string[], remaining: () => number, beforeInput?: () => void) {
     const input =
       command.version === 12 ? resolvedBrowserScroll(command) : resolvedBrowserTarget(command);
     const scrollUrl = this.contents.getURL();
@@ -791,6 +802,7 @@ export class EmbeddedPage {
             if (!(await state(item)).visible) throw Error('点击目标不再可见');
           },
           input.selector,
+          beforeInput,
         );
         result = { clicked: true, verified: false };
       } else if (input.operation === 'read') {

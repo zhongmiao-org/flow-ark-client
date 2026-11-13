@@ -978,7 +978,7 @@ export default function BrowserSidebar({
                       <span>
                         {expanded
                           ? '这里只改变查看区域，不重排网页。macOS 清晰查看时，点入网页后按 ⌥⌘ 和方向键平移；滚轮上下查看。切换比例后请重新核对目标。'
-                          : '收起面板后任务继续'}
+                          : '读取可继续；输入需展开面板'}
                       </span>
                     )}
                   </>
