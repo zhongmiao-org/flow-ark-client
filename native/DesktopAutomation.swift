@@ -97,10 +97,21 @@ func jsonStamp(_ value:Any) throws -> String {
               frame(w.window) != nil else { try fault("window-changed") }
         return w
     }
+    // NSWorkspace's time-varying application cache requires a running main RunLoop.
+    // This stdin helper must query WindowServer's current accessibility owner instead.
+    static func foregroundPID(timeout:Float=0.1) -> pid_t? {
+        let system=AXUIElementCreateSystemWide()
+        guard AXUIElementSetMessagingTimeout(system,timeout) == .success,
+              let focused=ax(system,kAXFocusedApplicationAttribute),
+              CFGetTypeID(focused)==AXUIElementGetTypeID() else {return nil}
+        var pid:pid_t=0
+        guard AXUIElementGetPid(focused as! AXUIElement,&pid) == .success,pid>0 else {return nil}
+        return pid
+    }
     static func focused(_ w:DesktopWindow,timeout:Float?=nil) throws {
         let root=AXUIElementCreateApplication(w.app.processIdentifier)
         if let timeout {guard AXUIElementSetMessagingTimeout(root,timeout) == .success else {try fault("focus-read-timeout-unavailable")}}
-        guard NSWorkspace.shared.frontmostApplication?.processIdentifier==w.app.processIdentifier,
+        guard foregroundPID()==w.app.processIdentifier,
               let f=ax(root,kAXFocusedWindowAttribute),
               CFGetTypeID(f)==AXUIElementGetTypeID(), same(f as! AXUIElement,w.window) else { try fault("focus-changed") }
     }
@@ -123,7 +134,7 @@ func jsonStamp(_ value:Any) throws -> String {
         while ProcessInfo.processInfo.systemUptime<deadline {
             let remaining=deadline-ProcessInfo.processInfo.systemUptime
             if remaining<=0 {break}
-            if NSWorkspace.shared.frontmostApplication?.processIdentifier != w.app.processIdentifier {
+            if foregroundPID(timeout:Float(min(0.1,remaining))) != w.app.processIdentifier {
                 phase="activation-phase:foreground-pid-unconfirmed"
             } else {
                 var confirmed=false
@@ -260,7 +271,7 @@ func jsonStamp(_ value:Any) throws -> String {
         var targets=[String:String]();for row in rows {if let id=row["id"] as? String {targets[id]=try jsonStamp(row)}}
         let focus=try captureFocus(w)
         // Expose only nontext metadata; the complete stamp above remains private.
-        if NSWorkspace.shared.frontmostApplication?.processIdentifier==w.app.processIdentifier,let focus,focus.2 != "AXSecureTextField",focus.3 != kAXSecureTextFieldSubrole {
+        if foregroundPID()==w.app.processIdentifier,let focus,focus.2 != "AXSecureTextField",focus.3 != kAXSecureTextFieldSubrole {
             var snapshot:[String:Any]=["role":focus.2,"subrole":focus.3]
             let matchingIds=refs.compactMap { same($0.value,focus.0) ? $0.key:nil }
             if matchingIds.count==1 {snapshot["elementId"]=matchingIds[0]}
