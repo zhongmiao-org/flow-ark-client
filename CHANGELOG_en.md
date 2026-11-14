@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- Home tasks create a human-interaction project and keep workbook inspection, clarification, generation and reviewed trial preparation in one conversation. Bound-window evidence is collected by the official host and sent to the model only after submission.
+- Human-interaction mode restricts browser, network and process paths. Local subagent development uses placeholder credentials and rejects real keys or remote fallback for generation, independent review and desktop visual judgement. Full profile reset is an explicit backup/restore operation, never startup behavior.
+- Native screenshots include only the selected window on an exact display with explicit cropping, rejecting cross-display or changed geometry. Helper exits report a fixed phase and signal without treating failed evidence as success.
+
 - Recheck the same nonsecure input control before each Unicode text chunk, allowing the current input to change its own text or selection without resuming after focus moves.
 - Query the current system accessibility focus owner for macOS foreground checks instead of depending on the command helper refreshing the NSWorkspace cache; retain exact-window and dispatch guards.
 - Check ARIA disabled, read-only, inert and composed-tree states before embedded browser input, and AXEnabled before macOS element clicks. Label Excel headers as source evidence rather than target webpage fields.

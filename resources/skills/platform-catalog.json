@@ -1,8 +1,8 @@
 [
   {
     "id": "feishu-bitable",
-    "version": "0.2.0-draft",
-    "sha256": "26b52612dab89e6c08a7809eaffec37c6537c0a0fdce119413932236a3f5a861",
+    "version": "0.2.1-draft",
+    "sha256": "2b7f027fe136c85d1ac7d1b3ae6acc127a4b35c96ca2f2e43da0c8b74b3a9571",
     "summary": "飞书多维表格：输入、下拉、搜索、提交及保存核验",
     "platform": "feishu",
     "views": [

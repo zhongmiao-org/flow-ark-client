@@ -14,7 +14,13 @@
     "localProjectFormat": {
       "version": 1,
       "status": "draft-unreleased",
-      "authoringSkillVersion": "1.2.31-draft",
+      "authoringSkillVersion": "1.2.32-draft",
+      "humanRpaConversation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "71e6b39c4bcdd47e275e2a0fdf7b0974d92e7e1b",
+        "executionMode": "desktop-human-v1"
+      },
       "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746",
       "tableRangeHelper": {
         "version": 1,

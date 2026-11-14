@@ -11,6 +11,8 @@ export const desktopCommand = z.union([
   z.object({ kind: z.literal('scroll'), point, deltaX: z.number().int().min(-1000).max(1000), deltaY: z.number().int().min(-1000).max(1000) }).strict(),
   z.object({ kind: z.literal('drag'), from: point, to: point }).strict(),
 ]);
+/** Host-to-Main only; deliberately absent from Renderer desktop method table. */
+export const desktopAuthoringObserveRequest = z.object({ scopeId, screenshot: z.boolean().default(false) }).strict();
 export const desktopAutomationMethods = {
   'desktop.automation.list': z.object({}).strict(),
   'desktop.automation.state': z.object({ scopeId }).strict(),
@@ -33,3 +35,6 @@ export const desktopObservation = z.object({ version: z.literal(1), observationI
   focus: z.object({ role: z.string().max(4000), subrole: z.string().max(4000), elementId: z.string().regex(/^\d{1,4}$/).optional(), bounds: bounds.optional() }).strict().optional(),
   image: z.object({ mimeType: z.literal('image/png'), data: z.string().min(1).max(8*1024*1024), width: z.number().int().positive().max(4096), height: z.number().int().positive().max(4096) }).strict().optional(),
 }).strict();
+
+/** Internal response only; project evidence strips observationId before persistence. */
+export const desktopAuthoringObserveResult = z.object({ bindingId: uuid, expiresAt: z.number().finite(), observation: desktopObservation }).strict();

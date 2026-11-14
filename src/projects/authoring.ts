@@ -13,10 +13,12 @@ import { validateFlow } from '../core/validate';
 import { emitGraph } from './graph';
 import { digest } from '../shared/utils';
 import type { Step } from '../shared/types';
+import { assertHumanPlan, assertHumanSource, humanExecutionMode } from './human-interaction-policy';
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,80}$/), schema = z.record(z.string(), z.unknown());
 const resource = z.object({ id, name: z.string().min(1).max(200), kind: z.enum(['file','directory','browser','ai','skill','conversation-source','run-result']), access: z.enum(['read','write','readwrite','use']), required: z.boolean().default(true) }).strict();
 const action = z.object({ id, name: z.string().min(1).max(200), description: z.string().min(1).max(4000) }).strict();
 export const authoringPlanSchema = z.object({
+  executionMode: z.literal(humanExecutionMode).optional(),
   summary: z.string().min(1).max(4000), constants: schema.default({}), defaults: schema.default({}),
   configurationSchema: schema.default({ type: 'object', properties: {}, additionalProperties: false }),
   stateSchema: schema.default({ type: 'object', properties: {}, additionalProperties: false }),
@@ -104,6 +106,7 @@ function checkPlan(plan: Plan) {
 }
 /** New-plan preflight only. Historical drafts remain readable without rewriting. */
 function checkPlanInputs(plan:Plan){
+  assertHumanPlan(plan);
   const schemas:[string,Record<string,unknown>][]=[['configurationSchema',plan.configurationSchema],['stateSchema',plan.stateSchema],...plan.entries.flatMap(e=>[[`entries.${e.id}.inputSchema`,e.inputSchema],[`entries.${e.id}.resultSchema`,e.resultSchema]] as [string,Record<string,unknown>][])];
   try{validateConfigurationSchema(plan.configurationSchema);}catch(error){throw new ProjectDiagnostic('authoring-configuration-schema',error instanceof Error?error.message:'配置Schema无效',undefined,'configurationSchema');}
   for(const [field,value]of schemas){try{new Ajv({strict:false,logger:false,validateFormats:false}).compile(value);}catch{throw new ProjectDiagnostic('authoring-schema','Schema无法本地编译；核对类型、约束与本地引用',undefined,field);}}
@@ -212,6 +215,7 @@ export async function codeAuthoring(root:string,draftId:string,revision:string,e
   if(!source.trim()||Buffer.byteLength(source)>256*1024)throw new ProjectDiagnostic('authoring-code-size','节点代码须为不超过256KiB的完整模块',script.path,nodeId);
   try{const result=await build({stdin:{contents:source,loader:script.language,sourcefile:script.path},format:'esm',target:'es2022',write:false,metafile:true,logLevel:'silent'});if(!Object.values(result.metafile!.outputs).some(o=>o.exports.includes('default')))throw new ProjectDiagnostic('authoring-default-export','脚本需要default export async函数',script.path,nodeId);}
   catch(error:any){if(error instanceof ProjectDiagnostic)throw error;return {valid:false,draftId,draftRevision:revision,entryId,nodeId,diagnostics:(error.errors??[]).map((e:any)=>({code:'script-syntax',message:e.text,file:script.path,field:nodeId,line:e.location?.line,column:e.location?e.location.column+1:undefined})),publicFilesWritten:false};}
+  if(current.draft.plan.executionMode===humanExecutionMode)await assertHumanSource(source,script.path,script.language);
   const typeIssues=await checkProjectScripts(new Map([[script.path,source]]),[{path:script.path,entryId,nodeId}]);
   if(typeIssues.length)return {valid:false,draftId,draftRevision:revision,entryId,nodeId,diagnostics:typeIssues,publicFilesWritten:false};
   const sha256=digest(source);if(script.sha256===sha256)return {...view(current.draft,current.revision),valid:true,unchanged:true,checked:'syntax and SDK types',publicFilesWritten:false};
@@ -226,7 +230,9 @@ export async function assembleAuthoring(root:string,draftId:string,revision:stri
   checkPlanInputs(current.draft.plan);
   const draft=current.draft;const snapshot=await snapshotProject(root);
   const missing=draft.scripts.filter(s=>!s.sha256);if(missing.length)throw new ProjectDiagnostic('authoring-missing-code','尚有脚本未实现：'+missing.map(s=>key(s.entryId,s.nodeId)).join(','));
-  const files:Record<string,string>={},m=structuredClone(snapshot.manifest);m.entries=[];m.resources=draft.plan.resources;m.actions=draft.plan.actions.map(a=>({...a,default:'deny'}));m.prompts=[];m.promptBindings={};m.environment=[];
+  const files:Record<string,string>={},m=structuredClone(snapshot.manifest);
+  if(draft.plan.executionMode)m.executionMode=draft.plan.executionMode;else delete m.executionMode;
+  m.entries=[];m.resources=draft.plan.resources;m.actions=draft.plan.actions.map(a=>({...a,default:'deny'}));m.prompts=[];m.promptBindings={};m.environment=[];
   for(const e of draft.plan.entries){
     const ignored:Script[]=[],steps=nodeList(e.id,e.steps,ignored,false),graph=emitGraph(steps),bindings:Record<string,unknown>={};
     for(const [id,node]of Object.entries(graph.nodes)){const script=draft.scripts.find(s=>s.entryId===e.id&&s.nodeId===id);bindings[id]={node,...script?{script:script.path}:{}};}

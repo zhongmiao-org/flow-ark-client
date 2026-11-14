@@ -90,7 +90,8 @@ export async function generate(
     endpoint = url.href.replace(/\/$/, '') + (deep ? '/chat/completions' : '/responses');
   }
   const maxTokens = generation?.maxOutputTokens ?? (budget === 'planning' ? 16384 : 4096);
-  const timeoutMs = budget === 'planning' ? 120000 : 45000;
+  const localAgent = process.env.FLOWARK_DEVELOPMENT_AI_LOOPBACK === '1' && connection && new URL(connection.baseUrl).protocol === 'http:' && ['127.0.0.1', '[::1]'].includes(new URL(connection.baseUrl).hostname);
+  const timeoutMs = localAgent ? 240000 : budget === 'planning' ? 120000 : 45000;
   let total = 0;
   if (images.length > 4) throw new Error('每次最多发送四张图片');
   for (const image of images) {

@@ -1,9 +1,11 @@
+import { developmentAILoopbackOnly } from '../host/development-ai';
 import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
 import { platformSkillMaxBytes, parsePlatformAuthoringSkill } from '../projects/platform-authoring-skill';
 import { workspaceStorage, prepareWorkspaceStorage, activateWorkspaceStorage, type WorkspaceStorageReview } from '../host/workspace-storage';
 import { stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { DesktopAutomation } from './desktop-automation';
+import { desktopAuthoringObserveRequest } from '../shared/desktop-automation';
 import { assertReductionOutput } from '../shared/source-reduction';
 import { ProjectBridge } from './project-bridge';
 import { conversationEvent } from '../shared/conversation';
@@ -696,6 +698,13 @@ app
         rpc = new Rpc(
           (m) => host.postMessage(m),
           async (method, args) => {
+            // Legacy AI paths must fail before opening provider/local/tool secrets.
+            if (developmentAILoopbackOnly()) {
+              if (method === 'credential.local.read' || method === 'credentials.list') return [];
+              if (method === 'ai.configuration.read') return { provider: aiProvider.parse(args.provider), configured: false, revision: null, model: 'local-development-only' };
+              if (['credentials.get','credentials.identity','credential.local.check','credential.local.write','ai.configuration.write','tool.credentials.get','tool.credentials.set','tool.credentials.remove'].includes(method))
+                throw Error('本机子智能体开发模式禁止读取或修改真实凭据；请使用工程本机兼容服务');
+            }
             if (method === 'project.run.confirm') {
               const configuring = ['project-configuration', 'project-rebuild'].includes(args.review?.kind);
               const detail = JSON.stringify(args.review, null, 2);
@@ -731,6 +740,10 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method === 'desktop.automation.authoringObserve') {
+              const value = desktopAuthoringObserveRequest.parse(args);
+              return desktopAutomation.observeForAuthoring(value.scopeId, value.screenshot);
+            }
             if (method === 'desktop.automation.command') return desktopAutomation.command(args.scopeId, args.runId, args.request, args.actionId);
             if (method === 'desktop.automation.finish') return desktopAutomation.finish(args.runId);
             if (method === 'desktop.automation.state') return desktopAutomation.state(args.scopeId);

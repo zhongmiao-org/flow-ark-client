@@ -245,9 +245,13 @@ func jsonStamp(_ value:Any) throws -> String {
         }
         return ["version":1,"accessibility":"granted","screenRecording":CGPreflightScreenCaptureAccess(),"windows":result] as [String:Any]
     }
-    static func screenshot(_ w:DesktopWindow,_ expected:CGRect) async throws -> [String:Any] {
+    // ScreenCaptureKit filter creation and AppKit bitmap conversion stay on the main actor.
+    // The stdin RPC loop remains unisolated, so waiting for the next request cannot block capture.
+    @MainActor static func screenshot(_ w:DesktopWindow,_ expected:CGRect) async throws -> [String:Any] {
         guard CGPreflightScreenCaptureAccess() else { try fault("screen-recording-required") }
-        if #available(macOS 14.0,*) {
+        if #available(macOS 14.2,*) {
+            guard expected.minX.isFinite,expected.minY.isFinite,expected.width.isFinite,expected.height.isFinite,
+                expected.width>0,expected.height>0 else {try fault("capture-window-geometry-invalid")}
             let content=try await SCShareableContent.excludingDesktopWindows(true,onScreenWindowsOnly:true)
             let candidates=content.windows.filter { $0.owningApplication?.processID==w.app.processIdentifier && $0.frame==expected }
             let appName=w.app.localizedName ?? "", title=captureTitle(str(w.window,kAXTitleAttribute),appName)
@@ -260,16 +264,35 @@ func jsonStamp(_ value:Any) throws -> String {
                 if siblings.count==1 && same(siblings[0],w.window) && candidates.count==1 { matches=candidates }
             }
             guard matches.count==1 else { try fault("capture-window-ambiguous") }
-            let filter=SCContentFilter(desktopIndependentWindow:matches[0]), config=SCStreamConfiguration()
+            // Use the display-bound *including* filter, never a full-display or
+            // application filter. The independent-window initializer aborts in
+            // the installed helper on this OS, even when called on MainActor.
+            // Keep one exact window ID and crop in display-local logical points
+            // so image (0,0) still means the selected AX window's origin.
+            let displays=content.displays.filter {display in
+                let intersection=display.frame.intersection(expected)
+                return !intersection.isNull && intersection.width>0 && intersection.height>0
+            }
+            guard displays.count==1,let display=displays.first,display.frame.contains(expected),
+                CGDisplayIsActive(display.displayID) != 0,CGDisplayBounds(display.displayID)==display.frame
+                else {try fault("capture-window-requires-single-display")}
+            let filter=SCContentFilter(display:display,including:[matches[0]]), config=SCStreamConfiguration()
+            filter.includeMenuBar=false;config.includeChildWindows=false
+            config.ignoreShadowsDisplay=true;config.ignoreGlobalClipDisplay=false
+            config.sourceRect=expected.offsetBy(dx:-display.frame.minX,dy:-display.frame.minY)
             let scale=min(2,1600/max(expected.width,expected.height));config.width=max(1,Int(expected.width*scale));config.height=max(1,Int(expected.height*scale));config.showsCursor=false
             let cg=try await SCScreenshotManager.captureImage(contentFilter:filter,configuration:config)
-            guard try check().app.processIdentifier==w.app.processIdentifier, frame(w.window)==expected else { try fault("window-changed") }
+            let current=try check()
+            guard current.app.processIdentifier==w.app.processIdentifier,same(current.window,w.window),frame(w.window)==expected,
+                captureTitle(str(w.window,kAXTitleAttribute),appName)==title,
+                CGDisplayIsActive(display.displayID) != 0,CGDisplayBounds(display.displayID)==display.frame,
+                cg.width==config.width,cg.height==config.height else { try fault("window-changed") }
             let rep=NSBitmapImageRep(cgImage:cg)
             guard let data=rep.representation(using:.png,properties:[:]), data.count<=6*1024*1024 else { try fault("image-limit") }
             capturedWindowNumber=matches[0].windowID
             return ["mimeType":"image/png","data":data.base64EncodedString(),"width":cg.width,"height":cg.height]
         }
-        try fault("capture-requires-macos14")
+        try fault("capture-requires-macos14-2")
     }
     static func observe(_ args:[String:Any]) async throws -> Any {
         let w=try check();let (bounds,rows,refs,stamp,truncated)=try tree(w)

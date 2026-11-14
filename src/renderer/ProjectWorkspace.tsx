@@ -1,8 +1,9 @@
 import ProjectAiConversation from './ProjectAiConversation';
 import DesktopAutomationPanel from './DesktopAutomationPanel';
+import EntryResultView from './EntryResultView';
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, Button, Card, Select, Space, Tabs, Tag, Modal, Typography, Input, InputNumber, Checkbox } from 'antd';
-import type { Step } from '../shared/types';
+import type { Step, Run } from '../shared/types';
 import { compileGraph, emitGraph } from '../projects/graph';
 import { buildDiagram } from './flow-diagram';
 import DiagramCanvas from './DiagramCanvas';
@@ -14,9 +15,14 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
   const [info, setInfo] = useState<Info>(), [entryId, setEntryId] = useState(''), [selected, setSelected] = useState('');
   const [files, setFiles] = useState<Record<string, string>>({}), [edits, setEdits] = useState<Record<string, string>>({});
   const [desktopScope, setDesktopScope] = useState('');
+  const [desktopBinding, setDesktopBinding] = useState<any>();
+  const [conversationPrepared, setConversationPrepared] = useState<{ revision:string; instanceId:string; entryId:string }>();
+  const [conversationRun, setConversationRun] = useState<Run>();
+  const [conversationSubmitted, setConversationSubmitted] = useState(false);
   const [entry, setEntry] = useState<any>(), [file, setFile] = useState(''), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [notice, setNotice] = useState(''), [conflict, setConflict] = useState(false), [pendingField, setPendingField] = useState(false);
   const [ai, setAi] = useState<any>(), [aiProvider, setAiProvider] = useState('deepseek'), [baseUrl, setBaseUrl] = useState('');
+  const localAgentDevelopment = ai?.development?.mode === 'loopback-subagent';
   const [protocol, setProtocol] = useState('chat-completions'), [model, setModel] = useState(''), [credentialId, setCredentialId] = useState('');
   const [keyValue, setKeyValue] = useState(''), [task, setTask] = useState('');
   const [evidenceRuns,setEvidenceRuns]=useState<any[]>([]),[evidenceRun,setEvidenceRun]=useState('');
@@ -29,6 +35,12 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
   const localKeyId = useRef('local-' + crypto.randomUUID());
   const state = useRef({ info, edits, busy }); state.current = { info, edits, busy };
   const dirty = Object.keys(edits).length > 0;
+  const conversationAssembled = !!info && (ai?.tasks??[]).some((t:any)=>t.authoring?.assembledRevision===info.revision);
+  const conversationPreparedCurrent = !!info && conversationPrepared?.revision===info.revision;
+  const conversationRequiresDesktop = useMemo(()=>{
+    try { return JSON.parse(edits['flowark.project.json']??files['flowark.project.json']??'{}').entries?.find((e:any)=>e.id===conversationPrepared?.entryId)?.capabilities?.includes('desktop-automation-v1')===true; }
+    catch { return true; }
+  },[edits,files,conversationPrepared?.entryId]);
   const perform = async (fn: () => Promise<void>) => { if (state.current.busy) return; state.current.busy = true; setBusy(true); setError(''); try { await fn(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { state.current.busy = false; setBusy(false); } };
   const read = async (p: Info, path: string) => (await api('project.read', { id: p.id, revision: p.revision, path })).content as string;
   const load = async (p: Info, id: string) => {
@@ -59,10 +71,36 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
       void api('project.get', { id: info.id }).then((next: Info) => { if (next.revision !== state.current.info?.revision) { setConflict(true); setNotice('磁盘工程已变化，当前输入保留；请读取磁盘版本后合并。'); } }).catch(e => setError(e.message));
     }, 5000); return () => clearInterval(timer);
   }, [info?.id]);
+  useEffect(()=>{
+    setConversationPrepared(undefined);setConversationSubmitted(false);
+  },[info?.id,info?.revision]);
+  useEffect(()=>{
+    setConversationRun(undefined);
+  },[info?.id]);
+  useEffect(()=>{
+    if(!info || !conversationRun || ['SUCCEEDED','FAILED','CANCELLED','INTERRUPTED'].includes(conversationRun.state))return;
+    let live=true,reading=false;
+    const refresh=async()=>{
+      if(reading)return;reading=true;
+      try {
+        const detail=await api('project.run.status',{id:info.id,runId:conversationRun.id});
+        if(!live)return;
+        setConversationRun(detail.run);
+        if(['SUCCEEDED','FAILED','CANCELLED','INTERRUPTED'].includes(detail.run.state)){
+          await api('project.ai.runEvidence',{id:info.id,runId:detail.run.id});
+          const next=await api('project.ai.get',{id:info.id});
+          if(live)setAi(next);
+        }
+      } catch(e){if(live)setError(e instanceof Error?e.message:'运行状态暂不可读取，请核对原运行，不重复提交。');}
+      finally{reading=false;}
+    };
+    void refresh();const timer=setInterval(()=>void refresh(),2000);
+    return()=>{live=false;clearInterval(timer);};
+  },[info?.id,conversationRun?.id,conversationRun?.state]);
   useEffect(() => {
     if (!info) return;
     let live = true;
-    setDesktopScope(''); setTask(initialTask ?? ''); if (initialTask||initialRunId) setTab('ai'); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel('');
+    setDesktopScope(''); setDesktopBinding(undefined); setTask(initialTask ?? ''); if (initialTask||initialRunId) setTab('ai'); setKeyValue(''); setCredentialId(''); setBaseUrl(''); setModel('');
     const refresh = () => void api('project.ai.get', { id: info.id }).then(next => {
       if (!live) return; setAi(next);
     }).catch(e => { if (live) setError(e.message); });
@@ -140,14 +178,41 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
         <Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => { const r = await api('project.package', { id: info.id, revision: info.revision }); if (r) setNotice('完整ZIP已保存：' + r.sha256); })}>导出完整ZIP</Button>
         <Button disabled={busy} onClick={() => leave(() => void perform(reload))}>读取磁盘版本</Button>
         {conflict && <Button disabled={busy || pendingField} onClick={() => void perform(reviewDifferences)}>核对磁盘差异</Button>}</Space>
-      <Tabs activeKey={tab} onChange={setTab} items={[{ key: 'desktop', label: '桌面窗口', children: <><p>先构建当前工程以固定实例身份，再绑定本次窗口。此操作不会运行流程。</p><Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => { const detail = await api('project.prepare', { id: info.id, revision: info.revision }); setDesktopScope(detail.instance.id); })}>准备桌面实例</Button>{desktopScope && <DesktopAutomationPanel key={desktopScope} scopeId={desktopScope} connection={ai?.connection} />}</> }, { key: 'blocks', label: '区块与参数', children: <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(320px, 1fr)', gap: 16 }}><Card title="流程编排">
+      <Tabs activeKey={tab} onChange={setTab} items={[{ key: 'desktop', label: '桌面窗口', children: <><p>先构建当前工程以固定实例身份，再绑定本次窗口。此操作不会运行流程。</p><Button disabled={busy || dirty || conflict || pendingField} onClick={() => void perform(async () => { const detail = await api('project.prepare', { id: info.id, revision: info.revision }); setDesktopScope(detail.instance.id); })}>准备桌面实例</Button>{tab === 'desktop' && desktopScope && <DesktopAutomationPanel key={desktopScope} scopeId={desktopScope} connection={ai?.connection} localAgentDevelopment={localAgentDevelopment} onBindingChange={setDesktopBinding} />}</> }, { key: 'blocks', label: '区块与参数', children: <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(320px, 1fr)', gap: 16 }}><Card title="流程编排">
         {projection.error ? <Alert type="error" message={projection.error} /> : <><Space wrap><Button disabled={busy} onClick={() => { const id = 'n_' + crypto.randomUUID().slice(0, 8); changeSteps([...projection.steps, { id, type: 'value', version: 1, name: '新数据步骤', value: null }]); setSelected(id); }}>新增数据步骤</Button>
           {(['上移', '下移', '移除'] as const).map((label, action) => <Button key={label} disabled={!selected || busy} onClick={() => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { if (action === 2) list.splice(i, 1); else { const j = i + (action === 0 ? -1 : 1); if (j >= 0 && j < list.length) [list[i], list[j]] = [list[j], list[i]]; } }); changeSteps(steps); if (action === 2) setSelected(''); }}>{label}</Button>)}</Space>
           <div style={{ height: 550 }}><DiagramCanvas nodes={diagram.nodes} edges={diagram.edges} selected={selected} select={setSelected} /></div></>}
       </Card><Card title={selected ? '区块绑定 · ' + selected : '选择区块编辑参数'}>{selected && <Space style={{ marginBottom: 12 }}><Button onClick={() => locateSource(entry.nodes, selected)}>定位节点源码</Button><Button onClick={() => locateSource(entry.graph, selected)}>定位编排源码</Button>{typeof projection.bindings[selected]?.script === 'string' && <Button onClick={() => locateSource(projection.bindings[selected].script)}>定位脚本</Button>}</Space>}{projection.bindings[selected] && <JsonTreeEditor key={selected} value={projection.bindings[selected]} disabled={busy} onPendingChange={setPendingField} rootLabel="区块绑定" change={next => { const steps = structuredClone(projection.steps); transform(steps, (list, i) => { list[i] = { ...list[i], ...(next as any).node }; }); changeSteps(steps, { ...projection.bindings, [selected]: next }); }} />}</Card></div> },
         { key: 'source', label: '源码与配置', children: <Card title="工程文件"><ProjectSourceEditor key={info.id} projectId={info.id} busy={busy} file={file} paths={info.files.filter(f => /\.(json|mmd|md|js|ts)$/.test(f.path) || f.path === '.env.example').map(f => f.path)} contents={files} edits={edits} choose={chooseFile} change={(path, content) => setEdits(old => { const next = { ...old }; if (content === files[path]) delete next[path]; else next[path] = content; return next; })} issues={issues} focusRequest={focusRequest} locateBlock={id => { setSelected(id); setTab('blocks'); }} /></Card> },
         { key: 'ai', label: 'AI 开发', children: <Card title="一起确认字段和流程节点">
+          {initialTask && <Alert type="info" showIcon message="任务已进入流程开发对话" description="FlowArk 自动编写流程，你只需确认字段、步骤和外部操作。网页采用观察、鼠标和键盘操作，不调用站点 API；先试录 3 条，核验后再确认剩余范围。" style={{marginBottom:16}} />}
           <ProjectAiConversation tasks={ai?.tasks??[]} message={task} change={setTask} busy={busy||dirty||pendingField||conflict} ready={true} usage={ai?.usage} recovery={ai?.recovery}
+            execution={conversationAssembled && <Card title="确认后试运行">
+              <p>FlowArk 根据已确认的方案准备配置和权限，供你核对；随后按入口默认参数运行，不需要配置 RPA 节点。</p>
+              <Space wrap><Button disabled={busy || dirty || conflict || pendingField || ai?.tasks?.some((t:any)=>t.state==='running') || conversationSubmitted && (!conversationRun || !['SUCCEEDED','FAILED','CANCELLED','INTERRUPTED'].includes(conversationRun.state))} onClick={()=>void perform(async()=>{
+                const prepared=await api('project.prepareConversation',{id:info.id,revision:info.revision});
+                if(!prepared.configured){setNotice('未确认试运行准备，尚未启动运行。');return;}
+                setConversationPrepared({revision:prepared.revision,instanceId:prepared.instanceId,entryId:prepared.entryId});
+                setConversationSubmitted(false);setConversationRun(undefined);setDesktopScope(prepared.instanceId);
+                setDesktopBinding(await api('desktop.automation.state',{scopeId:prepared.instanceId}));
+                setNotice('试运行配置已核对；请确认目标窗口，随后点击试运行。准备没有执行操作。');
+              })}>核对试运行</Button>
+              <Button type="primary" disabled={busy || dirty || conflict || pendingField || !conversationPreparedCurrent || conversationSubmitted || ai?.tasks?.some((t:any)=>t.state==='running') || conversationRequiresDesktop && (!desktopBinding || desktopBinding.scopeId!==conversationPrepared?.instanceId || desktopBinding.active || Date.now()>=desktopBinding.expiresAt)} onClick={()=>void perform(async()=>{
+                if(!conversationPrepared || conversationPrepared.revision!==info.revision)throw Error('工程已变化，请重新核对试运行。');
+                setConversationSubmitted(true);
+                const outcome=await api('project.run.request',{id:info.id,entryId:conversationPrepared.entryId,requestId:crypto.randomUUID()});
+                if(outcome.cancelled){setConversationSubmitted(false);setNotice('已取消本次运行核对，未创建运行。');return;}
+                if(outcome.rejected){setConversationSubmitted(false);throw Error(outcome.message);}
+                if(!outcome.id)throw Error('运行回执未确认，请先读取运行记录，不重复提交。');
+                setConversationRun(outcome);setNotice('运行已登记；以下展示实际状态，完成结果将回到当前对话。');
+                if(['SUCCEEDED','FAILED','CANCELLED','INTERRUPTED'].includes(outcome.state)){
+                  await api('project.ai.runEvidence',{id:info.id,runId:outcome.id});setAi(await api('project.ai.get',{id:info.id}));
+                }
+              })}>试运行</Button>
+              {conversationRun && !['SUCCEEDED','FAILED','CANCELLED','INTERRUPTED'].includes(conversationRun.state) && <Button disabled={busy} onClick={()=>void perform(async()=>{await api('project.run.control',{id:info.id,runId:conversationRun.id,action:'cancel'});setNotice('已提交停止请求，是否停止以实际运行状态为准。');})}>停止试运行</Button>}</Space>
+              {conversationSubmitted && !conversationRun && !busy && <Alert type="warning" showIcon message="运行回执尚未确认" description="请先核对本工程运行记录；本次不自动重试或重复提交。" />}
+              {conversationRun && <div aria-label="对话试运行结果"><p>本次运行：{conversationRun.name} · {conversationRun.state}</p>{conversationRun.error && <Alert type="error" showIcon message="试运行未完成" description={conversationRun.error} />}<EntryResultView run={conversationRun} /></div>}
+            </Card>}
             send={(current,answer,intent)=>void perform(async()=>{
               const text=answer??task;
               if(current) await api('project.ai.resume',{id:info.id,taskId:current.id,answer:text,intent});
@@ -158,29 +223,41 @@ export default function ProjectWorkspace({ back, configure, navigation, initialT
             detail={current=>void perform(async()=>{const detail=await api('project.ai.detail',{id:info.id,taskId:current.id});Modal.info({title:'开发步骤与结果（只读）',width:960,content:<pre tabIndex={0} style={{maxHeight:520,overflow:'auto',whiteSpace:'pre-wrap',userSelect:'text'}}>{JSON.stringify(detail,null,2)}</pre>});})}
             cancel={current=>void perform(async()=>{await api('project.ai.cancel',{id:info.id,taskId:current.id});setAi(await api('project.ai.get',{id:info.id}));})}
             evidence={<Space direction="vertical" style={{width:'100%'}}>
+              <Space wrap><Button disabled={busy || dirty || conflict || pendingField} onClick={()=>void perform(async()=>{
+                const detail=await api('project.prepare',{id:info.id,revision:info.revision});
+                setDesktopScope(detail.instance.id);setDesktopBinding(await api('desktop.automation.state',{scopeId:detail.instance.id}));
+                setNotice('请选择本次操作窗口；准备实例和选择窗口不会运行流程。');
+              })}>选择操作窗口</Button>
+              <Button disabled={busy || !desktopScope || !desktopBinding || desktopBinding.active || Date.now() >= desktopBinding.expiresAt} onClick={()=>void perform(async()=>{
+                await api('project.ai.observeWindow',{id:info.id,screenshot:desktopBinding.screenshotAllowed===true});
+                setAi(await api('project.ai.get',{id:info.id}));
+                setNotice('已只读观察所选窗口，未点击或输入；提交回答后才发送证据给当前模型。');
+              })}>读取所选窗口并准备AI证据</Button></Space>
+              {tab === 'ai' && desktopScope && <DesktopAutomationPanel key={desktopScope} scopeId={desktopScope} connection={ai?.connection} localAgentDevelopment={localAgentDevelopment} onBindingChange={setDesktopBinding} />}
+              {ai?.evidence?.window && <div aria-label="目标窗口只读证据"><p>目标来源：{ai.evidence.window.observation?.application} · {ai.evidence.window.observation?.title || '无标题窗口'} · {new Date(ai.evidence.window.capturedAt).toLocaleString()}</p><p>{ai.evidence.window.screenshotIncluded ? '包含已授权的窗口截图和可访问内容。' : '仅包含窗口可访问内容，未读取截图。'}此证据用于讨论字段和步骤，执行时仍需重新观察。</p>{desktopBinding && ai.evidence.window.bindingId !== desktopBinding.bindingId && <p role="status">窗口绑定已变化，请重新读取当前所选窗口。</p>}</div>}
               <Space wrap><Button disabled={busy} onClick={()=>void perform(async()=>{const selected=await api('project.ai.chooseWorkbook',{id:info.id});if(selected){setAi(await api('project.ai.get',{id:info.id}));setNotice('只读表头已准备；提交回答后才发送给AI，不含客户数据行。');}})}>选择 Excel 并读取表头</Button>
               <Button disabled={busy} onClick={()=>void perform(async()=>{const h=await api('project.run.history',{id:info.id});setEvidenceRuns(h.runs);})}>选择运行结果用于排错</Button></Space>
               {ai?.evidence?.workbook&&<><p>Excel 来源（只读表头与统计）：{ai.evidence.workbook.name} · {ai.evidence.workbook.rowCount} 行 · 源表头：{ai.evidence.workbook.headers.map((h:any)=>h.header||'（Excel 无表头）').join('、')}</p><p>此处仅为 Excel 来源证据。目标网页表头需单独读取核对，不按列数推断映射。</p></>}
               {!!evidenceRuns.length&&<Space wrap><Select aria-label="用于排错的运行" style={{width:360}} value={evidenceRun||undefined} onChange={setEvidenceRun} options={evidenceRuns.map(r=>({value:r.id,label:new Date(r.createdAt).toLocaleString()+' · '+r.state+' · '+r.name}))}/><Button disabled={!evidenceRun||busy} onClick={()=>void perform(async()=>{await api('project.ai.runEvidence',{id:info.id,runId:evidenceRun});setAi(await api('project.ai.get',{id:info.id}));setNotice('运行身份、节点状态、错误和动作状态已关联，不包含完整业务输出；提交回答后才调用AI。');})}>关联所选运行</Button></Space>}
               {ai?.evidence?.run&&<p>已选历史运行 · {ai.evidence.run.state} · {ai.evidence.run.recovery?.title??'历史证据已关联，业务结果仍须核对'}</p>}
             </Space>}
-            cost={<p>API Key 产生的费用由用户自行承担。</p>}
+            cost={<p>{localAgentDevelopment ? '本次由本机子 agent 提供模型响应，不读取或调用你的 API Key；模拟生成与真实业务验收分别记录。' : 'API Key 产生的费用由用户自行承担。'}</p>}
             settings={<Space direction="vertical" style={{width:'100%'}}>
             <p>平台 Skill 随客户端提供；描述需求后自动匹配。平台不明确时会追问，可在对话中纠正。</p>
             <p>{ai?.platformSkill?`${ai.platformSkill.id} · ${ai.platformSkill.version} · SHA-256 ${ai.platformSkill.sha256}`:'尚未匹配平台 Skill'}</p>
             <p>固定正文用于生成与独立复核；更换后重新核对方案。个人运行 Skill 独立保留。</p>
-            <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />
-            {aiProvider === 'compatible' && <>
+            {localAgentDevelopment ? <Alert type="info" showIcon message="本机子 agent 开发模式" description="仅允许显式端口的本机接口，不访问真实凭据，不回退外部供应商。保存服务不会调用模型。" /> : <Select aria-label="开发AI服务" value={aiProvider} onChange={v=>{setAiProvider(v);}} options={[{ value: 'deepseek', label: '已保存的 DeepSeek' }, { value: 'openai-codex', label: '已保存的 OpenAI Responses' }, { value: 'compatible', label: '自定义兼容接口' }]} style={{ width: 300 }} />}
+            {(aiProvider === 'compatible' || localAgentDevelopment) && <>
               <Input aria-label="兼容接口 Base URL" placeholder="https://example.com/v1" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />
               <Select aria-label="兼容接口协议" value={protocol} onChange={setProtocol} options={[{ value: 'chat-completions', label: 'Chat Completions 兼容' }, { value: 'responses', label: 'Responses 兼容' }]} />
               <Input aria-label="兼容模型ID" placeholder="模型 ID" value={model} onChange={e => setModel(e.target.value)} />
-              <Select aria-label="兼容接口Key来源" value={['deepseek', 'openai-codex'].includes(credentialId) ? credentialId : 'local'} onChange={id => { setCredentialId(id === 'local' ? '' : id); setKeyValue(''); }} options={[{ value: 'local', label: '本工程独立Key' }, { value: 'deepseek', label: '复用已保存的DeepSeek Key用于此接口' }, { value: 'openai-codex', label: '复用已保存的OpenAI Key用于此接口' }]} />
-              {!['deepseek', 'openai-codex'].includes(credentialId) && <Input.Password aria-label="兼容服务 API Key" placeholder={credentialId ? 'Key 已保护保存；留空继续复用' : 'API Key，仅写入系统保护存储'} value={keyValue} onChange={e => setKeyValue(e.target.value)} autoComplete="off" />}
+              {!localAgentDevelopment && <><Select aria-label="兼容接口Key来源" value={['deepseek', 'openai-codex'].includes(credentialId) ? credentialId : 'local'} onChange={id => { setCredentialId(id === 'local' ? '' : id); setKeyValue(''); }} options={[{ value: 'local', label: '本工程独立Key' }, { value: 'deepseek', label: '复用已保存的DeepSeek Key用于此接口' }, { value: 'openai-codex', label: '复用已保存的OpenAI Key用于此接口' }]} />
+              {!['deepseek', 'openai-codex'].includes(credentialId) && <Input.Password aria-label="兼容服务 API Key" placeholder={credentialId ? 'Key 已保护保存；留空继续复用' : 'API Key，仅写入系统保护存储'} value={keyValue} onChange={e => setKeyValue(e.target.value)} autoComplete="off" />}</>}
             </>}
             <Button disabled={busy || ai?.tasks?.some((t: any) => t.state === 'running')} onClick={() => void perform(async () => {
-              let reference = credentialId;
-              if (aiProvider === 'compatible' && keyValue) { localKeyId.current = 'local-' + crypto.randomUUID(); const saved = await api('credential.local.save', { id: localKeyId.current, revision: null, name: '本地工程 AI 服务', value: keyValue }); reference = saved.id; setCredentialId(reference); setKeyValue(''); }
-              const connection = aiProvider === 'compatible' ? { provider: aiProvider, baseUrl, protocol, model, credentialId: reference } : { provider: aiProvider };
+              let reference = localAgentDevelopment ? localKeyId.current : credentialId;
+              if (!localAgentDevelopment && aiProvider === 'compatible' && keyValue) { localKeyId.current = 'local-' + crypto.randomUUID(); const saved = await api('credential.local.save', { id: localKeyId.current, revision: null, name: '本地工程 AI 服务', value: keyValue }); reference = saved.id; setCredentialId(reference); setKeyValue(''); }
+              const connection = aiProvider === 'compatible' || localAgentDevelopment ? { provider: 'compatible', baseUrl, protocol, model, credentialId: reference } : { provider: aiProvider };
               setAi(await api('project.ai.save', { id: info.id, connection })); setNotice('开发服务已保存；尚未调用模型。');
             })}>保存开发服务</Button>{ai?.skill && <Tag>内置开发 Skill · {ai.skill.version}</Tag>}
             </Space>}/>

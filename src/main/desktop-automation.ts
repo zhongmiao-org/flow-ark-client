@@ -3,11 +3,13 @@ import { Rpc } from '../shared/rpc';
 import { desktopSdkRequest, desktopDiscovery, desktopObservation } from '../shared/desktop-automation';
 import { z } from 'zod';
 class NativeNotExecuted extends Error {}
+type NativeFailure = { kind: 'spawn' | 'exit' | 'stdin' | 'protocol' | 'stdout-limit'; code?: number | null; signal?: NodeJS.Signals | null };
 const bindingSchema = z.object({ bindingId: z.string().uuid(), application: z.string().max(1024), title: z.string().max(4000), expiresAt: z.number().finite() }).strict();
 /** Main-owned native process. Renderer can select a window; only an active host Run can act. */
 export class DesktopAutomation {
   private child?: ChildProcessWithoutNullStreams;
   private rpc?: Rpc;
+  private nativeOutcome?: { failure?: NativeFailure };
   private binding?: z.infer<typeof bindingSchema> & { scopeId: string; screenshotAllowed: boolean; actionsAllowed: boolean };
   private staging?: { token: symbol; scopeId: string; bindingId?: string };
   private bindingReady = false;
@@ -22,27 +24,39 @@ export class DesktopAutomation {
   private async call(method: string, args: unknown = {}): Promise<any> {
     if (process.platform !== 'darwin') throw Error('桌面操作当前仅支持 macOS');
     if (!this.rpc) {
+      const outcome = this.nativeOutcome = {} as { failure?: NativeFailure };
       const child = this.child = spawn(this.executable, [], { stdio: 'pipe', env: { PATH: '/usr/bin:/bin', LANG: 'en_US.UTF-8' } });
       const rpc = this.rpc = new Rpc(message => { if (!child.stdin.write(JSON.stringify(message) + '\n')) { /* pipe backpressure is bounded by one request */ } }, async () => { throw Error('原生助手不能主动调用宿主'); });
       let buffer = ''; child.stdout.setEncoding('utf8'); child.stderr.resume();
       const stop = () => { if (this.child === child) this.stop(); };
-      child.on('error', stop); child.on('exit', stop); child.stdin.on('error', stop);
+      child.on('error', () => { outcome.failure ??= { kind: 'spawn' }; stop(); });
+      child.on('exit', (code, signal) => { outcome.failure = { kind: 'exit', code, signal }; stop(); });
+      child.stdin.on('error', () => { outcome.failure ??= { kind: 'stdin' }; stop(); });
       child.stdout.on('data', (chunk: string) => {
-        buffer += chunk; if (Buffer.byteLength(buffer) > 12 * 1024 * 1024) { stop(); return; }
+        buffer += chunk; if (Buffer.byteLength(buffer) > 12 * 1024 * 1024) { outcome.failure = { kind: 'stdout-limit' }; stop(); return; }
         let end: number;
         while ((end = buffer.indexOf('\n')) >= 0) {
           const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
           try { const value = JSON.parse(line); if (value.reply !== true || typeof value.rpc !== 'string') throw Error(); void rpc.receive(value); }
-          catch { stop(); return; }
+          catch { outcome.failure = { kind: 'protocol' }; stop(); return; }
         }
       });
     }
-    const rpc = this.rpc, child = this.child;
+    const rpc = this.rpc, child = this.child, outcome = this.nativeOutcome;
     try {
       const result = await rpc.call(method, args, 15000);
       if (result?.error) throw new NativeNotExecuted('桌面操作未执行：' + String(result.error));
       return result;
-    } catch (error) { if (this.rpc === rpc && this.child === child) this.stop(); throw error; }
+    } catch (error) {
+      if (this.rpc === rpc && this.child === child) this.stop();
+      const nativeFailure = outcome?.failure;
+      if (nativeFailure) {
+        const phase = ['permissions', 'list', 'bind', 'observe', 'readSelection', 'act'].includes(method) ? method : 'unknown';
+        throw Error('桌面原生助手未完成：phase=' + phase + ';failure=' + nativeFailure.kind +
+          (nativeFailure.kind === 'exit' ? ';exitCode=' + String(nativeFailure.code) + ';signal=' + String(nativeFailure.signal) : ''));
+      }
+      throw error;
+    }
   }
   permission(permission: string) { if (this.owner || this.busy || this.staging) throw Error('请先结束桌面运行或绑定准备'); return this.call('permissions', { request: permission }); }
   state(scopeId: string) {
@@ -72,6 +86,22 @@ export class DesktopAutomation {
   }
   release(scopeId: string, bindingId?: string) { if ((this.binding?.scopeId !== scopeId && this.staging?.scopeId !== scopeId) || (bindingId !== undefined && this.binding?.bindingId !== bindingId)) return false; if (this.owner) throw Error('请先取消桌面运行'); this.stop(); return true; }
   finish(runId: string) { if (this.owner === runId) this.stop(); return { confirmed: true }; }
+  /** Explicit authoring evidence: read the already bound window without a Run or actions. */
+  async observeForAuthoring(scopeId: string, screenshot = false) {
+    if (this.owner || this.busy || this.staging) throw Error('桌面运行或绑定准备中不能读取开发证据');
+    const binding = this.state(scopeId);
+    if (!binding) throw Error('请先在本工程绑定当前目标窗口');
+    if (screenshot && !binding.screenshotAllowed) throw Error('本次绑定未允许读取窗口截图');
+    const original = this.binding;
+    this.busy = true;
+    try {
+      const observation = desktopObservation.parse(await this.call('observe', { bindingId: binding.bindingId, screenshot }));
+      const current = this.state(scopeId);
+      if (this.owner || this.staging || !current || this.binding !== original || current.bindingId !== binding.bindingId || current.expiresAt !== binding.expiresAt)
+        throw Error('读取期间窗口绑定已变化或过期，未采用开发证据');
+      return { bindingId: current.bindingId, expiresAt: current.expiresAt, observation };
+    } finally { this.busy = false; }
+  }
   async command(scopeId: string, runId: string, raw: unknown, actionId?: string) {
     const request = desktopSdkRequest.parse(raw);
     if (request.operation === 'decide') throw Error('模型调用仅由宿主处理');

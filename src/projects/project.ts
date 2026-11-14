@@ -19,11 +19,12 @@ import { validateFlow } from '../core/validate';
 import { assertJson, object, ProjectDiagnostic, parseEnvironment, resolveConfiguration } from './configuration';
 import { compileGraph, emitGraph } from './graph';
 import { checkProjectScripts, ScriptDiagnostics } from './script-check';
+import { assertHumanPlan, assertHumanSource, humanExecutionMode } from './human-interaction-policy';
 
 const env = z.object({ variable: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/), field: z.string().min(1),
   type: z.enum(['string', 'number', 'integer', 'boolean', 'json']) }).strict();
 export const projectSchema = z.object({
-  projectVersion: z.literal(1), metadata: z.record(z.string(), z.unknown()),
+  projectVersion: z.literal(1), executionMode: z.literal(humanExecutionMode).optional(), metadata: z.record(z.string(), z.unknown()),
   configurationSchema: z.literal('schemas/configuration.json'), stateSchema: z.string(),
   constants: z.literal('config/constants.json'), defaults: z.literal('config/defaults.json'),
   entries: z.array(z.object({ id: z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/), name: z.string().min(1),
@@ -126,12 +127,15 @@ function resolveConstants(value: any, constants: Record<string, Json>): any {
 async function wrapScript(snapshot: ProjectSnapshot, path: string, constants: Record<string, Json>) {
   pathName(path); required(snapshot, path);
   const result = await build({
-    stdin: { contents: `import main from 'flowark:user-entry';const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v};const constants=freeze(${JSON.stringify(constants)});export default ctx=>main(Object.freeze({...ctx,constants}));`, loader: 'js' },
+    stdin: { contents: `import main from 'flowark:user-entry';const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v};const constants=freeze(${JSON.stringify(constants)});${snapshot.manifest.executionMode===humanExecutionMode ? `const human=ctx=>Object.freeze({input:ctx.input,signal:ctx.signal,logger:ctx.logger,progress:ctx.progress,artifact:ctx.artifact,desktop:Object.freeze({observe:ctx.desktop.observe,decide:ctx.desktop.decide,act:ctx.desktop.act,readSelection:ctx.desktop.readSelection,readTableRange:ctx.desktop.readTableRange}),template:Object.freeze({configuration:ctx.template.configuration,resource:ctx.template.resource,validate:ctx.template.validate,file:ctx.template.file,state:ctx.template.state,human:ctx.template.human,attention:ctx.template.attention,effect:ctx.template.effect,result:ctx.template.result})});` : ''}export default ctx=>main(Object.freeze({...${snapshot.manifest.executionMode===humanExecutionMode?'human(ctx)':'ctx'},constants}));`, loader: 'js' },
     bundle: true, write: false, platform: 'node', format: 'esm', target: 'node24', charset: 'utf8', minifyWhitespace: true,
     logLevel: 'silent', plugins: [{ name: 'flowark-project-modules', setup(b) {
       b.onResolve({ filter: /.*/ }, args => {
         if (args.path === 'flowark:user-entry') return { path, namespace: 'project' };
-        if (isBuiltin(args.path)) return { path: args.path, external: true };
+        if (isBuiltin(args.path)) {
+          if(snapshot.manifest.executionMode===humanExecutionMode)throw new ProjectDiagnostic('human-mode-import','拟人流程不允许 Node 内置模块',args.path);
+          return { path: args.path, external: true };
+        }
         if (!args.path.startsWith('.')) throw new ProjectDiagnostic('project-dependency', '只允许内置模块或已明确静态打包的工程模块', args.path);
         const file = relative('/project', resolve('/project', dirname(args.importer), args.path)).split(sep).join('/');
         pathName(file);
@@ -147,6 +151,8 @@ async function wrapScript(snapshot: ProjectSnapshot, path: string, constants: Re
 }
 export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorDefinition> {
   const m = snapshot.manifest, read = (path: string) => json(required(snapshot, path), path);
+  assertHumanPlan(m);
+  if(m.executionMode===humanExecutionMode)for(const [path,bytes] of snapshot.files)if(/\.[cm]?[jt]s$/.test(path))await assertHumanSource(text(bytes),path,path.endsWith('.ts')?'ts':'js');
   const constants = read(m.constants), defaults = read(m.defaults);
   if (!object(constants) || !object(defaults)) throw new ProjectDiagnostic('project-config-object', '常量与默认配置必须为对象');
   const configurationSchema = read(m.configurationSchema);
@@ -188,6 +194,7 @@ export async function compileProject(snapshot: ProjectSnapshot): Promise<AuthorD
       } else if (value.script !== undefined) throw new ProjectDiagnostic('node-script', '非脚本节点不能绑定script', entry.nodes, id);
       nodes[id] = node;
     }
+    if(m.executionMode===humanExecutionMode)assertHumanPlan({...m,entries:[{...entry,steps:Object.values(nodes) as unknown as Record<string,unknown>[]}]});
     const flow = validateFlow({ formatVersion: '1.0', id: entry.id, name: entry.name, description: '', parameters: entry.parameters,
       requiredCapabilities: entry.capabilities, steps: compileGraph(text(required(snapshot, entry.graph)), nodes, entry.graph) });
     entries.push({ id: entry.id, name: entry.name, schedulable: entry.schedulable,
@@ -312,7 +319,7 @@ async function writeExclusive(path: string, bytes: Buffer) {
   const file = await open(path, 'wx', 0o600);
   try { await file.writeFile(bytes); await file.sync(); } finally { await file.close(); }
 }
-export async function projectFromZip(zip: string, destination: string) {
+export async function projectFromZip(zip: string, destination: string, executionMode?: typeof humanExecutionMode) {
   const pkg = await readArchive(zip);
   if (pkg.files.has(sourceIndexPath)) return restoreProjectSource(pkg, destination);
   const d = await authorFromPackage(pkg, pkg.manifest.id);
@@ -342,7 +349,7 @@ export async function projectFromZip(zip: string, destination: string) {
   encode('config/constants.json', {});
   const defaults = (schema: any): any => Object.hasOwn(schema, 'default') ? schema.default : schema.properties ? Object.fromEntries(Object.entries(schema.properties).filter(([, s]: any) => Object.hasOwn(s, 'default') || s.properties).map(([k, s]) => [k, defaults(s)])) : undefined;
   encode('config/defaults.json', defaults(d.configurationSchema) ?? {});
-  const manifest: LocalProjectManifest = { projectVersion: 1, metadata: d.metadata, configurationSchema: 'schemas/configuration.json', stateSchema: 'schemas/state.json',
+  const manifest: LocalProjectManifest = { projectVersion: 1, ...(executionMode?{executionMode}:{}), metadata: d.metadata, configurationSchema: 'schemas/configuration.json', stateSchema: 'schemas/state.json',
     constants: 'config/constants.json', defaults: 'config/defaults.json', entries, resources: d.resources, actions: d.actions,
     prompts: d.prompts.map(p => ({ id: p.id, name: p.name, path: 'prompts/' + p.id + '.md' })),
     promptBindings: Object.fromEntries(d.entries.map(e => [e.id, e.promptBindings])), dependencies: d.dependencies, environment: [], publicFiles: [...files.keys()] };
@@ -361,7 +368,7 @@ export async function projectFromZip(zip: string, destination: string) {
   } catch (error) { await rm(staging, { recursive: true, force: true }); throw error; }
   return { root: target, ...(await projectInfo(target)) };
 }
-export async function createProject(destination: string, id: string, name: string) {
+export async function createProject(destination: string, id: string, name: string, executionMode?: typeof humanExecutionMode) {
   if (!/^[a-z][a-z0-9-]{0,99}$/.test(id) || !name.trim() || name.length > 200) throw new ProjectDiagnostic('project-identity', '项目标识或名称无效');
   const schema = { type: 'object', properties: {}, additionalProperties: false };
   const definition: AuthorDefinition = {
@@ -373,12 +380,12 @@ export async function createProject(destination: string, id: string, name: strin
     resources: [], actions: [], prompts: [], assets: [], dependencies: [], readme: '# ' + name + '\n\n本地工程。先编辑和检查，再核对运行；不默认授权写入。\n',
   };
   const pkg = await compileAuthor(definition), directory = await mkdtemp(join(tmpdir(), 'flowark-project-create-'));
-  try { const zip = join(directory, 'project.zip'); await writeExclusive(zip, await archiveBytes(pkg)); return await projectFromZip(zip, destination); }
+  try { const zip = join(directory, 'project.zip'); await writeExclusive(zip, await archiveBytes(pkg)); return await projectFromZip(zip, destination, executionMode); }
   finally { await rm(directory, { recursive: true, force: true }); }
 }
 export async function projectInfo(path: string) {
   const snapshot = await snapshotProject(path);
-  return { revision: snapshot.revision, metadata: snapshot.manifest.metadata, entries: snapshot.manifest.entries.map(e => ({ id: e.id, name: e.name })), files: [...snapshot.files].map(([path, b]) => ({ path, size: b.length, sha256: hash(b) })) };
+  return { revision: snapshot.revision, ...(snapshot.manifest.executionMode?{executionMode:snapshot.manifest.executionMode}:{}), metadata: snapshot.manifest.metadata, entries: snapshot.manifest.entries.map(e => ({ id: e.id, name: e.name })), files: [...snapshot.files].map(([path, b]) => ({ path, size: b.length, sha256: hash(b) })) };
 }
 export async function packageProject(path: string, destination: string, revision?: string) {
   const { snapshot, pkg } = await buildProject(path, revision), bytes = await archiveBytes(pkg);

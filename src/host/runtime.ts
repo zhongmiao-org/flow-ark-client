@@ -2,6 +2,7 @@ import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
 import { z } from 'zod';
 import { workbookHeaders } from '../adapters/files';
 import { DesktopAutomationRuns } from './desktop-automation';
+import { desktopAuthoringObserveResult } from '../shared/desktop-automation';
 import {
   assertBrowserScrollInvocation,
   assertBrowserScrollCapabilities,
@@ -2963,6 +2964,39 @@ export class Runtime {
       if (!rule) throw Error('未知工程AI操作');
       const value = rule.parse(args) as any;
       await this.projects.request('project.get', { id: value.id });
+      if (method === 'project.ai.observeWindow') {
+        this.assertAdmitting();
+        const detail = await this.projects.request('project.instance', { id: value.id });
+        const scopeId = detail.instance.id;
+        const preparedStamp = digest(this.store.get<any>('local-project', value.id)?.prepared ?? null);
+        const instanceStamp = digest(this.store.get('template-instance', scopeId));
+        this.assertResourceExtensionIdle(scopeId);
+        const result = desktopAuthoringObserveResult.parse(await this.system('desktop.automation.authoringObserve', { scopeId, screenshot: value.screenshot }));
+        this.assertResourceExtensionIdle(scopeId);
+        const current = await this.projects.request('project.instance', { id: value.id });
+        if (current.instance.id !== scopeId || current.revision !== detail.revision)
+          throw Error('读取期间本工程实例已变化，未采用窗口证据');
+        this.assertResourceExtensionIdle(scopeId);
+        const binding = await this.system('desktop.automation.state', { scopeId });
+        this.assertResourceExtensionIdle(scopeId);
+        if (!binding || binding.active || binding.bindingId !== result.bindingId || binding.expiresAt !== result.expiresAt || binding.expiresAt <= Date.now())
+          throw Error('读取期间窗口绑定已变化或被运行占用，未采用开发证据');
+        if (preparedStamp !== digest(this.store.get<any>('local-project', value.id)?.prepared ?? null) || instanceStamp !== digest(this.store.get('template-instance', scopeId)))
+          throw Error('读取期间本工程实例或配置已变化，未采用窗口证据');
+        const observed = result.observation;
+        const { observationId: _privateObservationId, image, ...metadata } = observed;
+        const safe = redact(metadata, this.secrets);
+        if (Buffer.byteLength(JSON.stringify(safe), 'utf8') > 256 * 1024)
+          throw Error('窗口证据超过256KiB，请缩小目标窗口或页面后重新读取');
+        if (image && !value.screenshot) throw Error('窗口返回了未批准的截图，未采用证据');
+        if (typeof result.bindingId !== 'string' || result.expiresAt <= Date.now())
+          throw Error('窗口绑定已失效，未采用开发证据');
+        const window = { version: 1, source: 'bound-window-authoring', projectId: value.id, instanceId: scopeId,
+          bindingId: result.bindingId, expiresAt: result.expiresAt, capturedAt: now(), readOnly: true, actionReuseAllowed: false,
+          screenshotIncluded: !!image, observation: safe, ...(image ? { image } : {}) };
+        this.store.put('project-ai-evidence', value.id, { ...(this.store.get<any>('project-ai-evidence', value.id) ?? {}), window });
+        return window;
+      }
       if(method==='project.ai.runEvidence') {
         const detail=await this.projects.request('project.run.status',{id:value.id,runId:value.runId});
         const summary=projectRunEvidence(detail,this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect'));
@@ -2984,10 +3018,24 @@ export class Runtime {
       if (method === 'project.ai.platformSkill.choose') return this.projectAI.selectPlatformSkill(value.id,value.content,value.sourceName);
       if (method === 'project.ai.platformSkill.clear') return this.projectAI.selectPlatformSkill(value.id);
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
-      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.intent);
+      if (method === 'project.ai.start' || method === 'project.ai.resume') {
+        // A path explicitly included in the user's submitted task is a selected
+        // source. Read only this workbook's headers/statistics, never siblings.
+        const text = method === 'project.ai.start' ? value.task : value.answer;
+        const paths = [...new Set<string>(text.match(/\/(?:Users|Volumes|private|tmp)\/[^\r\n"'“”‘’<>]*?\.xlsx/gu) ?? [])];
+        if (paths.length === 1) {
+          const summary = await workbookHeaders(paths[0]);
+          this.store.put('project-ai-evidence', value.id, {
+            ...(this.store.get<any>('project-ai-evidence', value.id) ?? {}),
+            workbook: summary, selectedFile: paths[0], selectionSource: 'user-task-path',
+          });
+        }
+        return method === 'project.ai.start'
+          ? this.projectAI.start(value.id, value.task, value.intent)
+          : this.projectAI.resume(value.id, value.taskId, value.answer, undefined, value.intent);
+      }
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
       if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes);
-      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, undefined, value.intent);
       const task = this.projectAI.detail(value.id, value.taskId);
       return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
     }

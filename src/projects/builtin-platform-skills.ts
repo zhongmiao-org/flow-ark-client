@@ -60,6 +60,9 @@ export function routePlatformSkill(text:string,previous?:PlatformAuthoringSkill)
   const declaration=[...text.matchAll(/(?:平台(?:是|为|用|改为|改成|换成|切换到|[：:])|^(?:改用|换到|切换到|改到))[：:\s]*([^，。；\n]+)/g)].at(-1)?.[1];
   if(declaration&&!(feishuPattern.test(declaration)&&bitablePattern.test(declaration)))return feishuPattern.test(declaration)?question('已明确平台为飞书，请确认是多维表格、电子表格还是其他视图。','feishu'):question('平台声明尚不能唯一匹配内置 Skill，请确认平台和视图；不会沿用旧匹配。');
   if(feishu&&bitable)return matchedPlatformSkill(catalog);
+  // Mentioning the already selected platform during ordinary follow-up is not
+  // a request to choose its view again. Explicit changes/negations above still win.
+  if(feishu&&!declaration&&previous?.id==='feishu-bitable'&&previous.sourceName==='builtin:feishu-bitable')return matchedPlatformSkill(catalog);
   if(hasPlatformIntent(text))return feishu?question('已明确平台为飞书，请确认是多维表格、电子表格还是其他视图。','feishu'):question();
   if(previous&&previous.sourceName==='builtin:'+previous.id){
     const e=catalog.find(e=>e.id===previous.id);if(e){const skill=parsePlatformAuthoringSkill(readFileSync(join(resourceRoot,e.id,'SKILL.md'),'utf8'),'builtin:'+e.id);return {status:'matched',skill,message:`沿用内置平台 Skill：${e.summary} · ${e.version} · SHA-256 ${e.sha256}`};}

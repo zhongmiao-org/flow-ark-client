@@ -296,6 +296,20 @@ export async function workbookHeaders(path: string) {
   await workbook.xlsx.load(bytes as any);
   const sheet=workbook.worksheets[0];
   if(!sheet)throw Error('工作簿没有工作表');
-  const columns=Math.min(sheet.columnCount,256);
-  return {sha256:createHash('sha256').update(bytes).digest('hex'),inspectedAt:new Date().toISOString(),name:basename(source),sheet:sheet.name,rowCount:Math.max(0,sheet.rowCount-1),columnCount:sheet.columnCount,headers:Array.from({length:columns},(_,i)=>({column:i+1,header:sheet.getRow(1).getCell(i+1).text})),truncated:sheet.columnCount>columns};
+  const describe = (current: ExcelJS.Worksheet) => {
+    const columns=Math.min(current.columnCount,256), sampledRows=Math.min(Math.max(0,current.rowCount-1),100);
+    const headers=Array.from({length:columns},(_,i)=>{
+      const types=new Set<string>(),numberFormats=new Set<string>();
+      for(let row=2;row<=sampledRows+1;row++){
+        const cell=current.getRow(row).getCell(i+1);
+        if(cell.value!==null&&cell.value!==undefined){
+          types.add(String(ExcelJS.ValueType[cell.effectiveType]??cell.effectiveType));
+          if(cell.numFmt&&numberFormats.size<8)numberFormats.add(cell.numFmt);
+        }
+      }
+      return {column:i+1,header:current.getRow(1).getCell(i+1).text,observedTypes:[...types],numberFormats:[...numberFormats]};
+    });
+    return {sheet:current.name,rowCount:Math.max(0,current.rowCount-1),columnCount:current.columnCount,headers,sampledRows,truncated:current.columnCount>columns};
+  };
+  return {sha256:createHash('sha256').update(bytes).digest('hex'),inspectedAt:new Date().toISOString(),name:basename(source),...describe(sheet),sheets:workbook.worksheets.slice(0,50).map(describe),sheetsTruncated:workbook.worksheets.length>50,note:'只读表头、行列统计及前100行类型/格式，不含数据单元格正文；统计不等于有效业务记录数。'};
 }

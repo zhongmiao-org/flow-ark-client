@@ -94,7 +94,7 @@ export type ConnectionTaskSource = {
 };
 export type TaskOpener = (source: ConnectionTaskSource) => Promise<void>;
 type Props = {
-  openDesktopProject: (task: string) => void;
+  openDesktopProject: (task: string, source?: 'file' | 'image' | 'web' | 'window') => void;
   openTask: MutableRefObject<TaskOpener | undefined>;
   returnConnection: (id: string) => void;
   configuredAI?: { key: string; provider: 'deepseek' | 'openai-codex'; model: string };
@@ -2099,15 +2099,15 @@ export default function AITaskWorkspace(props: Props) {
                 onChange={(e) => setHomeText(e.target.value)}
                 placeholder="把指定网页的标题保存到文件，标题为空就提醒我。"
               />
-              <p>也可以附加文件、网页链接或目标截图，帮助说明需求。</p>
+              <p>描述文件、网页目标和完成条件，FlowArk 会自动建立工程，在同一对话中确认方案并编写流程。</p>
               <div className="ai-task-actions task-home-attachments" aria-label="添加任务资料">
-                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'file')}>
+                <Button disabled={busy || undefined} onClick={() => props.openDesktopProject(homeText, 'file')}>
                   ＋ 文件
                 </Button>
-                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'web')}>
+                <Button disabled={busy || undefined} onClick={() => props.openDesktopProject(homeText, 'web')}>
                   ＋ 网页
                 </Button>
-                <Button disabled={busy || undefined} onClick={() => void create(homeText, 'image')}>
+                <Button disabled={busy || undefined} onClick={() => props.openDesktopProject(homeText, 'image')}>
                   ＋ 截图
                 </Button>
               </div>
@@ -2115,18 +2115,11 @@ export default function AITaskWorkspace(props: Props) {
                 <Button
                   type="primary"
                   disabled={busy || !homeText.trim() || undefined}
-                  onClick={() => void create(homeText)}
+                  onClick={() => props.openDesktopProject(homeText)}
                 >
                   开始规划
                 </Button>
-                <Button disabled={busy || !homeText.trim()} onClick={() => props.openDesktopProject(homeText)}>生成桌面流程</Button>
-                <Button
-                  disabled={busy || undefined}
-                  onClick={() => props.settings(provider, model)}
-                >
-                  AI 服务 · {providerName} ·{' '}
-                  {props.data.credentials.includes(provider) ? '已配置' : '未配置'}
-                </Button>
+                <span>AI 服务在流程对话中核对</span>
               </div>
             </Card>
           </section>
@@ -2154,7 +2147,7 @@ export default function AITaskWorkspace(props: Props) {
                 onClick={() =>
                   void (heading === '跟着示例做一次'
                     ? showGuide()
-                    : create(prompt, heading === '检查应用窗口' ? 'window' : undefined))
+                    : props.openDesktopProject(prompt, heading === '检查应用窗口' ? 'window' : undefined))
                 }
               >
                 <h2>{heading}</h2>
