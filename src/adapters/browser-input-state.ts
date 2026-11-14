@@ -1,5 +1,9 @@
 /** Self-contained for the selected website's isolated world. Never dispatches input. */
-export function browserInputBlockReason(element: Element, modifying = false): string | null {
+export function browserInputBlockReason(
+  element: Element,
+  modifying = false,
+  key?: string,
+): string | null {
   if (!element.isConnected) return 'disconnected';
   if (element.matches(':disabled')) return 'disabled';
   const visited = new Set<Element>();
@@ -22,12 +26,55 @@ export function browserInputBlockReason(element: Element, modifying = false): st
       (root instanceof ShadowRoot ? root.host : null);
   }
   if (modifying) {
+    const tag = element.tagName;
+    const inputType = tag === 'INPUT' ? (element as HTMLInputElement).type : '';
+    const textTypes = [
+      'text',
+      'search',
+      'url',
+      'tel',
+      'email',
+      'password',
+      'date',
+      'month',
+      'week',
+      'time',
+      'datetime-local',
+      'number',
+    ];
+    let role = element.getAttribute('role')?.trim().split(/\s+/)[0];
+    if (!role) {
+      if (tag === 'TEXTAREA') role = 'textbox';
+      else if (tag === 'SELECT')
+        role =
+          (element as HTMLSelectElement).multiple || (element as HTMLSelectElement).size > 1
+            ? 'listbox'
+            : 'combobox';
+      else if (tag === 'INPUT') {
+        if (
+          ['text', 'search', 'email', 'tel', 'url'].includes(inputType) &&
+          (element as HTMLInputElement).list
+        )
+          role = 'combobox';
+        else if (inputType === 'number') role = 'spinbutton';
+        else if (inputType === 'range') role = 'slider';
+        else if (inputType === 'checkbox') role = 'checkbox';
+        else if (inputType === 'search') role = 'searchbox';
+        else if (['text', 'email', 'tel', 'url'].includes(inputType)) role = 'textbox';
+      }
+    }
+    // Caret navigation does not edit a text control; other widgets can change value on these keys.
     if (
-      ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) &&
+      key &&
+      ['Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key) &&
+      ['textbox', 'searchbox'].includes(role ?? '')
+    )
+      return null;
+    if (
+      (tag === 'TEXTAREA' || (tag === 'INPUT' && textTypes.includes(inputType))) &&
       (element.hasAttribute('readonly') || (element as HTMLInputElement).readOnly === true)
     )
       return 'readonly';
-    const role = element.getAttribute('role')?.trim().split(/\s+/)[0];
     const readonlyRoles = [
       'checkbox',
       'combobox',

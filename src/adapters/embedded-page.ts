@@ -253,7 +253,7 @@ export class EmbeddedPage {
     }
     return scope;
   }
-  private async assertInputReady(scope: Scope, objectId: string, modifying = false) {
+  private async assertInputReady(scope: Scope, objectId: string, modifying = false, key?: string) {
     for (const ancestor of scope.ancestors) {
       const object = await this.evaluate(
         ancestor.scope,
@@ -285,8 +285,9 @@ export class EmbeddedPage {
     const reason = await this.call(
       scope,
       objectId,
-      `function(modifying){return (${browserInputBlockReason.toString()})(this,modifying);}`,
+      `function(modifying,key){return (${browserInputBlockReason.toString()})(this,modifying,key);}`,
       modifying,
+      key ?? null,
     );
     if (reason) throw new Error(`目标不可交互（${reason}），未派发本次写入或按下`);
   }
@@ -668,6 +669,7 @@ export class EmbeddedPage {
             scope,
             element,
             !['Tab', 'Escape'].includes(String(command.value)),
+            String(command.value),
           );
           beforeInput?.();
           await this.call(scope, element, 'function(){this.focus();}');
@@ -692,6 +694,7 @@ export class EmbeddedPage {
             scope,
             element,
             !['Tab', 'Escape'].includes(String(command.value)),
+            String(command.value),
           );
           beforeInput?.();
           await this.send('Input.dispatchKeyEvent', {
