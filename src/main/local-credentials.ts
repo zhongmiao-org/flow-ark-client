@@ -36,10 +36,11 @@ export class LocalCredentials {
     }
     return entries.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
   }
-  async key(id: string) {
+  async key(id: string, revision?: string) {
     if (this.writing.has(id)) throw new Error('凭据正在修改');
     const entry = await this.read(id);
-    if (!entry || this.writing.has(id)) throw new Error('凭据不可用或正在修改');
+    if (!entry || this.writing.has(id) || revision !== undefined && entry.revision !== revision)
+      throw new Error('凭据不可用、已变化或正在修改');
     return entry.record.value;
   }
   async change(id: string, revision: string | null, update?: { name: string; value?: string }) {

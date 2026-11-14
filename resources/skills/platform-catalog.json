@@ -1,0 +1,29 @@
+[
+  {
+    "id": "feishu-bitable",
+    "version": "0.2.1-draft",
+    "sha256": "2b7f027fe136c85d1ac7d1b3ae6acc127a4b35c96ca2f2e43da0c8b74b3a9571",
+    "summary": "飞书多维表格：输入、下拉、搜索、提交及保存核验",
+    "platform": "feishu",
+    "views": [
+      "bitable-grid"
+    ],
+    "operations": [
+      "text",
+      "dropdown",
+      "search",
+      "person",
+      "group",
+      "commit",
+      "save",
+      "reopen"
+    ],
+    "requiredCapabilities": [
+      "target-observation",
+      "scoped-input",
+      "readback",
+      "durable-progress"
+    ],
+    "verifiedBoundary": "部分控件条件性观察；完整填写、保存及重开防重未联合通过"
+  }
+]

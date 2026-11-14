@@ -46,6 +46,7 @@ function finiteJsonNumbers(value: unknown): boolean {
   }
   return true;
 }
+export type NativeActionTool = {name:string;description:string;parameters:unknown;action:'tool'|'question'|'complete';readOnly?:boolean};
 export async function generate(
   input: AIRequest,
   key: string,
@@ -56,9 +57,11 @@ export async function generate(
   structuredOutcome = false,
   generation?: AIGenerationOptions,
   connection?: { baseUrl: string; protocol: 'responses' | 'chat-completions' },
+  nativeActions?: NativeActionTool[],
 ): Promise<AIResult> {
   validateObject('AIRequest', input);
   if (generation !== undefined) assertAIGenerationOptions(generation, input.provider);
+  if(nativeActions&&(!structuredOutcome||input.provider!=='deepseek'||connection||generation?.thinking!=='disabled'||!nativeActions.length||nativeActions.length>128||new Set(nativeActions.map(t=>t.name)).size!==nativeActions.length||nativeActions.some(t=>!/^[a-zA-Z0-9_-]{1,128}$/.test(t.name))))throw Error('原生开发工具配置无效；未发起模型请求');
   // Local preparation is outside the request fault boundary. Invalid schemas are not
   // model failures and must never consume a request or become a handled result.
   let validateOutput: ReturnType<Ajv['compile']> | undefined;
@@ -87,7 +90,8 @@ export async function generate(
     endpoint = url.href.replace(/\/$/, '') + (deep ? '/chat/completions' : '/responses');
   }
   const maxTokens = generation?.maxOutputTokens ?? (budget === 'planning' ? 16384 : 4096);
-  const timeoutMs = budget === 'planning' ? 120000 : 45000;
+  const localAgent = process.env.FLOWARK_DEVELOPMENT_AI_LOOPBACK === '1' && connection && new URL(connection.baseUrl).protocol === 'http:' && ['127.0.0.1', '[::1]'].includes(new URL(connection.baseUrl).hostname);
+  const timeoutMs = localAgent ? 240000 : budget === 'planning' ? 120000 : 45000;
   let total = 0;
   if (images.length > 4) throw new Error('每次最多发送四张图片');
   for (const image of images) {
@@ -132,7 +136,7 @@ export async function generate(
               {
                 role: 'system',
                 content:
-                  input.instructions +
+                  nativeActions ? input.instructions + '\n本轮必须只调用一个已提供的原生函数；不要在正文构造JSON封套。' : input.instructions +
                   '\n只输出符合以下 JSON Schema 的完整 JSON：' +
                   JSON.stringify(input.schema),
               },
@@ -143,7 +147,7 @@ export async function generate(
                   : inputText,
               },
             ],
-            response_format: { type: 'json_object' },
+            ...(nativeActions?{tools:nativeActions.map(t=>({type:'function',function:{name:t.name,description:t.description,parameters:t.parameters}})),tool_choice:'required'}:{response_format: { type: 'json_object' }}),
             max_tokens: maxTokens,
             ...(generation && generation.thinking !== 'provider-default'
               ? { thinking: { type: generation.thinking } }
@@ -261,7 +265,7 @@ export async function generate(
     fail('incomplete', 'AI 服务暂时无法完成生成，请稍后手动重试。');
   if (
     deep
-      ? body.choices?.[0]?.finish_reason !== 'stop'
+      ? body.choices?.[0]?.finish_reason !== (nativeActions?'tool_calls':'stop')
       : body.status !== 'completed' || body.error || body.incomplete_details
   )
     fail('incomplete', 'AI 返回未完成结果');
@@ -283,7 +287,18 @@ export async function generate(
     )
   )
     fail('invalid-response', 'AI 消息结构无效');
-  const text = deep
+  let nativeCall:any,nativeBatch:any[]|undefined;
+  if(nativeActions){
+    const calls=body.choices[0].message.tool_calls;
+    if(!Array.isArray(calls)||!calls.length||calls.length>8)fail('invalid-response','原生函数响应数量无效（'+(Array.isArray(calls)?calls.length:'非列表')+'），未执行');
+    if(calls.some((c:any)=>c?.type!=='function'||typeof c.function?.name!=='string'||typeof c.function.arguments!=='string'))fail('invalid-response','原生响应含无效函数结构（共'+calls.length+'项），未执行');
+    if(calls.some((c:any)=>!nativeActions.some(t=>t.name===c.function.name)))fail('invalid-response','模型请求未声明函数，未执行');
+    if(calls.length>1){
+      if(calls.some((c:any)=>!nativeActions.some(t=>t.name===c.function.name&&t.action==='tool'&&t.readOnly)))fail('invalid-response','收到'+calls.length+'个原生调用；仅只读查询可批量，写入、补问和完成须分别提交；本次未执行');
+      nativeBatch=calls.map((c:any)=>c.function);
+    }else nativeCall=calls[0].function;
+  }
+  const text = nativeCall ? nativeCall.arguments : deep
     ? body.choices[0].message.content
     : body.output
         ?.filter((m: any) => m.type === 'message')
@@ -293,11 +308,21 @@ export async function generate(
         .join('');
   let output: any;
   if (structuredOutcome) {
-    if (typeof text !== 'string') fail('invalid-response', 'AI 输出正文类型无效');
+    if (!nativeBatch && typeof text !== 'string') fail('invalid-response', 'AI 输出正文类型无效');
     try {
-      output = JSON.parse(text);
+      if(nativeBatch)output={action:'read-tools',tool:'',arguments:{calls:nativeBatch.map((c,index)=>{let args;try{args=JSON.parse(c.arguments);}catch{fail('invalid-response','只读批次第'+(index+1)+'项参数JSON无效，未执行');}if(!args||typeof args!=='object'||Array.isArray(args))fail('invalid-response','只读函数参数必须为对象，未执行');return {tool:c.name,arguments:args};})},message:'只读工具查询批次'};
+      else output = JSON.parse(text);
+      if(nativeCall){
+        if(!output||typeof output!=='object'||Array.isArray(output))fail('invalid-response','原生函数参数必须为对象，未执行');
+        const definition=nativeActions!.find(t=>t.name===nativeCall.name)!;
+        if(definition.action==='tool')output={action:'tool',tool:definition.name,arguments:output,message:definition.name};
+        else {const {message,...args}=output;output={action:definition.action,tool:'',arguments:args,message};}
+      }
     } catch (error) {
-      if (error instanceof SyntaxError) fail('invalid-response', 'AI 输出JSON无效');
+      if (error instanceof SyntaxError) {
+        const trimmed=text.trim(),position=/position (\d+)/.exec(error.message)?.[1] ?? 'unknown';
+        fail('invalid-response', `${nativeCall?'原生函数'+nativeCall.name+'参数':'AI 输出'}JSON无效（字符数=${text.length}，位置=${position}，Markdown封装=${trimmed.startsWith('```')}，对象起始=${trimmed.startsWith('{')}）；未采用正文`);
+      }
       throw error;
     }
     if (!finiteJsonNumbers(output)) fail('invalid-response', '模型返回的数字无效，未采用此结果。');

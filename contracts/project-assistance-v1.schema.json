@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "taskId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reviewStamp": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "operation": {
+      "enum": [
+        "generate",
+        "assemble",
+        "pause"
+      ]
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 200
+      },
+      "maxItems": 100,
+      "default": []
+    }
+  },
+  "required": [
+    "id",
+    "taskId",
+    "reviewStamp",
+    "operation"
+  ],
+  "additionalProperties": false
+}

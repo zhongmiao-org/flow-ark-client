@@ -77,6 +77,7 @@ const names = (value: string, fallback: string) => {
 };
 /** Host-only supervision. No timer or persisted record reconstructs an execution permit. */
 export class EntryBatches {
+  get maintenanceBusyCount() { return Number(this.ticking) + [...this.permits.keys()].filter(id => { const v = this.records.get(id); return v && !batchTerminalPhases.has(v.phase); }).length; }
   readonly records: EntryBatchRecords;
   private processSha256 = digest(uid());
   private permits = new Map<string, Permit>();

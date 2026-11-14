@@ -8,12 +8,79 @@
   "author": "FlowArk",
   "license": "UNLICENSED",
   "flowark": {
-    "governanceBaseline": "c41701f772916745cee024b51cd924551b2c742b",
+    "governanceBaseline": "a84237ca02f4d7ff9fa4e8912724b6da1d16b473",
     "contractsVersion": "0.53.2",
     "contractsTag": "contracts-v0.53.2",
     "localProjectFormat": {
       "version": 1,
-      "status": "draft-unreleased"
+      "status": "draft-unreleased",
+      "authoringSkillVersion": "1.2.32-draft",
+      "humanRpaConversation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "71e6b39c4bcdd47e275e2a0fdf7b0974d92e7e1b",
+        "executionMode": "desktop-human-v1"
+      },
+      "assistedDevelopmentGovernance": "e314f9be4f78331890ec60e875300688a3c32746",
+      "tableRangeHelper": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "be5df01531e159322b79793117bc69d00fc2fbb3"
+      },
+      "desktopAutomationFocus": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "91f673c4d7c1dde465711a1215f495b10bd2e3da"
+      },
+      "desktopEffectScopePreparation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "2f1b2dc941f47156923390e0cdf2fad542dc7812"
+      },
+      "desktopBindingCredentialSeparation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "871fe674a73f6bf1e0c6c2e022a40d86f53c71ea"
+      },
+      "desktopActivationWindowFocus": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "09456658e3b8fa20682bbba1796c3f4735b8b2b8"
+      },
+      "desktopInputGuardDiagnostics": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "407f1cc98bd5fa1e781c9641a2a3d71fedf7688e"
+      },
+      "builtinPlatformSkills": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "4ee452484e697f43e44254b27f6064fff3e53c42"
+      },
+      "authoringStateInitialization": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "7c908b3648155332c267339397b749cc1c082196"
+      },
+      "embeddedOperationDiagnostics": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "eb91c6b7fc7591f2cf7a1846ff446db04dadd68d"
+      },
+      "embeddedInputPresentation": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "a45b3b0e7b524016eb368ea2233a175a512aa6fe"
+      },
+      "rpaInputReadiness": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "0f32de81dcd7bf55857b81d64cf962016e14bc35",
+        "scope": [
+          "embedded-dom-actionability",
+          "macos-ax-enabled"
+        ]
+      }
     }
   },
   "packageManager": "pnpm@10.14.0",
@@ -115,6 +182,20 @@
       {
         "from": "scripts/bin/flowark-project",
         "to": "bin/flowark-project"
+      },
+      {
+        "from": "dist/native",
+        "to": "app.asar.unpacked/dist/native",
+        "filter": [
+          "*.d.ts"
+        ]
+      },
+      {
+        "from": "dist/types",
+        "to": "flowark-types",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -123,8 +204,20 @@
         "dmg",
         "zip"
       ],
-      "identity": null,
-      "artifactName": "FlowArk-${version}-macos-${arch}.${ext}"
+      "identity": "1B00E55D2A28A571909A6D6791BA357416AC5A57",
+      "timestamp": "none",
+      "artifactName": "FlowArk-${version}-macos-${arch}.${ext}",
+      "hardenedRuntime": false,
+      "strictVerify": true,
+      "binaries": [
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-window-discovery",
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-desktop-automation",
+        "Contents/Resources/app.asar.unpacked/dist/native/flowark-typescript"
+      ],
+      "extendInfo": {
+        "NSAccessibilityUsageDescription": "FlowArk仅操作本人明确选择的应用窗口，并在运行前核对操作范围。",
+        "NSScreenCaptureUsageDescription": "FlowArk按需读取本人选定窗口，用于流程定位与结果核验。"
+      }
     },
     "dmg": {
       "title": "FlowArk ${version}"

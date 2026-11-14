@@ -1,3 +1,5 @@
+import DesktopActionReceipts from './DesktopActionReceipts';
+import RunFailureNotice from './RunFailureNotice';
 import TechnicalDetails from './TechnicalDetails';
 import RunBatchPanel from './RunBatchPanel';
 import { recordTime } from './readable-labels';
@@ -63,6 +65,7 @@ export default function RunDetail({
   inspectRelated,
   restored,
   humanRequest,
+  repairProject,
 }: {
   detail: any;
   fault?: string;
@@ -78,6 +81,7 @@ export default function RunDetail({
   inspectRelated: (detail: any, context: RunDetailReturnContext) => void;
   restored?: RunDetailReturnContext;
   humanRequest?: () => void;
+  repairProject?: () => void;
 }) {
   const [rerunOpened, setRerunOpened] = useState(tab === 'rerun');
   const previousTab = useRef<RunTab | null>(null);
@@ -323,6 +327,7 @@ export default function RunDetail({
                   snapshot={d.snapshot}
                   running={!terminal && view.activity === 'active'}
                 />
+                <DesktopActionReceipts runId={r.id} receipts={d.desktopAutomationReceipts} />
                 <DesktopRunReceipt
                   runId={r.id}
                   receipts={d.desktopReceipts}
@@ -421,7 +426,7 @@ export default function RunDetail({
                 <Alert type="warning" showIcon title={view.statusNote} role="status" />
               )}
               {controlFeedbackContent}
-              {r.error && <Alert type="error" showIcon title={r.error} />}
+              {r.error && <RunFailureNotice error={r.error} action={repairProject&&<Button onClick={repairProject}>在 AI 对话中处理</Button>} />}
             </section>
             {tab === 'current' && (
               <RunFileRecovery key={r.id} detail={observed} output={() => setTab('output')} />
@@ -432,7 +437,8 @@ export default function RunDetail({
               snapshot={d.snapshot}
               running={!terminal && view.activity === 'active'}
             />
-            <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
+            <DesktopActionReceipts runId={r.id} receipts={d.desktopAutomationReceipts} />
+                <DesktopRunReceipt runId={r.id} receipts={d.desktopReceipts} snapshot={d.snapshot} />
             <div className={'run-observation-layout' + (tab !== 'current' ? ' is-output' : '')}>
               <aside className="run-timeline" aria-label="执行步骤" hidden={tab !== 'current'}>
                 <h2>执行步骤</h2>

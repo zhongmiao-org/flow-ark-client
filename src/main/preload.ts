@@ -4,12 +4,16 @@ import type { ArchiveEvent } from '../shared/conversation-archive';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ConversationEvent } from '../shared/conversation';
 const allowed = new Set([
+  'workspace.storage.status', 'workspace.storage.preview', 'workspace.storage.enable',
+  'project.ai.platformSkill.choose', 'project.ai.platformSkill.clear',
+  'desktop.automation.list', 'desktop.automation.state', 'desktop.automation.bind', 'desktop.automation.release', 'desktop.automation.settings',
   'project.review.get', 'project.review.respond',
-  'project.choose', 'project.create', 'project.list', 'project.get', 'project.read',
+  'project.choose', 'project.create', 'project.createManaged', 'project.list', 'project.get', 'project.read',
   'project.diagnose', 'project.check', 'project.write', 'project.transaction', 'project.rollback',
-  'project.package', 'project.prepare', 'project.instance', 'project.configure',
+  'project.package', 'project.prepare', 'project.prepareConversation', 'project.instance', 'project.configure',
   'project.run.history', 'project.run.preview', 'project.run.request', 'project.run.status', 'project.run.control',
   'project.ai.retryTool', 'project.ai.resume', 'project.ai.get', 'project.ai.save', 'project.ai.start', 'project.ai.detail', 'project.ai.cancel',
+  'project.ai.observeWindow', 'project.ai.chooseWorkbook', 'project.ai.runEvidence', 'project.ai.review',
   'cache.locations',
   'cache.location',
   'cache.scan',

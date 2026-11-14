@@ -374,6 +374,9 @@ function WorkspaceApp() {
     window.addEventListener('flowark:open-browser', open);
     return () => window.removeEventListener('flowark:open-browser', open);
   }, []);
+  const [desktopProjectTask, setDesktopProjectTask] = useState('');
+  const [projectRepair,setProjectRepair]=useState<{id:string;runId?:string;nonce:string;handled?:boolean}>();
+  const openingProjectTask = useRef(false);
   const [data, setData] = useState(initial),
     [section, setSection] = useState('tasks'),
     [detail, setDetail] = useState<any>(null),
@@ -1372,7 +1375,8 @@ function WorkspaceApp() {
             </Button>
           </div>
         </aside>
-        <main>
+        <main aria-busy={!loaded}>
+          {!loaded&&<Alert type="info" showIcon title="正在读取本机受保护资料" description="工作区尚未载入，不能据此判断没有流程或待办。如系统弹出钥匙串提示，请本人核对应用后授权；无需向AI提供密码。"/>}
           {nodeSession && (
             <header className="topbar">
               <Button className="context-back" onClick={() => nodeNavigation.current?.()}>
@@ -1969,6 +1973,26 @@ function WorkspaceApp() {
           )}
           {loaded && (
             <AITaskWorkspace
+              openDesktopProject={(task, source) => {
+                if (openingProjectTask.current) return;
+                openingProjectTask.current = true;
+                void action(async () => {
+                  const intent = source === 'file' ? '本次要处理 Excel 文件，请先核对工作表、字段和目标。'
+                    : source === 'web' ? '本次要操作网页，请在对话中确认目标链接并由我在 FlowArk 中选择目标窗口；尚未读取网页。'
+                    : source === 'image' ? '本次希望用目标截图辅助说明，请先确认需要选择的截图或目标窗口；尚未选择或读取截图。'
+                    : source === 'window' ? '请先由我在 FlowArk 中选择目标窗口，再观察并核对操作方案。' : '';
+                  const requirement = [task.trim(), intent].filter(Boolean).join('\n');
+                  const project = await api('project.createManaged', { name: requirement.slice(0, 60) || '我的流程任务' });
+                  setDesktopProjectTask(requirement);
+                  setProjectRepair({ id: project.id, nonce: crypto.randomUUID() });
+                  setSection('projects');
+                  setBrowserOpen(false);
+                  if (source === 'file') {
+                    const workbook = await api('project.ai.chooseWorkbook', { id: project.id });
+                    if (!workbook) setNotice('任务已保留，尚未选择 Excel。可在流程开发对话中继续选择。');
+                  }
+                }).finally(() => { openingProjectTask.current = false; });
+              }}
               openTask={taskOpener}
               openAttention={() => {
                 setSection('inbox');
@@ -2138,7 +2162,7 @@ function WorkspaceApp() {
             }
             showAttention={() => setSection('inbox')}
           />
-          {section === 'projects' && <ProjectWorkspace navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
+          {loaded&&section === 'projects' && <ProjectWorkspace key={projectRepair?.nonce??'projects'} initialProjectId={projectRepair?.id} initialRunId={projectRepair?.handled?undefined:projectRepair?.runId} initialHandled={()=>setProjectRepair(p=>p?{...p,handled:true}:p)} initialTask={desktopProjectTask} navigation={projectNavigation} back={() => setSection('flows')} configure={detail => {
             setTemplateInstanceRequest({ key: crypto.randomUUID(), detail, entryId: detail.entries[0]?.id ?? '', initialTab: 'resources', returnLabel: '流程编辑器', back: () => { setTemplateInstanceRequest(undefined); setSection('projects'); } });
             setSection('templates');
           }} />}
@@ -2825,6 +2849,7 @@ function WorkspaceApp() {
                 <TaskRunPage
                   key={detail.run.id}
                   detail={detail}
+                  repairProject={detail.developmentProject?()=>{setDesktopProjectTask('');setProjectRepair({id:detail.developmentProject.id,runId:detail.run.id,nonce:crypto.randomUUID()});setSection('projects');}:undefined}
                   fault={data.fault}
                   page={taskRunView}
                   restored={taskRunRestored}
@@ -2871,6 +2896,7 @@ function WorkspaceApp() {
                 <RunDetail
                   key={detail.run.id}
                   detail={detail}
+                  repairProject={detail.developmentProject?()=>{setDesktopProjectTask('');setProjectRepair({id:detail.developmentProject.id,runId:detail.run.id,nonce:crypto.randomUUID()});setSection('projects');}:undefined}
                   fault={data.fault}
                   humanRequest={
                     data.attention.some(
@@ -2997,7 +3023,7 @@ function WorkspaceApp() {
             }}
             request={attentionRequest}
             data={data}
-            active={section === 'inbox'}
+            active={loaded&&section === 'inbox'}
             refresh={reloadSettingsData}
             navigation={setAttentionNavigation}
             showBrowser={() => setBrowserOpen(true)}

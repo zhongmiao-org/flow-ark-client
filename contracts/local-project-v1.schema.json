@@ -197,6 +197,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "executionMode": {
+      "type": "string",
+      "const": "desktop-human-v1",
+      "description": "Optional explicit human interaction authoring/compilation policy; no browser, direct network/process or generic AI path. Visual judgement uses host-supervised desktop.decide."
     }
   },
   "required": [

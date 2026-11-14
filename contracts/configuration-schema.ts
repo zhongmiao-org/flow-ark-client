@@ -60,15 +60,35 @@ export function validateConfigurationSchema(schema: any, depth = 0): void {
     for (const item of schema.oneOf) validateConfigurationSchema(item, depth + 1);
   }
 }
+/** Data defaults are form seeds, never invented required values or authority. */
 export function schemaDefaults(schema: any): any {
-  if (Object.hasOwn(schema, 'const')) return structuredClone(schema.const);
-  if (Object.hasOwn(schema, 'default')) return structuredClone(schema.default);
-  if (schema.type === 'object')
-    return Object.fromEntries(
-      Object.entries(schema.properties ?? {}).map(([k, s]) => [k, schemaDefaults(s)]),
-    );
-  if (schema.type === 'array') return [];
-  if (schema.type === 'boolean') return false;
-  if (schema.type === 'integer' || schema.type === 'number') return schema.minimum ?? 0;
-  return schema.enum?.[0] ?? schema.oneOf?.[0]?.const ?? '';
+  const derive = (s: any): any => {
+    if (!s || typeof s !== 'object') return undefined;
+    if (Object.hasOwn(s, 'const')) return structuredClone(s.const);
+    if (Object.hasOwn(s, 'default')) return structuredClone(s.default);
+    const nullable = s.type === 'null' || Array.isArray(s.type) && s.type.includes('null') ||
+      Array.isArray(s.enum) && s.enum.includes(null) ||
+      [...(s.anyOf ?? []), ...(s.oneOf ?? [])].some((v: any) => v.type === 'null' || Object.hasOwn(v, 'const') && v.const === null);
+    if (nullable) return null;
+    if (Array.isArray(s.enum) && s.enum.length) return structuredClone(s.enum[0]);
+    if (Array.isArray(s.oneOf) && s.oneOf.length && Object.hasOwn(s.oneOf[0], 'const')) return structuredClone(s.oneOf[0].const);
+    if (s.type === 'object') {
+      const required = new Set(s.required ?? []), result: Record<string, unknown> = {};
+      for (const [key, child] of Object.entries(s.properties ?? {}) as [string, any][]) {
+        if (!required.has(key) && !Object.hasOwn(child, 'default') && !Object.hasOwn(child, 'const')) continue;
+        const value = derive(child);
+        if (value !== undefined) result[key] = value;
+      }
+      return result;
+    }
+    if (s.type === 'array') return (s.minItems ?? 0) > 0 ? undefined : [];
+    if (s.type === 'boolean') return false;
+    if (s.type === 'integer' || s.type === 'number') {
+      const value = s.minimum ?? 0;
+      return s.maximum !== undefined && value > s.maximum ? undefined : value;
+    }
+    if (s.type === 'string') return (s.minLength ?? 0) > 0 ? undefined : '';
+    return undefined;
+  };
+  return derive(schema) ?? null;
 }

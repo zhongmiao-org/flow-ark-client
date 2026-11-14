@@ -3,6 +3,7 @@ import { activateCollapseWithSpace } from './collapseKeyboard';
 import { useRef, useState } from 'react';
 import type { Bootstrap, FlowRecord } from '../shared/types';
 import './local-storage.css';
+import WorkspaceStorageSettings from './WorkspaceStorageSettings';
 
 type Resource = { key: string; name: string; kind: string; usage: string; path?: string };
 const usage = { read: '声明读取', write: '声明写入', readwrite: '声明读写', use: '声明使用' };
@@ -227,6 +228,7 @@ export default function LocalStoragePanel({
           styles={compact ? { body: { padding: 0 } } : undefined}
         >
           {!compact && <h2>文件与存储</h2>}
+          <WorkspaceStorageSettings disabled={busy} />
           <div className="local-storage-location">
             <h3>应用内产物</h3>
             <p>

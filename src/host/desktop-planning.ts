@@ -56,6 +56,7 @@ const resultSchema = {
   required: ['kind', 'summary', 'replacement', 'limitations'],
 };
 export class DesktopPlanning {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<string, Job>();
   private consumed = new Map<string, number>();
   private candidates = new Map<string, Candidate>();

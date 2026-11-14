@@ -42,6 +42,7 @@ type Adoption = {
   definition: AuthorDefinition;
 };
 export class TemplateAuthor {
+  get maintenanceBusyCount() { return this.jobs.size + this.store.list<ExportOperation>('author-export').filter(x => x.receipt.status === 'writing').length; }
   schema(value: unknown, form: boolean) {
     if (
       !value ||

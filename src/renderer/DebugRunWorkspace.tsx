@@ -1,3 +1,4 @@
+import RunFailureNotice from './RunFailureNotice';
 import TechnicalDetails from './TechnicalDetails';
 import { runStateColors, runStepColors } from './theme';
 import { Alert, Button, Card, Collapse, Descriptions, Empty, Tag, Badge } from 'antd';
@@ -138,7 +139,7 @@ export default function DebugRunWorkspace(props: Props) {
             </p>
             {props.controls}
             {props.feedback}
-            {run.error && <Alert type="error" showIcon title={run.error} />}
+            {run.error && <RunFailureNotice error={run.error} />}
             <Collapse
               className="debug-run-details"
               ghost

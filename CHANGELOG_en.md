@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+- Home tasks create a human-interaction project and keep workbook inspection, clarification, generation and reviewed trial preparation in one conversation. Bound-window evidence is collected by the official host and sent to the model only after submission.
+- Human-interaction mode restricts browser, network and process paths. Local subagent development uses placeholder credentials and rejects real keys or remote fallback for generation, independent review and desktop visual judgement. Full profile reset is an explicit backup/restore operation, never startup behavior.
+- Native screenshots include only the selected window on an exact display with explicit cropping, rejecting cross-display or changed geometry. Helper exits report a fixed phase and signal without treating failed evidence as success.
+
+- Recheck the same nonsecure input control before each Unicode text chunk, allowing the current input to change its own text or selection without resuming after focus moves.
+- Query the current system accessibility focus owner for macOS foreground checks instead of depending on the command helper refreshing the NSWorkspace cache; retain exact-window and dispatch guards.
+- Check ARIA disabled, read-only, inert and composed-tree states before embedded browser input, and AXEnabled before macOS element clicks. Label Excel headers as source evidence rather than target webpage fields.
+
+- Resolve an assembled authoring baseline by the exact public revision, preserve current unassembled work on that revision, and reject stale-base reuse instead of reverting current source to an older conversation draft.
+
+- Add redacted read-only instance and runtime preflight evidence, separate generation, client and prerequisite failures in the Skill, keep analysis in recovery mode, and distinguish native dispatch receipts from document replacement receipts.
+
+- Show protected-workspace initialization explicitly and avoid displaying an empty inbox before workspace loading completes.
+
+- Inspect project-owned failed runs and pending evidence automatically; add enforced read-only AI analysis and local repair planning, and allow technical corrections within approved nodes while retaining scope, unknown-result and run reviews.
+
+- Route synthetic desktop input to the bound process, check posting access before dispatch, and retain foreground and observation checks; dispatch receipts do not prove selection changes.
+
+- Preserve bounded clipboard snapshots up to 16 MiB for desktop copy/paste, including image formats; reject changes during capture and oversized snapshots before modifying clipboard contents.
+
+- Remove project AI request/time budgets and cost checkboxes. Show provider-reported cumulative tokens, read selected workbook headers, and attach owned run diagnostics; require confirmation before repairs and execution.
+
+- Provide at least three choices and custom input for assisted decisions; preselection does not submit, corrections do not approve the old plan, and explicit paid retries retain the conversation.
+
+- Add assisted project conversations with explicit plan and node selection, pause after generation or diagnostics, and assemble locally without model calls. Reuse Markdown/Mermaid rendering and retain detailed history in a collapsed view.
+
+- Generate typed desktop observations, receipts, selection and effect SDK declarations from their schemas, and expose the same response shapes through MCP.
+
+- Validate replacement entries against the new public file list, preserve old files, and keep failed assembly revisions monotonic. Recover affected drafts through read-only inspection and a new plan; unrelated edits no longer reset repeated-error stops.
+
+- Add candidate macOS window observations and actions, plus a bundled authoring Skill with staged node planning, SDK type checks, deterministic assembly and no-progress stops. Business acceptance remains separate.
+
 - Allow standalone flows and authoring copies to be classified as development work without changing their definitions or history; retain the classification when saving.
 
 - Group template entry flows into task cards and separate development instances without deleting history; add Monaco project file models, SDK/schema hints, draft diagnostics, and block navigation.

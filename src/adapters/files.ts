@@ -13,7 +13,7 @@ import {
 } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { resolve, relative, dirname, join, basename, sep } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import type { Bindings } from '../shared/types';
@@ -285,4 +285,31 @@ export async function artifactPath(root: string, runId: string, name: string) {
   const dir = join(root, 'artifacts', runId);
   await mkdir(dir, { recursive: true, mode: 0o700 });
   return join(dir, name);
+}
+
+/** Native picker approved source; only metadata leaves the local adapter. */
+export async function workbookHeaders(path: string) {
+  if(!path.toLowerCase().endsWith('.xlsx'))throw Error('请选择.xlsx工作簿');
+  const source=await realpath(path),info=await stat(source);
+  if(!info.isFile()||info.size>50*1024*1024)throw Error('工作簿须为50MiB以内的普通文件');
+  const bytes=await readFile(source),workbook=new ExcelJS.Workbook();
+  await workbook.xlsx.load(bytes as any);
+  const sheet=workbook.worksheets[0];
+  if(!sheet)throw Error('工作簿没有工作表');
+  const describe = (current: ExcelJS.Worksheet) => {
+    const columns=Math.min(current.columnCount,256), sampledRows=Math.min(Math.max(0,current.rowCount-1),100);
+    const headers=Array.from({length:columns},(_,i)=>{
+      const types=new Set<string>(),numberFormats=new Set<string>();
+      for(let row=2;row<=sampledRows+1;row++){
+        const cell=current.getRow(row).getCell(i+1);
+        if(cell.value!==null&&cell.value!==undefined){
+          types.add(String(ExcelJS.ValueType[cell.effectiveType]??cell.effectiveType));
+          if(cell.numFmt&&numberFormats.size<8)numberFormats.add(cell.numFmt);
+        }
+      }
+      return {column:i+1,header:current.getRow(1).getCell(i+1).text,observedTypes:[...types],numberFormats:[...numberFormats]};
+    });
+    return {sheet:current.name,rowCount:Math.max(0,current.rowCount-1),columnCount:current.columnCount,headers,sampledRows,truncated:current.columnCount>columns};
+  };
+  return {sha256:createHash('sha256').update(bytes).digest('hex'),inspectedAt:new Date().toISOString(),name:basename(source),...describe(sheet),sheets:workbook.worksheets.slice(0,50).map(describe),sheetsTruncated:workbook.worksheets.length>50,note:'只读表头、行列统计及前100行类型/格式，不含数据单元格正文；统计不等于有效业务记录数。'};
 }

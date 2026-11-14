@@ -1,17 +1,19 @@
 import { createProjectDevelopment } from './project-development';
 import { mergeConfiguration } from '../projects/configuration';
 import { validateData } from '../../contracts/package-format';
+import { projectRebuildCompatibility } from '../templates/project-rebuild';
 import { digest } from '../shared/utils';
-import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+import { randomUUID, createHash } from 'node:crypto';
+import { mkdir, writeFile, readFile, lstat, realpath } from 'node:fs/promises';
 import { z } from 'zod';
 import type { Store } from './store';
 import type { Templates } from '../templates/service';
 import { archiveBytes } from '../templates/archive';
 import { compileAuthor } from '../templates/author-compiler';
-import { diagnoseProject, buildProject, projectRoot, projectInfo, snapshotProject, updateProjectFiles, inspectProjectTransaction, rollbackProjectTransaction, packageProject, configurationForProject } from '../projects/project';
+import { createProject, diagnoseProject, buildProject, projectRoot, projectInfo, snapshotProject, updateProjectFiles, inspectProjectTransaction, rollbackProjectTransaction, packageProject, configurationForProject } from '../projects/project';
 import { ProjectDiagnostic } from '../projects/configuration';
+import { currentAuthoring } from '../projects/authoring';
 import { templateSaveSchema } from '../shared/ipc';
 import { projectMethods } from '../shared/project';
 type Record = { id: string; root: string; instances: string[]; prepared?: { revision: string; instanceId: string; compilerDigest: string } };
@@ -38,6 +40,105 @@ export class ProjectWorkspace {
     if (snapshot.revision !== record.prepared.revision) throw new ProjectDiagnostic('project-changed', '工程已修改，请重新构建；旧运行保持原快照');
     return this.templates().detail(record.prepared.instanceId);
   }
+  private async configure(record: Record, args: any, beforeSave?: () => Promise<void>) {
+    const detail = await this.current(record);
+    if (detail.revision !== args.revision) throw new ProjectDiagnostic('project-conflict', '实例配置已变化，请重读');
+    const resolved = await configurationForProject(record.root, { instance: args.configuration ?? detail.instance.configuration });
+    const request = { id: detail.instance.id, revision: detail.revision, name: detail.instance.name,
+      configuration: resolved.value, resources: args.resources ?? detail.instance.resources,
+      grants: args.grants ?? detail.instance.grants, inputs: args.inputs ?? {} };
+    templateSaveSchema.parse(request);
+    if (!await this.confirm({ kind: 'project-configuration', project: record.root, layers: resolved.layers,
+      before: { configuration: detail.instance.configuration, resources: detail.instance.resources, grants: detail.instance.grants }, proposed: request }))
+      return { cancelled: true, saved: false };
+    if (beforeSave) await beforeSave();
+    const current = await this.current(this.record(record.id));
+    if (current.instance.id !== detail.instance.id || current.revision !== detail.revision)
+      throw new ProjectDiagnostic('project-conflict', '核对期间实例或配置已变化，请重新准备运行');
+    return this.runtime('template.save', request);
+  }
+  private initialPlaceholder(instanceId: string, manifest: any) {
+    if (manifest.resources.length || manifest.actions.length || manifest.entries.length !== 1 || manifest.entries[0].capabilities.some((capability:string) => capability !== 'value')) return false;
+    const instance = this.store.get<any>('template-instance', instanceId), meta = this.store.get<any>('template-state-meta', instanceId);
+    if (!instance || meta?.revision !== 0 || Object.keys(instance.resources ?? {}).length || Object.keys(instance.grants ?? {}).length) return false;
+    const flowIds = new Set(Object.values(instance.entryFlows));
+    if (this.store.list<any>('run').some(run => flowIds.has(run.flowId) || this.store.get<any>('snapshot', run.id)?.bindings?.template?.instanceId === instanceId)) return false;
+    if (this.store.list<any>('template-effect').some(effect => effect.instanceId === instanceId)) return false;
+    return [...flowIds].every(id => {
+      const flow = this.store.get<any>('flow', String(id))?.flow;
+      return flow?.steps?.length === 1 && flow.steps[0].id === 'result' && flow.steps[0].type === 'value' && flow.steps[0].value === null;
+    });
+  }
+  private async prepareConversation(record: Record, revision: string) {
+    const source = await snapshotProject(record.root);
+    if (source.revision !== revision) throw new ProjectDiagnostic('project-conflict', '工程已变化，请重新核对生成结果');
+    if (source.manifest.executionMode !== 'desktop-human-v1') throw new ProjectDiagnostic('project-human-mode-required', '请先在当前对话中生成拟人操作方案，再准备运行');
+    const authoring = await currentAuthoring(record.root, revision);
+    if (!authoring.authoringLookup.complete || authoring.currentAuthoring?.assembledRevision !== revision || authoring.currentAuthoring?.plan.executionMode !== 'desktop-human-v1')
+      throw new ProjectDiagnostic('project-conversation-not-assembled', '当前修订尚无可核对的拟人方案组装记录，请先在对话中完成生成；导入工程可使用原配置入口');
+    const selected = this.store.get<any>('project-ai-evidence', record.id);
+    if (!selected?.selectedFile || !/^[a-f0-9]{64}$/.test(selected.workbook?.sha256 ?? ''))
+      throw new ProjectDiagnostic('project-workbook-required', '请先在对话中明确 Excel 路径或选择工作簿，再准备运行');
+    const evidenceStamp = digest({ selectedFile: selected.selectedFile, sha256: selected.workbook.sha256 });
+    let selectedPath: string | undefined;
+    const verifySource = async () => {
+      const evidence = this.store.get<any>('project-ai-evidence', record.id);
+      if (digest({ selectedFile: evidence?.selectedFile, sha256: evidence?.workbook?.sha256 }) !== evidenceStamp)
+        throw new ProjectDiagnostic('project-workbook-changed', '所选工作簿已变化，请重新读取表头并确认映射');
+      const path = await realpath(selected.selectedFile), before = await lstat(path);
+      if (selectedPath !== undefined && selectedPath !== path) throw new ProjectDiagnostic('project-workbook-changed', '工作簿位置已变化，请重新选择并确认');
+      selectedPath = path;
+      if (!before.isFile() || before.size > 50 * 1024 * 1024) throw new ProjectDiagnostic('project-workbook-changed', '工作簿不是50MiB以内的普通文件，请重新选择');
+      const bytes = await readFile(path), after = await lstat(path);
+      if (before.ino !== after.ino || before.size !== after.size || before.mtimeMs !== after.mtimeMs || bytes.length !== before.size ||
+          createHash('sha256').update(bytes).digest('hex') !== selected.workbook.sha256 || await realpath(selected.selectedFile) !== path)
+        throw new ProjectDiagnostic('project-workbook-changed', '工作簿内容已变化，请重新读取表头并确认映射');
+      if ((await snapshotProject(record.root)).revision !== revision) throw new ProjectDiagnostic('project-conflict', '工程已变化，请重新核对生成结果');
+      return dirname(path);
+    };
+    const sourceDirectory = await verifySource();
+    const declared = source.manifest.resources as {id:string;name:string;kind:string;access:string;required:boolean}[];
+    const readers = declared.filter(resource => resource.kind === 'directory' && resource.access === 'read');
+    if (readers.length !== 1) throw new ProjectDiagnostic('project-source-resource', '需要一个明确的 Excel 只读来源；请在当前对话中确认输入来源并完善方案');
+    let isolate = false;
+    const previous = this.record(record.id).prepared;
+    if (previous && previous.revision !== revision) {
+      this.assertIdle(previous.instanceId);
+      const old = await this.templates().detail(previous.instanceId);
+      const beforePackage = await this.templates().library.load(old.instance.packageKey), next = await buildProject(record.root, revision);
+      try { projectRebuildCompatibility(beforePackage, next.pkg); }
+      catch (error) {
+        if (!this.initialPlaceholder(previous.instanceId, old.manifest)) throw error;
+        isolate = true; // Existing project.prepare isolate path requires explicit native review.
+      }
+    }
+    let detail: any;
+    try { detail = await this.request('project.prepare', { id: record.id, revision, ...(isolate ? {isolate:true} : {}) }); }
+    catch (error) {
+      if (error instanceof ProjectDiagnostic && error.code === 'project-rebuild-cancelled') return { configured:false, cancelled:true };
+      throw error;
+    }
+    this.assertIdle(detail.instance.id);
+    await verifySource();
+    const resources = { ...detail.instance.resources, [readers[0].id]: { path: sourceDirectory } };
+    const unresolved = declared.filter(resource => {
+      if (!resource.required) return false;
+      const binding = resources[resource.id];
+      if (!binding) return true;
+      if (['file', 'directory'].includes(resource.kind)) return !binding.path;
+      if (resource.kind === 'skill') return !binding.path || !binding.skill;
+      if (resource.kind === 'conversation-source') return !binding.source;
+      if (resource.kind === 'run-result') return !binding.result;
+      return true;
+    });
+    if (unresolved.length) throw new ProjectDiagnostic('project-resource-required', '还需要确认以下资源：' + unresolved.map(resource => resource.name).join('、') + '。请在当前对话中补充，尚未运行流程。');
+    const grants = Object.fromEntries(source.manifest.actions.map((action: any) => [action.id, 'confirm']));
+    const configured = await this.configure(this.record(record.id), {revision:detail.revision,resources,grants}, async () => {
+      await verifySource(); this.assertIdle(detail.instance.id);
+    });
+    if ((configured as any)?.cancelled) return { configured:false, cancelled:true };
+    return { revision, instanceId: detail.instance.id, entryId: source.manifest.entries[0].id, configured:true };
+  }
   async export(id: string, revision: string, destination: string) {
     return packageProject(this.record(id).root, destination, revision);
   }
@@ -45,7 +146,23 @@ export class ProjectWorkspace {
     if (method === 'project.list') return this.store.list<Record>('local-project').map(r => ({ id: r.id, root: r.root }));
     const rule = projectMethods[method as keyof typeof projectMethods];
     if (!rule) throw Error('未知工程接口');
-    const args = rule.parse(value) as any, record = this.record(args.id);
+    const args = rule.parse(value) as any;
+    if (method === 'project.createManaged') {
+      // Ordinary task authoring stays in the application-owned workspace. No
+      // caller-provided filesystem path, MCP pairing, model request or Run.
+      const dataRoot = await realpath(this.dataPath), parent = join(dataRoot, 'projects');
+      await mkdir(parent, { recursive: true, mode: 0o700 });
+      const parentStat = await lstat(parent);
+      if (!parentStat.isDirectory() || parentStat.isSymbolicLink() || await realpath(parent) !== parent)
+        throw new ProjectDiagnostic('project-managed-root', '应用工程目录不是有效的本机目录');
+      const projectId = 'flowark-task-' + randomUUID(), destination = join(parent, projectId);
+      await createProject(destination, projectId, args.name, 'desktop-human-v1');
+      const local = join(destination, '.flowark');
+      await mkdir(local, { mode: 0o700 });
+      await writeFile(join(local, 'interaction-policy.json'), JSON.stringify({ executionMode: 'desktop-human-v1' }) + '\n', { flag: 'wx', mode: 0o600 });
+      return this.attach(destination);
+    }
+    const record = this.record(args.id);
     if (method === 'project.get') return { id: record.id, root: record.root, ...await projectInfo(record.root) };
     if (method === 'project.read') {
       const snapshot = await snapshotProject(record.root);
@@ -62,6 +179,7 @@ export class ProjectWorkspace {
     if (method === 'project.write') return updateProjectFiles(record.root, args.revision, args.changes);
     if (method === 'project.transaction') return inspectProjectTransaction(record.root);
     if (method === 'project.rollback') return rollbackProjectTransaction(record.root, args.transactionId);
+    if (method === 'project.prepareConversation') return this.prepareConversation(record, args.revision);
     if (method === 'project.prepare') {
       const job = this.queue.catch(() => {}).then(async () => {
         const current = this.record(record.id);
@@ -80,10 +198,11 @@ export class ProjectWorkspace {
         if (current.prepared && !args.isolate) {
           const previous = await this.templates().detail(current.prepared.instanceId);
           this.assertIdle(previous.instance.id);
+          const {initialDefaultsRepair,compatibility} = await this.templates().previewProjectRebuild(previous.instance.id, installed.key, previous.revision);
           if (!await this.confirm({ kind: 'project-rebuild', project: record.root, oldRevision: current.prepared.revision, newRevision: snapshot.revision,
-            oldPackage: previous.instance.packageKey, newPackage: installed.key, preserve: ['实例/流程标识', '配置/输入/资源/权限', '状态与修订', '回执/unknown/历史Run'] }))
+            oldPackage: previous.instance.packageKey, newPackage: installed.key, ...(initialDefaultsRepair ? {initialDefaultsRepair} : {}), ...(compatibility?{compatibility}:{}), preserve: ['实例/流程标识', '配置/输入/资源/权限', '状态与修订', '回执/unknown/历史Run'] }))
             throw new ProjectDiagnostic('project-rebuild-cancelled', '未确认重建，原实例与历史保持');
-          const rebuilt = await this.templates().rebuildProjectInstance(previous.instance.id, installed.key, previous.revision, () => this.assertIdle(previous.instance.id));
+          const rebuilt = await this.templates().rebuildProjectInstance(previous.instance.id, installed.key, previous.revision, () => this.assertIdle(previous.instance.id), initialDefaultsRepair?.stamp, compatibility?.compatibilityStamp);
           instance = rebuilt.instance; rebuildReceipt = rebuilt.rebuildReceipt;
         } else {
           if (args.isolate && !await this.confirm({ kind: 'project-rebuild', project: record.root, operation: '新建隔离调试实例', package: installed.key,
@@ -97,20 +216,7 @@ export class ProjectWorkspace {
       });
       this.queue = job; return job;
     }
-    if (method === 'project.configure') {
-      const detail = await this.current(record);
-      if (detail.revision !== args.revision) throw new ProjectDiagnostic('project-conflict', '实例配置已变化，请重读');
-      const resolved = await configurationForProject(record.root, { instance: args.configuration ?? detail.instance.configuration });
-      const request = { id: detail.instance.id, revision: detail.revision, name: detail.instance.name,
-        configuration: resolved.value, resources: args.resources ?? detail.instance.resources,
-        grants: args.grants ?? detail.instance.grants, inputs: args.inputs ?? {} };
-      templateSaveSchema.parse(request);
-      if (!await this.confirm({ kind: 'project-configuration', project: record.root, layers: resolved.layers,
-        before: { configuration: detail.instance.configuration, resources: detail.instance.resources, grants: detail.instance.grants }, proposed: request }))
-        return { cancelled: true, saved: false };
-      await this.current(this.record(record.id));
-      return this.runtime('template.save', request);
-    }
+    if (method === 'project.configure') return this.configure(record, args);
     if (method === 'project.instance') return this.current(record);
     if (method.startsWith('project.run.')) {
       if (method === 'project.run.history') return { runs: this.store.list<any>('run').filter(run => record.instances.includes(this.store.get<any>('snapshot', run.id)?.bindings?.template?.instanceId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 100).map(run => ({ id: run.id, name: run.name, state: run.state, versionId: run.versionId, createdAt: run.createdAt, batch: run.batch })) };

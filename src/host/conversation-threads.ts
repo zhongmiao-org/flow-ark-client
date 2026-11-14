@@ -98,6 +98,7 @@ const key = (id: string, value: string | number) => digest({ id, value });
 
 /** Persistent history is independent of the bounded UI/model window. No business prompts or external actions. */
 export class ConversationThreads {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<string, Job>();
   private grants = new Map<string, SendGrant | CheckpointGrant>();
   constructor(

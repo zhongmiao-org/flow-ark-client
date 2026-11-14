@@ -1,3 +1,11 @@
+import { developmentAILoopbackOnly } from '../host/development-ai';
+import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
+import { platformSkillMaxBytes, parsePlatformAuthoringSkill } from '../projects/platform-authoring-skill';
+import { workspaceStorage, prepareWorkspaceStorage, activateWorkspaceStorage, type WorkspaceStorageReview } from '../host/workspace-storage';
+import { stat } from 'node:fs/promises';
+import { basename } from 'node:path';
+import { DesktopAutomation } from './desktop-automation';
+import { desktopAuthoringObserveRequest } from '../shared/desktop-automation';
 import { assertReductionOutput } from '../shared/source-reduction';
 import { ProjectBridge } from './project-bridge';
 import { conversationEvent } from '../shared/conversation';
@@ -17,6 +25,7 @@ import {
   clipboard,
   shell,
   powerMonitor,
+  systemPreferences,
 } from 'electron';
 import { EmbeddedBrowser } from './embedded-browser';
 import { selectionReference } from '../shared/desktop-windows';
@@ -54,6 +63,8 @@ let host: Electron.UtilityProcess;
 let startupError = '';
 let embedded: EmbeddedBrowser;
 let hostStopped = false;
+// Only the explicit idle-workspace maintenance path may bypass the normal quit review.
+let workspaceHostExitConfirmed = false;
 const knownSecrets = new Set<string>();
 const publicError = (error: unknown, additional: string[] = []) =>
   redactedErrorText(error, [...knownSecrets, ...additional]);
@@ -98,6 +109,11 @@ async function quit() {
   if (quitting || quitPending) return;
   quitPending = true;
   try {
+    if (workspaceHostExitConfirmed && hostStopped) {
+      quitting = true;
+      app.quit();
+      return;
+    }
     let data: Bootstrap | undefined;
     try {
       data = await rpc.call('bootstrap');
@@ -264,6 +280,10 @@ app
       knownSecrets.add(key),
     );
     const localCredentials = new LocalCredentials(vault, (value) => knownSecrets.add(value));
+    const desktopAutomation = new DesktopAutomation(app.isPackaged ? join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'native', 'flowark-desktop-automation') : join(__dirname, 'native', 'flowark-desktop-automation'));
+    app.on('before-quit', () => desktopAutomation.stop());
+    powerMonitor.on('suspend', () => desktopAutomation.stop());
+    powerMonitor.on('lock-screen', () => desktopAutomation.stop());
     const desktopWindows = new DesktopWindows(
       app.isPackaged
         ? join(
@@ -287,7 +307,13 @@ app
     win.on('closed', () => projectReview?.finish(false));
     app.on('before-quit', () => projectReview?.finish(false));
     let ready: Promise<any>;
+    let legacyWorkspaceKey: Buffer | undefined;
+    let storageCandidate: WorkspaceStorageReview | undefined;
+    let storageBusy = false;
+    let storageStopped = false;
+    const ordinaryRequests = new WorkspaceMaintenanceGate();
     ipcMain.handle('flowark:request', async (event, method: string, raw: unknown) => {
+      let leaveOrdinary: (() => void) | undefined;
       const pending =
         method === 'ai.configuration.save' &&
         raw &&
@@ -320,11 +346,126 @@ app
         )
           throw new Error('IPC 来源无效');
         const args: any = validateIPC(method, raw ?? {});
+        if (!['workspace.storage.status', 'workspace.storage.preview', 'workspace.storage.enable'].includes(method)) leaveOrdinary = ordinaryRequests.enter(method);
+        if (method === 'workspace.storage.status') {
+          await ready;
+          const workspace = await workspaceStorage(app.getPath('userData'));
+          return { mode: workspace ? 'workspace-json-v1' : 'encrypted', path: workspace?.path ?? join(app.getPath('userData'), 'flowark.sqlite'), retainedPath: join(app.getPath('userData'), 'flowark.sqlite'), candidatePath: storageCandidate ? join(app.getPath('userData'), 'workspace-public', storageCandidate.candidateId, 'flowark.sqlite') : undefined, candidate: storageCandidate, stopped: storageStopped, busy: storageBusy };
+        }
+        if (storageBusy) throw Error('工作区维护中，请等待核对完成');
+        if (method === 'workspace.storage.preview' || method === 'workspace.storage.enable') {
+          storageBusy = true;
+          let mainNonce: string | undefined;
+          let hostNonce: string | undefined;
+          try {
+            mainNonce = ordinaryRequests.hold(() => {});
+            await ready;
+            if (startupError || hostStopped || storageStopped) throw Error('本地宿主不可用，请完整退出并重开后重新预览');
+            if (await workspaceStorage(app.getPath('userData'))) throw Error('普通工作区已经启用，未重复迁移');
+            hostNonce = (await rpc.call('workspace.maintenance.hold')).nonce;
+            if (method === 'workspace.storage.preview') {
+              storageCandidate = undefined;
+              if (!legacyWorkspaceKey) throw Error('本会话未解锁原工作区，请重开后重新预览');
+              storageCandidate = await prepareWorkspaceStorage(app.getPath('userData'), legacyWorkspaceKey);
+              return storageCandidate;
+            }
+            const candidate = storageCandidate;
+            if (!candidate || candidate.stamp !== args.stamp) throw Error('工作区预览已变化，请重新核对');
+            await rpc.call('workspace.maintenance.assert', { nonce: hostNonce });
+            // Block further writes before stopping the existing lifecycle. No arbitrary host RPC is exposed.
+            storageStopped = true;
+            projectBridge?.close();
+            await rpc.call('shutdown', {}, 15000);
+            await embedded.close();
+            if (!hostStopped) await new Promise<void>((resolve, reject) => {
+              let settled = false;
+              const finish = (error?: Error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                host.removeListener('exit', exited);
+                error ? reject(error) : resolve();
+              };
+              const exited = () => finish();
+              const timer = setTimeout(() => finish(Error('原宿主退出尚未确认，未启用；请完整退出并重开')), 10000);
+              host.once('exit', exited);
+              if (hostStopped) { finish(); return; }
+              try {
+                // A false return can race a queued exit event; only that event or
+                // the existing stopped flag proves exit, never the kill result.
+                host.kill();
+              } catch {
+                if (hostStopped) finish();
+                else finish(Error('原宿主未停止，未启用；请完整退出并重开'));
+              }
+            });
+            if (!hostStopped) throw Error('原宿主退出尚未确认，未启用');
+            workspaceHostExitConfirmed = true;
+            const result = await activateWorkspaceStorage(app.getPath('userData'), candidate, () => {
+              if (!hostStopped) throw Error('原宿主尚未停止，未启用');
+            });
+            storageCandidate = undefined;
+            legacyWorkspaceKey?.fill(0); legacyWorkspaceKey = undefined;
+            startupError = '普通工作区已启用，请完整退出并重开 FlowArk';
+            return result;
+          } catch (error) {
+            if (storageStopped) startupError = '工作区切换未完成，请完整退出并重开后重新预览；原记录保留';
+            throw error;
+          } finally {
+            try {
+              if (hostNonce && !storageStopped && !hostStopped) {
+                try { await rpc.call('workspace.maintenance.release', { nonce: hostNonce }); }
+                catch (error) { storageStopped = true; startupError = '维护许可释放未确认，请完整退出并重开；原记录保留'; throw error; }
+              }
+            } finally {
+              if (mainNonce) ordinaryRequests.release(mainNonce);
+              storageBusy = false;
+            }
+          }
+        }
+        if (storageStopped) throw Error(startupError || '本地宿主已停止，请完整退出并重开 FlowArk');
+        if (method.startsWith('desktop.automation.')) {
+          if (method === 'desktop.automation.settings') {
+            if (args.permission === 'accessibility') systemPreferences.isTrustedAccessibilityClient(true);
+            await desktopAutomation.permission(args.permission);
+            await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?' + (args.permission === 'accessibility' ? 'Privacy_Accessibility' : 'Privacy_ScreenCapture')); return true;
+          }
+          if (method === 'desktop.automation.list') { const value = await desktopAutomation.list(); return { ...value, applicationPermissions: { accessibility: systemPreferences.isTrustedAccessibilityClient(false), screenRecording: systemPreferences.getMediaAccessStatus('screen') } }; }
+          if (method === 'desktop.automation.state') return desktopAutomation.state(args.scopeId);
+          if (method === 'desktop.automation.release') return desktopAutomation.release(args.scopeId);
+          if (method === 'desktop.automation.bind') {
+            await ready; await rpc.call('desktop.automation.scope', { scopeId: args.scopeId });
+            const binding = await desktopAutomation.bind(args);
+            try {
+              await rpc.call('desktop.automation.budget', { scopeId: args.scopeId, durationMs: args.durationMs, bindingId: binding.bindingId });
+              return desktopAutomation.commitBinding(args.scopeId, binding.bindingId);
+            }
+            catch (error) { desktopAutomation.release(args.scopeId, binding.bindingId); throw error; }
+          }
+          throw Error('未知桌面接口');
+        }
         if (method === 'project.review.get') return projectReview ? { id: projectReview.id, readStamp: projectReview.readStamp, detail: projectReview.detail, configuring: projectReview.configuring, expiresAt: projectReview.expiresAt } : null;
         if (method === 'project.review.respond') {
           const pending = projectReview;
           if (!pending || pending.id !== args.reviewId || pending.readStamp !== args.readStamp || Date.now() >= pending.expiresAt) throw Error('工程核对已过期，不执行');
           pending.finish(args.approved); return { accepted: true };
+        }
+        if (method === 'project.ai.platformSkill.choose') {
+          await ready;
+          await rpc.call('project.get', {id:args.id});
+          const picked=await dialog.showOpenDialog(win,{title:'选择平台作者 Skill（仅导入 Markdown 正文）',properties:['openFile'],filters:[{name:'Skill Markdown',extensions:['md']}]});
+          if(picked.canceled||!picked.filePaths[0])return null;
+          const path=picked.filePaths[0],info=await stat(path);
+          if(!info.isFile()||info.size>platformSkillMaxBytes)throw Error('Skill 必须是小于 48 KiB 的 Markdown 文件');
+          const snapshot=parsePlatformAuthoringSkill(new TextDecoder('utf-8',{fatal:true}).decode(await readFile(path)),basename(path));
+          return rpc.call(method,{id:args.id,content:snapshot.content,sourceName:snapshot.sourceName});
+        }
+        if (method === 'project.ai.chooseWorkbook') {
+          await ready;
+          await rpc.call('project.get', { id: args.id });
+          const picked = await dialog.showOpenDialog(win, {title:'选择只读工作簿（仅提取表头与统计）',properties:['openFile'],filters:[{name:'Excel 工作簿',extensions:['xlsx']}]});
+          if(picked.canceled||!picked.filePaths[0])return null;
+          return rpc.call('project.ai.workbook', {id:args.id,path:picked.filePaths[0]});
         }
         if (method === 'project.choose' || method === 'project.create') {
           const chosen = await dialog.showOpenDialog(win, { title: method === 'project.create' ? '选择新工程的存放目录' : '打开本地流程工程', properties: ['openDirectory', 'createDirectory'] });
@@ -527,12 +668,13 @@ app
         );
       } catch (error) {
         throw new Error(publicError(error, pending));
-      }
+      } finally { leaveOrdinary?.(); }
     });
     ready = (async () => {
       try {
-        const key = await vault.key();
-        knownSecrets.add(key);
+        const workspace = await workspaceStorage(app.getPath('userData'));
+        const key = workspace ? undefined : await vault.key();
+        if (key) { knownSecrets.add(key); legacyWorkspaceKey = Buffer.from(key, 'base64'); }
         host = utilityProcess.fork(join(__dirname, 'host.cjs'), [], {
           serviceName: 'FlowArk Local Host',
           stdio: 'pipe',
@@ -556,6 +698,13 @@ app
         rpc = new Rpc(
           (m) => host.postMessage(m),
           async (method, args) => {
+            // Legacy AI paths must fail before opening provider/local/tool secrets.
+            if (developmentAILoopbackOnly()) {
+              if (method === 'credential.local.read' || method === 'credentials.list') return [];
+              if (method === 'ai.configuration.read') return { provider: aiProvider.parse(args.provider), configured: false, revision: null, model: 'local-development-only' };
+              if (['credentials.get','credentials.identity','credential.local.check','credential.local.write','ai.configuration.write','tool.credentials.get','tool.credentials.set','tool.credentials.remove'].includes(method))
+                throw Error('本机子智能体开发模式禁止读取或修改真实凭据；请使用工程本机兼容服务');
+            }
             if (method === 'project.run.confirm') {
               const configuring = ['project-configuration', 'project-rebuild'].includes(args.review?.kind);
               const detail = JSON.stringify(args.review, null, 2);
@@ -591,6 +740,13 @@ app
                 executable: app.getPath('exe'),
                 version: process.versions.chrome,
               };
+            if (method === 'desktop.automation.authoringObserve') {
+              const value = desktopAuthoringObserveRequest.parse(args);
+              return desktopAutomation.observeForAuthoring(value.scopeId, value.screenshot);
+            }
+            if (method === 'desktop.automation.command') return desktopAutomation.command(args.scopeId, args.runId, args.request, args.actionId);
+            if (method === 'desktop.automation.finish') return desktopAutomation.finish(args.runId);
+            if (method === 'desktop.automation.state') return desktopAutomation.state(args.scopeId);
             if (method === 'desktop.selection.inspect')
               return desktopWindows.inspect(selectionReference.parse(args));
             if (method === 'desktop.selection.resolve')
@@ -769,11 +925,15 @@ app
               }
               return true;
             }
+            if (method === 'credentials.identity') {
+              try { return await vault.identity(args.id); }
+              catch { throw new Error('凭据身份读取未完成，请重新核对'); }
+            }
             if (method === 'credentials.get') {
               let value: string;
               if (localCredentialId.safeParse(args.id).success) {
                 try {
-                  value = await localCredentials.key(args.id);
+                  value = await localCredentials.key(args.id, args.revision);
                 } catch {
                   throw new Error('本机凭据读取未完成，请检查系统保护存储或重新绑定');
                 }
@@ -814,6 +974,8 @@ app
         await rpc.call('init', {
           dataPath: app.getPath('userData'),
           key,
+          storageMode: workspace?.format ?? 'encrypted',
+          databasePath: workspace?.path,
           executable: app.getPath('exe'),
         });
       } catch (e) {

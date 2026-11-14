@@ -195,6 +195,20 @@ export class EmbeddedBrowser {
     this.assertResource(resource);
     if (resource.operation !== operation) throw new Error('网页操作已失效');
   }
+  private assertInputPresented(resource: Resource, operation?: Operation) {
+    if (operation) this.assertOperation(resource, operation);
+    else this.assertResource(resource);
+    const presented = this.reconcilePresentation();
+    if (!presented || resource.presented !== true || resource.capture || !resource.view!.getVisible())
+      throw new Error('未执行本次输入，请展开内置网页面板并重新核对');
+    const bounds = resource.view!.getBounds(), [width, height] = this.window.getContentSize();
+    if (
+      ![bounds.x, bounds.y, bounds.width, bounds.height, width, height].every(Number.isFinite) ||
+      bounds.x < 0 || bounds.y < 0 || bounds.width <= 1 || bounds.height <= 1 ||
+      bounds.x + bounds.width > width || bounds.y + bounds.height > height
+    )
+      throw new Error('未执行本次输入，请展开内置网页面板并重新核对');
+  }
   private notifyLost(resource: Resource, reason: string, destroyed: boolean) {
     if (resource.lostNotified) return;
     resource.lostNotified = true;
@@ -754,6 +768,8 @@ export class EmbeddedBrowser {
         : !['read', 'wait'].includes(command.operation))
     )
       throw new Error('操作超出所选网页的只读范围');
+    const needsInput = ['click', 'fill', 'select', 'check', 'press', 'upload', 'download'].includes(command.operation);
+    if (needsInput) this.assertInputPresented(resource);
     let stop!: () => void;
     const stopped = new Promise<never>(
       (_, reject) => (stop = () => reject(new Error('网页会话已关闭'))),
@@ -761,6 +777,11 @@ export class EmbeddedBrowser {
     const operation = { stop };
     resource.operation = operation;
     const page = resource.page;
+    const beforeInput = needsInput ? () => this.assertInputPresented(resource, operation) : undefined;
+    const diagnosticOperation = ['navigate', 'url', 'read', 'count', 'attribute', 'inputValue', 'wait', 'click', 'fill', 'select', 'check', 'press', 'upload', 'download', 'screenshot', 'collect', 'scroll'].includes(command.operation) ? command.operation : 'unknown';
+    let diagnosticPhase = '等待网页观察就绪';
+    let driverStarted = false;
+    const timeoutMessage = () => `网页操作超时（操作：${diagnosticOperation}；阶段：${driverStarted ? page.operationPhase : diagnosticPhase}）`;
     let timer: NodeJS.Timeout | undefined;
     let timedOut = false;
     let idle: (() => void) | undefined;
@@ -783,18 +804,27 @@ export class EmbeddedBrowser {
       await resource.observation;
       this.assertOperation(resource, operation);
       if (resource.observationError) throw new Error(resource.observationError);
+      diagnosticPhase = '结束元素拾取';
       await page.picker.cancel();
       this.clearFieldsPick(resource);
       this.assertOperation(resource, operation);
       verifySelected();
-      if (element) await this.inspectTaskElement(resource, expected!, element, operation);
+      if (element) {
+        diagnosticPhase = '核对已选网页元素';
+        await this.inspectTaskElement(resource, expected!, element, operation);
+      }
       if (
         command.operation === 'screenshot' &&
         (!this.window.isVisible() || this.window.isMinimized() || !this.visible)
-      )
+      ) {
+        diagnosticPhase = '准备后台网页截图';
         return this.backgroundCapture(resource, operation, command);
+      }
       if (command.operation !== 'download') {
-        const result = await page.perform(command);
+        driverStarted = true;
+        const result = await page.perform(command, beforeInput);
+        driverStarted = false;
+        diagnosticPhase = '等待导航结束';
         // loadURL resolves at did-finish-load, before isLoading necessarily clears.
         // Keep the selected navigation within its operation/deadline until idle.
         if (expected && command.operation === 'navigate' && resource.contents!.isLoading())
@@ -802,7 +832,10 @@ export class EmbeddedBrowser {
             idle = resolve;
             resource.contents!.once('did-stop-loading', idle);
           });
-        if (element) await this.inspectTaskElement(resource, expected!, element, operation);
+        if (element) {
+          diagnosticPhase = '复核已选网页元素';
+          await this.inspectTaskElement(resource, expected!, element, operation);
+        }
         return result;
       }
       let resolve!: () => void, reject!: (error: Error) => void;
@@ -818,7 +851,10 @@ export class EmbeddedBrowser {
         resolve,
         reject,
       };
-      await page.perform({ ...command, operation: 'click' });
+      driverStarted = true;
+      await page.perform({ ...command, operation: 'click' }, beforeInput);
+      driverStarted = false;
+      diagnosticPhase = '等待下载完成';
       await done;
       this.assertOperation(resource, operation);
       return { saved: true };
@@ -830,7 +866,7 @@ export class EmbeddedBrowser {
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             timedOut = true;
-            reject(new Error('网页操作超时'));
+            reject(new Error(timeoutMessage()));
           }, command.timeoutMs ?? 15000);
         }),
       ]);
@@ -849,8 +885,9 @@ export class EmbeddedBrowser {
       }
       return result;
     } catch (error) {
+      const diagnosed = error instanceof Error && error.message === '浏览器命令超时（含框架定位）' ? new Error(timeoutMessage()) : error;
       if (timedOut) await this.closeResource(resource);
-      throw error;
+      throw diagnosed;
     } finally {
       clearTimeout(timer);
       resource.contents!.removeListener('did-start-navigation', navigation);

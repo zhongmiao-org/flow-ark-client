@@ -56,6 +56,7 @@ type Dependencies = {
 const kind = 'ai-task';
 
 export class Planning {
+  get maintenanceBusyCount() { return this.jobs.size; }
   private jobs = new Map<string, Job>();
   private operationEpoch = new Map<string, number>();
   private cancellationEpoch = 0;

@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DesktopTableRangeRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "effectId",
+    "effectKey",
+    "target",
+    "from",
+    "rows",
+    "columns"
+  ],
+  "properties": {
+    "effectId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "effectKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "application"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "application": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      }
+    },
+    "from": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20000
+        }
+      }
+    },
+    "to": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20000
+        }
+      },
+      "description": "Required only for explicit drag selection; keyboard selection needs only from and rows/columns."
+    },
+    "rows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    },
+    "columns": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    },
+    "requireBlank": {
+      "type": "boolean"
+    },
+    "expected": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 200,
+        "items": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      }
+    },
+    "selection": {
+      "type": "string",
+      "enum": [
+        "keyboard",
+        "drag"
+      ],
+      "description": "Default keyboard: click anchor then Shift+Down/Right. Drag only for a target explicitly known to select a rectangle."
+    },
+    "selectionPreparation": {
+      "type": "string",
+      "enum": [
+        "tab-roundtrip"
+      ],
+      "description": "Explicitly verified empty/nonediting anchor only: Tab then Shift+Tab returns to grid navigation before keyboard selection. No input/paste/save. Not valid with drag."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "selection"
+        ],
+        "properties": {
+          "selection": {
+            "const": "drag"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "to"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "selectionPreparation"
+        ]
+      },
+      "then": {
+        "properties": {
+          "selection": {
+            "const": "keyboard"
+          }
+        }
+      }
+    }
+  ]
+}

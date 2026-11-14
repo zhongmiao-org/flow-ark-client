@@ -58,7 +58,7 @@ export default function EmbeddedBrowserPanel({
       </div>
       <p>
         在 FlowArk
-        主窗口右侧面板中操作网页。最小化或收起工作台后，任务继续执行；需要登录或验证码时，再显示网页处理。
+        主窗口右侧面板中操作网页。最小化或收起工作台后，读取可继续；输入需展开面板并保持工作台可见。需要登录或验证码时，请显示网页处理。
       </p>
       <div className="note">
         <b>
@@ -67,7 +67,7 @@ export default function EmbeddedBrowserPanel({
             : status.started
               ? status.visible
                 ? '右侧网页面板已显示'
-                : '会话在后台运行'
+                : '读取可在后台继续；输入需展开面板'
               : '随时打开网页面板'}
         </b>
         <span className="embedded-url">

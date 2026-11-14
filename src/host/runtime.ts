@@ -1,3 +1,8 @@
+import { WorkspaceMaintenanceGate } from '../shared/workspace-maintenance';
+import { z } from 'zod';
+import { workbookHeaders } from '../adapters/files';
+import { DesktopAutomationRuns } from './desktop-automation';
+import { desktopAuthoringObserveResult } from '../shared/desktop-automation';
 import {
   assertBrowserScrollInvocation,
   assertBrowserScrollCapabilities,
@@ -12,6 +17,7 @@ import { verifySkillDocument } from './skill-update-documents';
 import { EffectNodes } from './effect-nodes';
 import { ProjectWorkspace } from './project-workspace';
 import { ProjectAI } from './project-ai';
+import { projectRunEvidence } from './project-recovery';
 import { createProject } from '../projects/project';
 import { projectMethods } from '../shared/project';
 import { EntryResults } from './entry-results';
@@ -179,6 +185,7 @@ import { AISettings } from './ai-settings';
 import { LocalCredentialSettings } from './local-credentials';
 
 export class Runtime {
+  private maintenance = new WorkspaceMaintenanceGate();
   readonly projects: ProjectWorkspace;
   readonly projectAI: ProjectAI;
   readonly store: Store;
@@ -242,11 +249,12 @@ export class Runtime {
     readonly dataPath: string,
     private dir: string,
     private executable: string,
-    key: Buffer,
+    key: Buffer | null,
     private system: (method: string, args: any) => Promise<any>,
+    workspace?: {format:'workspace-json-v1';path:string},
   ) {
     this.artifactFiles = new ArtifactFiles(dataPath);
-    this.store = new Store(join(dataPath, 'flowark.sqlite'), key);
+    this.store = workspace ? new Store(workspace.path, null, workspace.format) : new Store(join(dataPath, 'flowark.sqlite'), key);
     this.store.recover();
     this.projects = new ProjectWorkspace(this.store, () => this.templates, dataPath,
       (method, args) => this.request(method, args),
@@ -673,6 +681,7 @@ export class Runtime {
     this.runReview = new RunReview(this.store, {
       batches: this.batches,
       desktop: this.desktopRuns,
+      automation: record => this.desktopAutomationRuns().binding(record),
       tools: (record) => this.toolTargets.reviewStates(record),
       learnedTrial: (run) => this.learning.trial(run),
       busy: (id) =>
@@ -1144,6 +1153,7 @@ export class Runtime {
     desktopRun?: string | true,
     sourceReview = false,
   ): Promise<PreparedScripts> {
+    const desktopAutomationContext = await this.desktopAutomationRuns().binding(record);
     const checkAI = this.aiSettings.capture([
       ...record.bindings.credentials,
       ...aiProviders(record),
@@ -1155,6 +1165,7 @@ export class Runtime {
       checkLocal();
     };
     const checked = (prepared: PreparedScripts) => {
+      if (desktopAutomationContext) prepared.desktopAutomationContext = structuredClone(desktopAutomationContext);
       if (record.templateResourceExtension)
         prepared.templateResourceExtension = structuredClone(record.templateResourceExtension);
       // A queued execution is fixed even when its older manual snapshot has no
@@ -1456,6 +1467,7 @@ export class Runtime {
     const blocked = this.executionBlock();
     if (blocked) throw new Error(blocked);
     if (this.suspended) throw new Error('系统正在休眠，恢复后请重新开始运行');
+    if (this.maintenance.held) throw Error('工作区维护中，请等待核对完成');
     if (this.stopping || this.store.fault) throw new Error(this.store.fault ?? '应用正在退出');
   }
   private assertAdmission(epoch: number) {
@@ -1522,6 +1534,8 @@ export class Runtime {
     this.assertActiveRun(runId);
     return pkg;
   }
+  private desktopAutomation?: DesktopAutomationRuns;
+  private desktopAutomationRuns() { return this.desktopAutomation ??= new DesktopAutomationRuns(this.store, async (method, args) => { const value = await this.system(method, args); if (method === 'credentials.get' && typeof value === 'string') this.secrets.push(value); return value; }); }
   private async scriptRequest(owner: ScriptOwner, method: string, args: any) {
     this.assertScriptOwner(owner);
     let result: unknown;
@@ -1540,6 +1554,16 @@ export class Runtime {
       result = await this.workerRequest(owner.runId, 'credential', args);
     } else if (method === 'template') {
       const snapshot = this.store.runSnapshotView<FlowRecord & PreparedScripts>(owner.runId)!;
+      if (args?.operation === 'desktop') {
+        if (args.request?.operation === 'act') {
+          const { entry, ref } = await this.templates.context(snapshot);
+          const effect = this.store.get<any>('template-effect', args.request.effectId);
+          if (!entry.capabilities.includes('effect') || !effect || effect.instanceId !== ref.instanceId || effect.runId !== owner.runId || effect.state !== 'submitting' || !entry.actions.includes(effect.action)) throw Error('桌面动作需要本Run正式预留的模板效果凭据');
+          if (!['auto', 'confirm'].includes(snapshot.bindings.grants?.[effect.action] ?? 'deny')) throw Error('模板桌面动作未授权');
+          await this.templates.canWrite(snapshot, owner.runId, this.active!.abort.signal, () => this.assertScriptOwner(owner));
+        }
+        return this.desktopAutomationRuns().call(snapshot, owner.runId, args.request, () => this.assertScriptOwner(owner), this.active!.abort.signal);
+      }
       let fixedPackage: PackageData | undefined;
       if (!snapshot.authorSdk) {
         fixedPackage = await this.fixedRunTemplatePackage(snapshot, owner.runId);
@@ -1976,6 +2000,7 @@ export class Runtime {
     } finally {
       active.abort.abort(new Error('运行正在收尾'));
       await this.mcpRuns.release(run.id);
+      await this.desktopAutomationRuns().finish(run.id).catch(() => {});
       clearTimeout(active.cancelTimer);
       this.sessions.finishRun(run.id);
       rpc.close();
@@ -2746,11 +2771,12 @@ export class Runtime {
       }
   }
   async tick(time = Date.now()) {
-    if (this.suspended) return;
+    if (this.suspended || this.maintenance.held) return;
     const epoch = this.admissionEpoch;
     await this.ready;
     if (
       epoch !== this.admissionEpoch ||
+      this.maintenance.held ||
       this.stopping ||
       this.suspended ||
       this.ticking ||
@@ -2890,7 +2916,42 @@ export class Runtime {
       throw new AggregateError(errors, '休眠收尾遇到本地记录错误，请核对最后保存的状态与运行结果');
     return true;
   }
+  private assertWorkspaceIdle() {
+    if (this.recovering || this.stopping || this.suspended || this.ticking || this.active || this.handoffId || this.compiling || this.pendingCapabilities.size || this.store.fault || this.executionBlock() || runOverview(this.store.list<Run>('run')).queued || this.store.list<Schedule>('schedule').some(s => s.enabled))
+      throw Error('请先完成活动、排队任务与恢复，并关闭启用计划，再维护工作区');
+    const managers = [this.projectAI, this.aiSettings, this.toolConnections, this.planning, this.desktopPlanning, this.desktopRuns, this.mcpRuns, this.conversations, this.threads, this.archives, this.reductions, this.skills, this.author, this.batches, this.scripts, this.sessions];
+    if (managers.some(manager => manager.maintenanceBusyCount > 0)) throw Error('仍有 AI、工具、编辑或资源活动，请完成后再维护工作区');
+  }
+  holdWorkspaceMaintenance() { return { nonce: this.maintenance.hold(() => this.assertWorkspaceIdle()) }; }
+  assertWorkspaceMaintenance(nonce: string) { this.maintenance.assert(nonce, () => this.assertWorkspaceIdle()); return true; }
+  releaseWorkspaceMaintenance(nonce: string) { this.maintenance.release(nonce); return true; }
   async request(method: string, args: any = {}): Promise<any> {
+    if (method === 'shutdown') return this.dispatchRequest(method, args);
+    const leave = this.maintenance.enter(method);
+    try { return await this.dispatchRequest(method, args); } finally { leave(); }
+  }
+  private async dispatchRequest(method: string, args: any = {}): Promise<any> {
+    if (method === 'project.ai.workbook') {
+      await this.ready;
+      const value=z.object({id:z.string().min(1).max(100),path:z.string().min(1).max(4096)}).strict().parse(args);
+      await this.projects.request('project.get',{id:value.id});
+      const summary=await workbookHeaders(value.path);
+      this.store.put('project-ai-evidence',value.id,{...(this.store.get<any>('project-ai-evidence',value.id)??{}),workbook:summary,selectedFile:value.path});
+      return summary;
+    }
+    if (method === 'desktop.automation.budget') {
+      await this.ready;
+      if (!Number.isSafeInteger(args.durationMs) || args.durationMs < 10000 || args.durationMs > 3600000) throw Error('桌面窗口授权时限无效');
+      await this.request('desktop.automation.scope', { scopeId: args.scopeId });
+      return this.desktopAutomationRuns().configure(args.scopeId, args.bindingId, args.durationMs);
+    }
+    if (method === 'desktop.automation.scope') {
+      await this.ready; this.assertAdmitting();
+      const scopeId = args.scopeId;
+      if (typeof scopeId !== 'string' || (!this.store.get('template-instance', scopeId) && !this.store.get('flow', scopeId))) throw Error('目标实例或流程不存在');
+      this.assertResourceExtensionIdle(scopeId);
+      return true;
+    }
     if (method === 'project.createAt') {
       await this.ready;
       if (typeof args.destination !== 'string' || args.destination.length > 4096) throw Error('无效工程目录');
@@ -2903,11 +2964,78 @@ export class Runtime {
       if (!rule) throw Error('未知工程AI操作');
       const value = rule.parse(args) as any;
       await this.projects.request('project.get', { id: value.id });
-      if (method === 'project.ai.get') return this.projectAI.get(value.id);
+      if (method === 'project.ai.observeWindow') {
+        this.assertAdmitting();
+        const detail = await this.projects.request('project.instance', { id: value.id });
+        const scopeId = detail.instance.id;
+        const preparedStamp = digest(this.store.get<any>('local-project', value.id)?.prepared ?? null);
+        const instanceStamp = digest(this.store.get('template-instance', scopeId));
+        this.assertResourceExtensionIdle(scopeId);
+        const result = desktopAuthoringObserveResult.parse(await this.system('desktop.automation.authoringObserve', { scopeId, screenshot: value.screenshot }));
+        this.assertResourceExtensionIdle(scopeId);
+        const current = await this.projects.request('project.instance', { id: value.id });
+        if (current.instance.id !== scopeId || current.revision !== detail.revision)
+          throw Error('读取期间本工程实例已变化，未采用窗口证据');
+        this.assertResourceExtensionIdle(scopeId);
+        const binding = await this.system('desktop.automation.state', { scopeId });
+        this.assertResourceExtensionIdle(scopeId);
+        if (!binding || binding.active || binding.bindingId !== result.bindingId || binding.expiresAt !== result.expiresAt || binding.expiresAt <= Date.now())
+          throw Error('读取期间窗口绑定已变化或被运行占用，未采用开发证据');
+        if (preparedStamp !== digest(this.store.get<any>('local-project', value.id)?.prepared ?? null) || instanceStamp !== digest(this.store.get('template-instance', scopeId)))
+          throw Error('读取期间本工程实例或配置已变化，未采用窗口证据');
+        const observed = result.observation;
+        const { observationId: _privateObservationId, image, ...metadata } = observed;
+        const safe = redact(metadata, this.secrets);
+        if (Buffer.byteLength(JSON.stringify(safe), 'utf8') > 256 * 1024)
+          throw Error('窗口证据超过256KiB，请缩小目标窗口或页面后重新读取');
+        if (image && !value.screenshot) throw Error('窗口返回了未批准的截图，未采用证据');
+        if (typeof result.bindingId !== 'string' || result.expiresAt <= Date.now())
+          throw Error('窗口绑定已失效，未采用开发证据');
+        const window = { version: 1, source: 'bound-window-authoring', projectId: value.id, instanceId: scopeId,
+          bindingId: result.bindingId, expiresAt: result.expiresAt, capturedAt: now(), readOnly: true, actionReuseAllowed: false,
+          screenshotIncluded: !!image, observation: safe, ...(image ? { image } : {}) };
+        this.store.put('project-ai-evidence', value.id, { ...(this.store.get<any>('project-ai-evidence', value.id) ?? {}), window });
+        return window;
+      }
+      if(method==='project.ai.runEvidence') {
+        const detail=await this.projects.request('project.run.status',{id:value.id,runId:value.runId});
+        const summary=projectRunEvidence(detail,this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect'));
+        this.store.put('project-ai-evidence',value.id,{...(this.store.get<any>('project-ai-evidence',value.id)??{}),run:summary});
+        return summary;
+      }
+      if (method === 'project.ai.get') {
+        const history=await this.projects.request('project.run.history',{id:value.id});
+        const owned=new Set(history.runs.map((r:any)=>r.id));
+        const pending=this.store.list<any>('attention').filter(a=>!a.read&&owned.has(a.detail?.runId??a.origin?.runId));
+        pending.sort((a,b)=>b.time.localeCompare(a.time));
+        const latest=history.runs[0],pendingRunId=pending[0]?.detail?.runId??pending[0]?.origin?.runId;
+        const runId=latest&&['FAILED','INTERRUPTED','CANCELLED'].includes(latest.state)?latest.id:pendingRunId;
+        const run=runId?projectRunEvidence(await this.projects.request('project.run.status',{id:value.id,runId}),this.store.list<any>('desktop-effect'),this.store.list<any>('template-effect')):null;
+        const recovery={run,pendingCount:pending.length,pending:pending.map(a=>({id:a.id,runId:a.detail?.runId??a.origin?.runId,kind:a.kind,time:a.time})),checkedRuns:history.runs.length,readOnly:true};
+        if(digest(this.store.get('project-ai-recovery',value.id)??null)!==digest(recovery))this.store.put('project-ai-recovery',value.id,recovery);
+        return {...this.projectAI.get(value.id),recovery};
+      }
+      if (method === 'project.ai.platformSkill.choose') return this.projectAI.selectPlatformSkill(value.id,value.content,value.sourceName);
+      if (method === 'project.ai.platformSkill.clear') return this.projectAI.selectPlatformSkill(value.id);
       if (method === 'project.ai.save') return this.projectAI.save(value.id, value.connection);
-      if (method === 'project.ai.start') return this.projectAI.start(value.id, value.task, value.maxRequests, value.durationMs, value.reviewedCost);
+      if (method === 'project.ai.start' || method === 'project.ai.resume') {
+        // A path explicitly included in the user's submitted task is a selected
+        // source. Read only this workbook's headers/statistics, never siblings.
+        const text = method === 'project.ai.start' ? value.task : value.answer;
+        const paths = [...new Set<string>(text.match(/\/(?:Users|Volumes|private|tmp)\/[^\r\n"'“”‘’<>]*?\.xlsx/gu) ?? [])];
+        if (paths.length === 1) {
+          const summary = await workbookHeaders(paths[0]);
+          this.store.put('project-ai-evidence', value.id, {
+            ...(this.store.get<any>('project-ai-evidence', value.id) ?? {}),
+            workbook: summary, selectedFile: paths[0], selectionSource: 'user-task-path',
+          });
+        }
+        return method === 'project.ai.start'
+          ? this.projectAI.start(value.id, value.task, value.intent)
+          : this.projectAI.resume(value.id, value.taskId, value.answer, undefined, value.intent);
+      }
       if (method === 'project.ai.retryTool') return this.projectAI.retryTool(value.id, value.taskId);
-      if (method === 'project.ai.resume') return this.projectAI.resume(value.id, value.taskId, value.answer, value.maxRequests, value.durationMs, value.reviewedCost);
+      if (method === 'project.ai.review') return this.projectAI.review(value.id, value.taskId, value.reviewStamp, value.operation, value.nodes);
       const task = this.projectAI.detail(value.id, value.taskId);
       return method === 'project.ai.cancel' ? this.projectAI.cancel(task.id) : task;
     }
@@ -3362,9 +3490,12 @@ export class Runtime {
         const artifactCleanup = this.artifactCleanup.status(id);
         const run = this.store.get<Run>('run', id);
         const results = this.typedResults.summary(id);
+        const owners=this.store.list<any>('local-project').filter(p=>p.instances?.includes(snapshot?.bindings?.template?.instanceId));
         return {
           run,
+          developmentProject:owners.length===1?{id:owners[0].id}:undefined,
           desktopReceipts: redact(this.desktopRuns.receipts(id), this.secrets),
+          desktopAutomationReceipts:redact(this.store.list<any>('desktop-effect').filter(r=>r.runId===id&&r.version===1&&typeof r.effectId==='string'),this.secrets),
           mcpReceipts: this.mcpRuns
             .receipts(id)
             .map((receipt) => redactMcpReceipt(receipt, this.secrets)),

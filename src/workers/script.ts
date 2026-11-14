@@ -1,7 +1,11 @@
 import { pathToFileURL } from 'node:url';
+import { readTableRange } from './desktop-table-range';
 import { Rpc } from '../shared/rpc';
 import { verifyScriptBundle } from '../adapters/script-bundle';
 const abort = new AbortController();
+// Match the existing supervisor total bound; chained human confirmations do not reset it.
+const TEMPLATE_RPC_TIMEOUT_MS = 610000;
+const templateCall = (request: any, timeoutMs = TEMPLATE_RPC_TIMEOUT_MS) => rpc.call('template', request, timeoutMs);
 const rpc = new Rpc(
   (m) => process.send?.(m),
   async (method, args) => {
@@ -11,31 +15,38 @@ const rpc = new Rpc(
     if (typeof module.default !== 'function')
       throw new Error('脚本必须 default export 一个 async 函数');
     const pending: Promise<any>[] = [];
+    const desktop = {
+      readSelection: (request: any) => templateCall({ operation: 'desktop', request: { operation: 'readSelection', ...request } }),
+      decide: (request: any) => templateCall({ operation: 'desktop', request: { operation: 'decide', ...request } }, 130000),
+      observe: (options: any = {}) => templateCall({ operation: 'desktop', request: { operation: 'observe', ...options } }),
+      act: (request: any) => templateCall({ operation: 'desktop', request: { operation: 'act', ...request } }),
+    };
     const result = await module.default({
       input: args.input,
+      desktop: {...desktop, readTableRange: (request: any) => readTableRange(desktop,request,abort.signal)},
       template: {
-        configuration: () => rpc.call('template', { operation: 'configuration' }),
-        resource: (path: string) => rpc.call('template', { operation: 'resource', path }),
+        configuration: () => templateCall({ operation: 'configuration' }),
+        resource: (path: string) => templateCall({ operation: 'resource', path }),
         validate: (path: string, value: any) =>
-          rpc.call('template', { operation: 'validate', path, value }),
+          templateCall({ operation: 'validate', path, value }),
         browser: (resourceId: string, command: any) =>
-          rpc.call('template', { operation: 'browser', resourceId, command }),
+          templateCall({ operation: 'browser', resourceId, command }),
         file: (resourceId: string, request: any) =>
-          rpc.call('template', { operation: 'file', resourceId, request }),
+          templateCall({ operation: 'file', resourceId, request }),
         ai: (resourceId: string, request: any) =>
-          rpc.call('template', { operation: 'ai', resourceId, request }),
+          templateCall({ operation: 'ai', resourceId, request }),
         state: {
-          get: () => rpc.call('template', { operation: 'state.get' }),
-          set: (value: any) => rpc.call('template', { operation: 'state.set', value }),
+          get: () => templateCall({ operation: 'state.get' }),
+          set: (value: any) => templateCall({ operation: 'state.set', value }),
         },
-        human: (request: any) => rpc.call('template', { operation: 'human', request }, 610000),
-        attention: (request: any) => rpc.call('template', { operation: 'attention', request }),
+        human: (request: any) => templateCall({ operation: 'human', request }, 610000),
+        attention: (request: any) => templateCall({ operation: 'attention', request }),
         effect: {
           prepare: (request: any) =>
-            rpc.call('template', { operation: 'effect.prepare', request }, 610000),
-          resolve: (request: any) => rpc.call('template', { operation: 'effect.resolve', request }),
+            templateCall({ operation: 'effect.prepare', request }, 610000),
+          resolve: (request: any) => templateCall({ operation: 'effect.resolve', request }),
         },
-        result: (value: any) => rpc.call('template', { operation: 'result', value }),
+        result: (value: any) => templateCall({ operation: 'result', value }),
       },
       signal: abort.signal,
       logger: {
@@ -54,7 +65,7 @@ const rpc = new Rpc(
   },
 );
 process.on('message', (m: any) => {
-  if (m.control === 'cancel') abort.abort();
+  if (m.control === 'cancel') { abort.abort(); rpc.close(); }
   else void rpc.receive(m);
 });
 process.on('disconnect', () => process.exit(1));

@@ -88,6 +88,7 @@ const same = (a: unknown, b: unknown) => canonical(a) === canonical(b);
 const headKey = (w: Workspace, key: string) => digest({ workspace: w, key });
 const versionKey = (w: Workspace, ref: SkillVersionRef) => digest({ workspace: w, ref });
 export class Skills {
+  get maintenanceBusyCount() { return this.jobs.size + this.store.list<Saved>('skill-proposal').filter(x => x.snapshot.status === 'publishing').length; }
   private restorationPreviews = new Map<
     string,
     {

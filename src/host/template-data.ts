@@ -1,3 +1,4 @@
+import { projectRebuildCompatibility } from '../templates/project-rebuild';
 import type { Store } from './store';
 import type { StateReceiptStages } from './result-ledger';
 import type { Bindings, FlowRecord, Run } from '../shared/types';
@@ -28,15 +29,20 @@ import { digest, uid, now, canonical } from '../shared/utils';
 import { walk } from '../core/validate';
 
 /** Explicit project-only rebuild; caller holds the same Store transaction and an idle instance. */
-export function rebaseProjectDataContext(store: Store, instanceId: string, before: PackageData, next: PackageData) {
+export function rebaseProjectDataContext(store: Store, instanceId: string, before: PackageData, next: PackageData, compatibilityStamp?:string) {
   const rowKey = 'instance:' + instanceId, row = store.get<any>('template-data-context', rowKey);
   if (!row) return;
+  const oldSchemaSha256=templateDataSchemaDigest(jsonFile(before.files,before.manifest.configurationSchema),jsonFile(before.files,before.manifest.stateSchema));
   const schemaSha256 = templateDataSchemaDigest(jsonFile(next.files, next.manifest.configurationSchema), jsonFile(next.files, next.manifest.stateSchema));
-  if (row.packageKey !== before.manifest.id + '@' + before.manifest.version || row.digest !== before.manifest.contentDigest || row.schemaSha256 !== schemaSha256)
+  if(oldSchemaSha256!==schemaSha256&&(!compatibilityStamp||!(/^[a-f0-9]{64}$/).test(compatibilityStamp)||!projectRebuildCompatibility(before,next).stateProperties.length))throw Error('状态Schema扩展需要已核对的兼容重建，不自动迁移');
+  if (row.packageKey !== before.manifest.id + '@' + before.manifest.version || row.digest !== before.manifest.contentDigest || row.schemaSha256 !== oldSchemaSha256)
     throw Error('开发重建的数据上下文来源或Schema不一致');
   if (store.list<any>('template-data-operation').some(op => op.receipt?.contextId === row.id && ['prepared', 'unknown'].includes(op.receipt.status)))
     throw Error('存在未核对的状态提交，先核对原操作；不迁移或重放');
-  store.put('template-data-context', rowKey, { ...row, packageKey: next.manifest.id + '@' + next.manifest.version, digest: next.manifest.contentDigest });
+  const updated={ ...row, packageKey: next.manifest.id + '@' + next.manifest.version, digest: next.manifest.contentDigest, schemaSha256 };
+  store.put('template-data-context', rowKey, updated);
+  const summary=(value:typeof row)=>({id:value.id,packageKey:value.packageKey,digest:value.digest,schemaSha256:value.schemaSha256});
+  return {before:summary(row),after:summary(updated),dataValuesNotModifiedByContextRebase:true};
 }
 
 type Meta = { revision: number; updatedAt: string };

@@ -1,3 +1,5 @@
+import DesktopActionReceipts from './DesktopActionReceipts';
+import RunFailureNotice from './RunFailureNotice';
 import { runRecordLabel } from './readable-labels';
 import { runStateColors } from './theme';
 import { Alert, Button, Descriptions, Tag, Badge, Card } from 'antd';
@@ -121,7 +123,7 @@ export default function DesktopTaskRun({
             <Alert type="info" role="status" showIcon title={model.view.statusNote} />
           )}
           {detail.fault && <Alert type="error" role="alert" showIcon title={detail.fault} />}
-          {run.error && <Alert type="error" role="alert" showIcon title={run.error} />}
+          {run.error && <RunFailureNotice error={run.error} />}
           {!verified && (
             <div className="desktop-task-progress">
               <p>
@@ -202,7 +204,8 @@ export default function DesktopTaskRun({
           )}
           {page === 'details' ? (
             <>
-              <DesktopRunReceipt
+              <DesktopActionReceipts runId={run.id} receipts={detail.desktopAutomationReceipts} />
+                <DesktopRunReceipt
                 runId={run.id}
                 receipts={detail.desktopReceipts}
                 snapshot={detail.snapshot}
