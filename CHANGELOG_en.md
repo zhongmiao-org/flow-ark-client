@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Recheck the same nonsecure input control before each Unicode text chunk, allowing the current input to change its own text or selection without resuming after focus moves.
 - Query the current system accessibility focus owner for macOS foreground checks instead of depending on the command helper refreshing the NSWorkspace cache; retain exact-window and dispatch guards.
 - Check ARIA disabled, read-only, inert and composed-tree states before embedded browser input, and AXEnabled before macOS element clicks. Label Excel headers as source evidence rather than target webpage fields.
 

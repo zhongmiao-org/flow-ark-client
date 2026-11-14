@@ -199,6 +199,12 @@ func jsonStamp(_ value:Any) throws -> String {
         }
         return (e,try jsonStamp(attributes),role,subrole,box)
     }
+    static func captureInputFocus(_ w:DesktopWindow) -> AXUIElement? {
+        let root=AXUIElementCreateApplication(w.app.processIdentifier)
+        guard let focused=ax(root,kAXFocusedUIElementAttribute),CFGetTypeID(focused)==AXUIElementGetTypeID() else {return nil}
+        let e=focused as! AXUIElement
+        return str(e,kAXSubroleAttribute)==kAXSecureTextFieldSubrole ? nil:e
+    }
     static func checkFocus(_ w:DesktopWindow,_ old:DesktopObservation) throws {
         guard let e=old.focus,let stamp=old.focusStamp,let current=try captureFocus(w),same(e,current.0),stamp==current.1 else {try fault("focus-or-selection-changed")}
     }
@@ -456,6 +462,8 @@ func jsonStamp(_ value:Any) throws -> String {
                 guard str(e,kAXSubroleAttribute) != kAXSecureTextFieldSubrole else { try fault("secure-input-denied") }
                 for chunk in unicodeChunks(text) {
                     try focused(w)
+                    // Our previous chunk may change text/selection, but never the receiving control.
+                    guard let current=captureInputFocus(w),same(e,current) else {try fault("input-focus-changed")}
                     guard let event=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:true),let up=CGEvent(keyboardEventSource:nil,virtualKey:0,keyDown:false) else { try fault("input-unavailable") }
                     event.keyboardSetUnicodeString(stringLength:chunk.count,unicodeString:chunk);try keyPair(event,up,pid:w.app.processIdentifier)
                 }
