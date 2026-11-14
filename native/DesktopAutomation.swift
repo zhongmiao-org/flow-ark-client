@@ -417,6 +417,11 @@ func jsonStamp(_ value:Any) throws -> String {
             let dispatchModifiers=CGEventSource.flagsState(.combinedSessionState).intersection([.maskCommand,.maskShift,.maskAlternate,.maskControl])
             guard dispatchModifiers.isEmpty else {try fault(modifierGuardReason(.beforeDispatch,dispatchModifiers))}
         }
+        // Only an explicit AX boolean false proves this target is disabled.
+        // Missing/unsupported metadata is not a readiness result and does not change the selected input path.
+        if (kind=="click" || kind=="doubleClick"),let e=target,
+           let enabled=ax(e,kAXEnabledAttribute),CFGetTypeID(enabled)==CFBooleanGetTypeID(),
+           CFEqual(enabled,kCFBooleanFalse) { try fault("target-disabled") }
         // Consume before the first native event. Any subsequent failure is unknown, never retried.
         consumed.insert(actionId);observation=nil
         do {

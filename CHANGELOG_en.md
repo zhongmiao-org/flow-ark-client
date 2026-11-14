@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Check ARIA disabled, read-only, inert and composed-tree states before embedded browser input, and AXEnabled before macOS element clicks. Label Excel headers as source evidence rather than target webpage fields.
+
 - Resolve an assembled authoring baseline by the exact public revision, preserve current unassembled work on that revision, and reject stale-base reuse instead of reverting current source to an older conversation draft.
 
 - Add redacted read-only instance and runtime preflight evidence, separate generation, client and prerequisite failures in the Skill, keep analysis in recovery mode, and distinguish native dispatch receipts from document replacement receipts.

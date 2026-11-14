@@ -65,6 +65,15 @@
         "version": 1,
         "status": "draft-unreleased",
         "governanceCommit": "a45b3b0e7b524016eb368ea2233a175a512aa6fe"
+      },
+      "rpaInputReadiness": {
+        "version": 1,
+        "status": "draft-unreleased",
+        "governanceCommit": "0f32de81dcd7bf55857b81d64cf962016e14bc35",
+        "scope": [
+          "embedded-dom-actionability",
+          "macos-ax-enabled"
+        ]
       }
     }
   },

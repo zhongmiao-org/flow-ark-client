@@ -14,6 +14,7 @@ import { resolvedBrowserFields, assertBrowserFieldsResult } from '../shared/brow
 import { readBrowserFields } from './browser-fields-dom';
 import { readBrowserRenderedFields } from './browser-rendered-fields-dom';
 import { browserTargetDOM } from './browser-target-dom';
+import { browserInputBlockReason } from './browser-input-state';
 import { resolvedBrowserTarget, assertBrowserTargetResult } from '../shared/browser-target';
 import {
   renderingDiagnosticDataSchema,
@@ -37,7 +38,7 @@ type Scope = {
   session?: string;
   x: number;
   y: number;
-  ancestors: { scope: Scope; selector: string }[];
+  ancestors: { scope: Scope; selector: string; frameId: string }[];
 };
 const query = `(selector) => {
   const roots = [document]; const found = [];
@@ -50,7 +51,9 @@ export class EmbeddedPage {
   readonly picker: EmbeddedPicker;
   private diagnosticPhase = '尚未派发网页命令';
   /** Literal-only local phase snapshot: never includes page text, selectors or values. */
-  get operationPhase() { return this.diagnosticPhase; }
+  get operationPhase() {
+    return this.diagnosticPhase;
+  }
   private abort = new AbortController();
   private frames = new Map<string, string>();
   private documentEpoch = 0;
@@ -238,7 +241,7 @@ export class EmbeddedPage {
         const { node } = await this.send('DOM.describeNode', { objectId: element }, scope.session);
         if (!node.frameId) throw new Error('目标不是可用框架：' + selector);
         const next = await this.world(node.frameId, this.frames.get(node.frameId) ?? scope.session);
-        next.ancestors = [...scope.ancestors, { scope, selector }];
+        next.ancestors = [...scope.ancestors, { scope, selector, frameId: node.frameId }];
         next.x = scope.x + box.x;
         next.y = scope.y + box.y;
         scope = next;
@@ -249,6 +252,43 @@ export class EmbeddedPage {
       }
     }
     return scope;
+  }
+  private async assertInputReady(scope: Scope, objectId: string, modifying = false) {
+    for (const ancestor of scope.ancestors) {
+      const object = await this.evaluate(
+        ancestor.scope,
+        `(${query})(${JSON.stringify(ancestor.selector)})`,
+        false,
+      );
+      if (!object.objectId || object.subtype === 'null') throw Error('输入前框架已失效');
+      try {
+        const { node } = await this.send(
+          'DOM.describeNode',
+          { objectId: object.objectId },
+          ancestor.scope.session,
+        );
+        if (node.frameId !== ancestor.frameId) throw Error('输入前框架已被替换');
+        const reason = await this.call(
+          ancestor.scope,
+          object.objectId,
+          `function(){return (${browserInputBlockReason.toString()})(this);}`,
+        );
+        if (reason) throw Error(`框架不可交互（${reason}），未派发本次写入或按下`);
+      } finally {
+        await this.send(
+          'Runtime.releaseObject',
+          { objectId: object.objectId },
+          ancestor.scope.session,
+        ).catch(() => {});
+      }
+    }
+    const reason = await this.call(
+      scope,
+      objectId,
+      `function(modifying){return (${browserInputBlockReason.toString()})(this,modifying);}`,
+      modifying,
+    );
+    if (reason) throw new Error(`目标不可交互（${reason}），未派发本次写入或按下`);
   }
   private async visible(
     scope: Scope,
@@ -267,7 +307,7 @@ export class EmbeddedPage {
         if (!this.isConnected) throw new Error('目标元素已离开页面');
         if(scroll) this.scrollIntoView({block:'center', inline:'center', behavior:'instant'});
         const r=this.getBoundingClientRect(), s=getComputedStyle(this);
-        if (!r.width || !r.height || s.visibility==='hidden' || s.display==='none' || (enabled && this.matches(':disabled'))) return null;
+        if (!r.width || !r.height || s.visibility==='hidden' || s.display==='none' || (enabled && (${browserInputBlockReason.toString()})(this))) return null;
         const x=r.x+r.width/2,y=r.y+r.height/2;
         return {x,y};
       }`,
@@ -285,14 +325,15 @@ export class EmbeddedPage {
         objectId,
         functionDeclaration: `function() {
         const target=this, state={hovered:false,pressed:false,blocked:false,blockedEvent:null,blockedReason:null};
+        const blockReason=${browserInputBlockReason.toString()};
         const listen=e=>{
           if(!e.isTrusted) return;
           let unique=true, reason=null;
           ${selector ? `try { unique=(${browserTargetDOM.toString()})({selector:${JSON.stringify(selector)},expected:target,mode:'check'}).visible; if(!unique) reason='not-visible'; } catch { unique=false; reason='target-identity'; }` : ''}
           if(!target.isConnected) reason='disconnected';
-          else if(target.matches(':disabled')) reason='disabled';
+          else if(blockReason(target)) reason=blockReason(target);
           else if(!reason && !e.composedPath().includes(target)) reason='off-target';
-          const hit=unique && target.isConnected && !target.matches(':disabled') && e.composedPath().includes(target);
+          const hit=unique && target.isConnected && !blockReason(target) && e.composedPath().includes(target);
           if(e.type==='mousemove') { state.hovered=hit; return; }
           if(!hit) {
             if(!state.blocked) { state.blockedEvent=e.type; state.blockedReason=reason; }
@@ -320,7 +361,7 @@ export class EmbeddedPage {
       scope,
       objectId,
       `function() {
-        if (!this.isConnected || this.matches(':disabled')) throw new Error('点击目标已失效');
+        if ((${browserInputBlockReason.toString()})(this)) throw new Error('点击目标不可交互，未派发本次写入或按下');
         const r=this.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
         const hit=this.getRootNode().elementFromPoint(x,y);
         if (!r.width || !r.height || (hit!==this && !this.contains(hit))) throw new Error('点击目标被其他元素遮挡');
@@ -382,6 +423,7 @@ export class EmbeddedPage {
         // The native view must still be presented before input is dispatched.
         // Only moves repeat; a press/release is never retried.
         this.diagnosticPhase = '派发鼠标悬停';
+        await this.assertInputReady(scope, objectId);
         beforeInput?.();
         await this.send('Input.dispatchMouseEvent', { ...point, type: 'mouseMoved' });
         this.diagnosticPhase = '等待可信悬停回执';
@@ -398,6 +440,7 @@ export class EmbeddedPage {
       await beforePress?.();
       const input = { ...point, button: 'left', clickCount: 1 };
       this.diagnosticPhase = '派发鼠标按下';
+      await this.assertInputReady(scope, objectId);
       beforeInput?.();
       await this.send('Input.dispatchMouseEvent', { ...input, type: 'mousePressed' });
       this.diagnosticPhase = '派发鼠标释放';
@@ -541,7 +584,15 @@ export class EmbeddedPage {
             `function(value){ if (this.tagName!=='INPUT' || !['checkbox','radio'].includes(this.type) || (this.type==='radio' && !value)) throw new Error('check 仅支持原生 checkbox 或选中 radio'); return this.checked; }`,
             command.value,
           );
-          if (current !== command.value) await this.click(scope, element, remaining, undefined, undefined, beforeInput);
+          if (current !== command.value)
+            await this.click(
+              scope,
+              element,
+              remaining,
+              () => this.assertInputReady(scope, element, true),
+              undefined,
+              beforeInput,
+            );
           const checked = await this.call(scope, element, 'function(){return this.checked;}');
           if (checked !== command.value) throw new Error('勾选结果与目标状态不一致');
           return { checked };
@@ -551,11 +602,14 @@ export class EmbeddedPage {
           const values = typeof command.value === 'string' ? [command.value] : command.value;
           while (true) {
             remaining();
+            await this.assertInputReady(scope, element, true);
             beforeInput?.();
             const selected = await this.call(
               scope,
               element,
               `function(values){
+              const blocked=(${browserInputBlockReason.toString()})(this,true);
+              if(blocked) throw new Error('目标不可交互（'+blocked+'），未派发本次写入或按下');
               if (this.tagName!=='SELECT') throw new Error('select 仅支持原生下拉框');
               if (!this.multiple && values.length!==1) throw new Error('单选必须指定一个选项');
               const options=[...this.options];
@@ -578,12 +632,14 @@ export class EmbeddedPage {
         case 'fill': {
           await this.visible(scope, element, remaining, true);
           this.diagnosticPhase = '聚焦并选择输入目标';
+          await this.assertInputReady(scope, element, true);
           beforeInput?.();
           const native = await this.call(
             scope,
             element,
             `function(value){
-            if(this.readOnly) throw new Error('输入框为只读');
+            const blocked=(${browserInputBlockReason.toString()})(this,true);
+            if(blocked) throw new Error('目标不可交互（'+blocked+'），未派发本次写入或按下');
             if (this instanceof HTMLInputElement && ['date','time','datetime-local','month','week','color','range'].includes(this.type)) {
               Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(this,value);
               if(this.value!==value) throw new Error('输入值不符合控件格式');
@@ -599,6 +655,7 @@ export class EmbeddedPage {
           );
           this.diagnosticPhase = '派发文本输入';
           if (native) {
+            await this.assertInputReady(scope, element, true);
             beforeInput?.();
             await this.send('Input.insertText', { text: String(command.value) });
           }
@@ -607,6 +664,11 @@ export class EmbeddedPage {
         case 'press': {
           await this.visible(scope, element, remaining, true);
           this.diagnosticPhase = '聚焦按键目标';
+          await this.assertInputReady(
+            scope,
+            element,
+            !['Tab', 'Escape'].includes(String(command.value)),
+          );
           beforeInput?.();
           await this.call(scope, element, 'function(){this.focus();}');
           const key = command.value as (typeof formKeys)[number];
@@ -626,6 +688,11 @@ export class EmbeddedPage {
           };
           const actual = key === 'Space' ? ' ' : key;
           this.diagnosticPhase = '派发按键按下';
+          await this.assertInputReady(
+            scope,
+            element,
+            !['Tab', 'Escape'].includes(String(command.value)),
+          );
           beforeInput?.();
           await this.send('Input.dispatchKeyEvent', {
             type: 'keyDown',
@@ -644,6 +711,7 @@ export class EmbeddedPage {
           return { pressed: true };
         }
         case 'upload':
+          await this.assertInputReady(scope, element, true);
           beforeInput?.();
           await this.send(
             'DOM.setFileInputFiles',
@@ -660,7 +728,12 @@ export class EmbeddedPage {
       );
     }
   }
-  private async target(command: BrowserCommand, path: string[], remaining: () => number, beforeInput?: () => void) {
+  private async target(
+    command: BrowserCommand,
+    path: string[],
+    remaining: () => number,
+    beforeInput?: () => void,
+  ) {
     const input =
       command.version === 12 ? resolvedBrowserScroll(command) : resolvedBrowserTarget(command);
     const scrollUrl = this.contents.getURL();
@@ -755,7 +828,7 @@ export class EmbeddedPage {
         verify();
         const next = await this.world(node.frameId, this.frames.get(node.frameId) ?? scope.session);
         verify();
-        next.ancestors = [...scope.ancestors, { scope, selector }];
+        next.ancestors = [...scope.ancestors, { scope, selector, frameId: node.frameId }];
         chain.push(item);
         scope = next;
       }
